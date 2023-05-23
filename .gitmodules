@@ -1,3 +1,6 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/layerzero-client"]
+	path = lib/layerzero-client
+	url = https://github.com/solidstate-network/layerzero-client
