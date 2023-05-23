@@ -15,3 +15,6 @@ verbosity = 1
 [profile.CI]
 fuzz_runs = 100_000
 verbosity = 4
+
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
