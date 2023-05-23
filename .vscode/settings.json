@@ -1,0 +1,17 @@
+{
+  "[solidity]": {
+    "editor.defaultFormatter": "JuanBlanco.solidity"
+  },
+  "editor.formatOnSave": true,
+  "makefile.extensionOutputFolder": "./cache",
+  "search.exclude": { "lib": true },
+  "solidity.compileUsingRemoteVersion": "v0.8.20",
+  "solidity.formatter": "prettier",
+  "solidity.packageDefaultDependenciesContractsDirectory": "src",
+  "solidity.packageDefaultDependenciesDirectory": "lib",
+  "solidity.remappings": [
+    "@solidstate/=lib/solidstate-solidity/contracts/",
+    "@solidstate/layerzero-client/=lib/layerzero-client/contracts/",
+    "forge-std/=lib/forge-std/src/"
+  ]
+}

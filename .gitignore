@@ -1,0 +1,20 @@
+# Compiler files (Foundry cache and compiled output)
+cache/
+out/
+
+# Ignore Foundry development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+
+# Makefile extension output files
+.vscode/configurationCache.log
+
+# Docs
+docs/
+
+# Dotenv environment variables file
+.env
+
+# Mac artifact lockfile
+.DS_Store
