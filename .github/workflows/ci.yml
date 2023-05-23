@@ -1,6 +1,11 @@
-name: test
+name: CI
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - "main"
 
 env:
   FOUNDRY_PROFILE: ci
@@ -30,5 +35,16 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge test --gas-report
         id: test
+
+      - name: "Generate coverage report"
+        run: "forge coverage --report lcov"
+        id: coverage
+
+      - name: "Upload coverage report to Codecov"
+        uses: "codecov/codecov-action@v3"
+        with:
+          files: "./lcov.info"
+          name: insrt-lp-contracts
+          verbose: true
