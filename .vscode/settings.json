@@ -10,7 +10,7 @@
   "solidity.packageDefaultDependenciesContractsDirectory": "src",
   "solidity.packageDefaultDependenciesDirectory": "lib",
   "solidity.remappings": [
-    "@solidstate/=lib/solidstate-solidity/contracts/",
+    "@solidstate-solidity/=lib/solidstate-solidity/contracts/",
     "@solidstate/layerzero-client/=lib/layerzero-client/contracts/",
     "forge-std/=lib/forge-std/src/"
   ]
