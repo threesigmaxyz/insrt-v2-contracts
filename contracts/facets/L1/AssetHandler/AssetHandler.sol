@@ -8,6 +8,7 @@ import { SolidStateLayerZeroClient } from "@solidstate/layerzero-client/SolidSta
 
 import { IL1AssetHandler } from "./IAssetHandler.sol";
 import { L1AssetHandlerStorage as Storage } from "./Storage.sol";
+import { IAssetHandler } from "../../../interfaces/IAssetHandler.sol";
 import { PayloadEncoder } from "../../../libraries/PayloadEncoder.sol";
 
 /// @title L1AssetHandler
@@ -49,7 +50,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
         return this.onERC721Received.selector;
     }
 
-    /// @inheritdoc IL1AssetHandler
+    /// @inheritdoc IAssetHandler
     function setLayerZeroChainIdDestination(
         uint16 newDestinationLayerZeroChainId
     ) external onlyOwner {
@@ -104,18 +105,61 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
     }
 
     /// @notice Handles received LayerZero cross-chain messages.
-    /// @dev Overridden from the SolidStateLayerZeroClient contract.
-    /// @param sourceChainId LayerZero chain ID of the source chain.
-    /// @param path The encoded LayerZero trusted remote path.
-    /// @param nonce The ordered message nonce.
-    /// @param data The cross-chain message data payload.
+    /// @dev Overridden from the SolidStateLayerZeroClient contract. It processes data payloads based on the prefix and transfers unstaked NFT assets accordingly.
+    /// @param data The cross-chain message data payload. Decoded based on profix and processed accordingly.
     function _handleLayerZeroMessage(
-        uint16 sourceChainId,
-        bytes calldata path,
-        uint64 nonce,
+        uint16,
+        bytes calldata,
+        uint64,
         bytes calldata data
     ) internal override {
-        // TODO: ...
+        // Decode the prefix from the payload
+        PayloadEncoder.Prefix prefix = abi.decode(
+            data,
+            (PayloadEncoder.Prefix)
+        );
+
+        if (prefix == PayloadEncoder.Prefix.ERC1155) {
+            // Decode the payload to get the sender, the collection, the tokenIds and the amounts for each tokenId
+            (
+                address sender,
+                address collection,
+                uint256[] memory tokenIds,
+                uint256[] memory amounts
+            ) = abi.decode(data, (address, address, uint256[], uint256[]));
+
+            // Transfer the ERC1155 assets to the sender
+            IERC1155(collection).safeBatchTransferFrom(
+                address(this),
+                sender,
+                tokenIds,
+                amounts,
+                ""
+            );
+
+            emit ERC1155AssetsUnstaked(sender, collection, tokenIds, amounts);
+        } else if (prefix == PayloadEncoder.Prefix.ERC721) {
+            // Decode the payload to get the sender, the collection, and the tokenIds
+            (
+                address sender,
+                address collection,
+                uint256[] memory tokenIds
+            ) = abi.decode(data, (address, address, uint256[]));
+
+            // Transfer the ERC721 assets to the sender
+            for (uint i = 0; i < tokenIds.length; i++) {
+                IERC721(collection).safeTransferFrom(
+                    address(this),
+                    sender,
+                    tokenIds[i],
+                    ""
+                );
+            }
+
+            emit ERC721AssetsUnstaked(sender, collection, tokenIds);
+        } else {
+            revert InvalidPayloadPrefix();
+        }
     }
 
     /// TODO: add support for risk parameter

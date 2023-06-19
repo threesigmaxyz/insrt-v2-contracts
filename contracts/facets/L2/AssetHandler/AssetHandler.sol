@@ -7,6 +7,7 @@ import { SolidStateLayerZeroClient } from "@solidstate/layerzero-client/SolidSta
 
 import { IL2AssetHandler } from "./IAssetHandler.sol";
 import { L2AssetHandlerStorage as Storage } from "./Storage.sol";
+import { IAssetHandler } from "../../../interfaces/IAssetHandler.sol";
 import { PayloadEncoder } from "../../../libraries/PayloadEncoder.sol";
 
 /// @title L2AssetHandler
@@ -29,7 +30,7 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
         _setOwner(msg.sender);
     }
 
-    /// @inheritdoc IL2AssetHandler
+    /// @inheritdoc IAssetHandler
     function setLayerZeroChainIdDestination(
         uint16 newDestinationLayerZeroChainId
     ) external onlyOwner {
@@ -140,6 +141,8 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
                     tokenIds[i]
                 ] += amounts[i];
             }
+
+            emit ERC1155AssetsStaked(staker, collection, tokenIds, amounts);
         } else if (prefix == PayloadEncoder.Prefix.ERC721) {
             // Decode the payload to get the staker, the collection, and the tokenIds
             (
@@ -158,6 +161,8 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
                     tokenIds[i]
                 );
             }
+
+            emit ERC721AssetsStaked(staker, collection, tokenIds);
         } else {
             // If the prefix is neither ERC1155 nor ERC721, revert
             revert InvalidPayloadPrefix();
