@@ -30,6 +30,15 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
     }
 
     /// @inheritdoc IAssetHandler
+    function getLayerZeroEndpoint()
+        external
+        view
+        returns (address layerZeroEndpoint)
+    {
+        return _getLayerZeroEndpoint();
+    }
+
+    /// @inheritdoc IAssetHandler
     function getLayerZeroTrustedRemoteAddress(
         uint16 remoteChainId
     ) external view returns (bytes memory trustedRemoteAddress) {
@@ -64,6 +73,13 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
         Storage
             .layout()
             .DESTINATION_LAYER_ZERO_CHAIN_ID = newDestinationLayerZeroChainId;
+    }
+
+    /// @inheritdoc IAssetHandler
+    function setLayerZeroEndpoint(
+        address layerZeroEndpoint
+    ) external onlyOwner {
+        _setLayerZeroEndpoint(layerZeroEndpoint);
     }
 
     /// @inheritdoc IAssetHandler
