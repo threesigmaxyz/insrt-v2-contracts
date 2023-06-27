@@ -7,7 +7,6 @@ import { IERC721 } from "@solidstate/contracts/interfaces/IERC721.sol";
 import { SolidStateLayerZeroClient } from "@solidstate/layerzero-client/SolidStateLayerZeroClient.sol";
 
 import { IL1AssetHandler } from "./IAssetHandler.sol";
-import { L1AssetHandlerStorage as Storage } from "./Storage.sol";
 import { IAssetHandler } from "../../../interfaces/IAssetHandler.sol";
 import { PayloadEncoder } from "../../../libraries/PayloadEncoder.sol";
 
@@ -16,12 +15,7 @@ import { PayloadEncoder } from "../../../libraries/PayloadEncoder.sol";
 contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
     /// @notice Deploys a new instance of the L1AssetHandler contract.
     /// @param layerZeroEndpoint Address of the LayerZero endpoint.
-    /// @param destinationLayerZeroChainId LayerZero chain ID used to determine the chain where assets will be staked.
-    constructor(address layerZeroEndpoint, uint16 destinationLayerZeroChainId) {
-        Storage
-            .layout()
-            .DESTINATION_LAYER_ZERO_CHAIN_ID = destinationLayerZeroChainId;
-
+    constructor(address layerZeroEndpoint) {
         // Set the LayerZero endpoint address for this contract
         _setLayerZeroEndpoint(layerZeroEndpoint);
 
@@ -67,15 +61,6 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
     }
 
     /// @inheritdoc IAssetHandler
-    function setLayerZeroChainIdDestination(
-        uint16 newDestinationLayerZeroChainId
-    ) external onlyOwner {
-        Storage
-            .layout()
-            .DESTINATION_LAYER_ZERO_CHAIN_ID = newDestinationLayerZeroChainId;
-    }
-
-    /// @inheritdoc IAssetHandler
     function setLayerZeroEndpoint(
         address layerZeroEndpoint
     ) external onlyOwner {
@@ -94,6 +79,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
     /// @inheritdoc IL1AssetHandler
     function stakeERC1155Assets(
         address collection,
+        uint16 layerZeroDestinationChainId,
         uint256[] calldata tokenIds,
         uint256[] calldata amounts
     ) external payable {
@@ -110,7 +96,12 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
             ""
         );
 
-        _stakeERC1155Assets(collection, tokenIds, amounts);
+        _stakeERC1155Assets(
+            collection,
+            layerZeroDestinationChainId,
+            tokenIds,
+            amounts
+        );
 
         emit ERC1155AssetsStaked(msg.sender, collection, tokenIds, amounts);
     }
@@ -119,6 +110,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
     /// @inheritdoc IL1AssetHandler
     function stakeERC721Assets(
         address collection,
+        uint16 layerZeroDestinationChainId,
         uint256[] calldata tokenIds
     ) external payable {
         for (uint i = 0; i < tokenIds.length; i++) {
@@ -130,7 +122,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
             );
         }
 
-        _stakeERC721Assets(collection, tokenIds);
+        _stakeERC721Assets(collection, layerZeroDestinationChainId, tokenIds);
 
         emit ERC721AssetsStaked(msg.sender, collection, tokenIds);
     }
@@ -196,15 +188,17 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
     /// TODO: add support for risk parameter
     /// @notice Deposits ERC1155 assets cross-chain using LayerZero.
     /// @param collection Address of the ERC1155 collection.
+    /// @param layerZeroDestinationChainId The LayerZero destination chain ID.
     /// @param tokenIds IDs of the tokens to be staked.
     /// @param amounts The amounts of the tokens to be staked.
     function _stakeERC1155Assets(
         address collection,
+        uint16 layerZeroDestinationChainId,
         uint256[] calldata tokenIds,
         uint256[] calldata amounts
     ) private {
         _lzSend(
-            Storage.layout().DESTINATION_LAYER_ZERO_CHAIN_ID,
+            layerZeroDestinationChainId,
             PayloadEncoder.encodeStakeERC1155AssetsPayload(
                 msg.sender,
                 collection,
@@ -221,13 +215,15 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
     /// TODO: add support for risk parameter
     /// @notice Deposits ERC721 assets cross-chain using LayerZero.
     /// @param collection Address of the ERC721 collection.
+    /// @param layerZeroDestinationChainId The LayerZero destination chain ID.
     /// @param tokenIds IDs of the tokens to be staked.
     function _stakeERC721Assets(
         address collection,
+        uint16 layerZeroDestinationChainId,
         uint256[] calldata tokenIds
     ) private {
         _lzSend(
-            Storage.layout().DESTINATION_LAYER_ZERO_CHAIN_ID,
+            layerZeroDestinationChainId,
             PayloadEncoder.encodeStakeERC721AssetsPayload(
                 msg.sender,
                 collection,

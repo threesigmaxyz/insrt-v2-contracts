@@ -17,12 +17,7 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
 
     /// @notice Deploys a new instance of the L2AssetHandler contract.
     /// @param layerZeroEndpoint Address of the LayerZero endpoint.
-    /// @param destinationLayerZeroChainId LayerZero chain ID used to determine the chain where assets will be unstaked.
-    constructor(address layerZeroEndpoint, uint16 destinationLayerZeroChainId) {
-        Storage
-            .layout()
-            .DESTINATION_LAYER_ZERO_CHAIN_ID = destinationLayerZeroChainId;
-
+    constructor(address layerZeroEndpoint) {
         // Set the LayerZero endpoint address for this contract
         _setLayerZeroEndpoint(layerZeroEndpoint);
 
@@ -47,15 +42,6 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
     }
 
     /// @inheritdoc IAssetHandler
-    function setLayerZeroChainIdDestination(
-        uint16 newDestinationLayerZeroChainId
-    ) external onlyOwner {
-        Storage
-            .layout()
-            .DESTINATION_LAYER_ZERO_CHAIN_ID = newDestinationLayerZeroChainId;
-    }
-
-    /// @inheritdoc IAssetHandler
     function setLayerZeroEndpoint(
         address layerZeroEndpoint
     ) external onlyOwner {
@@ -73,6 +59,7 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
     /// @inheritdoc IL2AssetHandler
     function unstakeERC1155Assets(
         address collection,
+        uint16 layerZeroDestinationChainId,
         uint256[] calldata tokenIds,
         uint256[] calldata amounts
     ) external payable {
@@ -98,7 +85,12 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
             ] -= amounts[i];
         }
 
-        _unstakeERC1155Assets(collection, tokenIds, amounts);
+        _unstakeERC1155Assets(
+            collection,
+            layerZeroDestinationChainId,
+            tokenIds,
+            amounts
+        );
 
         emit ERC1155AssetsUnstaked(msg.sender, collection, tokenIds, amounts);
     }
@@ -106,6 +98,7 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
     /// @inheritdoc IL2AssetHandler
     function unstakeERC721Assets(
         address collection,
+        uint16 layerZeroDestinationChainId,
         uint256[] calldata tokenIds
     ) external payable {
         // For each tokenId, check if token is staked
@@ -127,7 +120,7 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
             );
         }
 
-        _unstakeERC721Assets(collection, tokenIds);
+        _unstakeERC721Assets(collection, layerZeroDestinationChainId, tokenIds);
 
         emit ERC721AssetsUnstaked(msg.sender, collection, tokenIds);
     }
@@ -202,15 +195,17 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
 
     /// @notice Withdraws ERC1155 assets cross-chain using LayerZero.
     /// @param collection Address of the ERC1155 collection.
+    /// @param layerZeroDestinationChainId The LayerZero destination chain ID.
     /// @param tokenIds IDs of the tokens to be unstaked.
     /// @param amounts The amounts of the tokens to be unstaked.
     function _unstakeERC1155Assets(
         address collection,
+        uint16 layerZeroDestinationChainId,
         uint256[] calldata tokenIds,
         uint256[] calldata amounts
     ) private {
         _lzSend(
-            Storage.layout().DESTINATION_LAYER_ZERO_CHAIN_ID,
+            layerZeroDestinationChainId,
             PayloadEncoder.encodeUnstakeERC1155AssetsPayload(
                 msg.sender,
                 collection,
@@ -226,13 +221,15 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
 
     /// @notice Withdraws ERC721 assets cross-chain using LayerZero.
     /// @param collection Address of the ERC721 collection.
+    /// @param layerZeroDestinationChainId The LayerZero destination chain ID.
     /// @param tokenIds IDs of the tokens to be unstaked.
     function _unstakeERC721Assets(
         address collection,
+        uint16 layerZeroDestinationChainId,
         uint256[] calldata tokenIds
     ) private {
         _lzSend(
-            Storage.layout().DESTINATION_LAYER_ZERO_CHAIN_ID,
+            layerZeroDestinationChainId,
             PayloadEncoder.encodeUnstakeERC721AssetsPayload(
                 msg.sender,
                 collection,

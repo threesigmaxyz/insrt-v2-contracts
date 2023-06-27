@@ -23,8 +23,7 @@ contract L2AssetHandlerHelper {
     /// @dev Deploys a new instance of L2AssetHandler.
     constructor() {
         l2AssetHandlerImplementation = new L2AssetHandler(
-            ARBITRUM_LAYER_ZERO_ENDPOINT,
-            DESTINATION_LAYER_ZERO_CHAIN_ID
+            ARBITRUM_LAYER_ZERO_ENDPOINT
         );
     }
 
@@ -34,22 +33,19 @@ contract L2AssetHandlerHelper {
         view
         returns (ISolidStateDiamond.FacetCut[] memory)
     {
-        bytes4[] memory functionSelectors = new bytes4[](7);
+        bytes4[] memory functionSelectors = new bytes4[](6);
 
         // Map the function selectors to their respective interfaces.
         functionSelectors[0] = IAssetHandler.getLayerZeroEndpoint.selector;
         functionSelectors[1] = IAssetHandler
             .getLayerZeroTrustedRemoteAddress
             .selector;
-        functionSelectors[2] = IAssetHandler
-            .setLayerZeroChainIdDestination
-            .selector;
-        functionSelectors[3] = IAssetHandler.setLayerZeroEndpoint.selector;
-        functionSelectors[4] = IAssetHandler
+        functionSelectors[2] = IAssetHandler.setLayerZeroEndpoint.selector;
+        functionSelectors[3] = IAssetHandler
             .setLayerZeroTrustedRemoteAddress
             .selector;
-        functionSelectors[5] = IL2AssetHandler.unstakeERC1155Assets.selector;
-        functionSelectors[6] = IL2AssetHandler.unstakeERC721Assets.selector;
+        functionSelectors[4] = IL2AssetHandler.unstakeERC1155Assets.selector;
+        functionSelectors[5] = IL2AssetHandler.unstakeERC721Assets.selector;
 
         ISolidStateDiamond.FacetCut memory facetCut = IDiamondWritableInternal
             .FacetCut({
