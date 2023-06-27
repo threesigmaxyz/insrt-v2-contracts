@@ -29,6 +29,13 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
         _setOwner(msg.sender);
     }
 
+    /// @inheritdoc IAssetHandler
+    function getLayerZeroTrustedRemoteAddress(
+        uint16 remoteChainId
+    ) external view returns (bytes memory trustedRemoteAddress) {
+        return _getTrustedRemoteAddress(remoteChainId);
+    }
+
     /// @inheritdoc IL1AssetHandler
     function onERC1155BatchReceived(
         address,
@@ -57,6 +64,14 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
         Storage
             .layout()
             .DESTINATION_LAYER_ZERO_CHAIN_ID = newDestinationLayerZeroChainId;
+    }
+
+    /// @inheritdoc IAssetHandler
+    function setLayerZeroTrustedRemoteAddress(
+        uint16 remoteChainId,
+        bytes calldata trustedRemoteAddress
+    ) external onlyOwner {
+        _setTrustedRemoteAddress(remoteChainId, trustedRemoteAddress);
     }
 
     /// TODO: add support for risk parameter
