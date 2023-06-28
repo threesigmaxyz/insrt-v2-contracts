@@ -14,17 +14,12 @@ import { IAssetHandler } from "../../../../contracts/interfaces/IAssetHandler.so
 contract L1AssetHandlerHelper {
     L1AssetHandler public l1AssetHandlerImplementation;
 
-    /// @dev The LayerZero Ethereum mainnet endpoint address.
-    address private constant MAINNET_LAYER_ZERO_ENDPOINT =
-        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     /// @dev The LayerZero proprietary chain ID for setting Arbitrum as the destination blockchain.
     uint16 private constant DESTINATION_LAYER_ZERO_CHAIN_ID = 110;
 
     /// @dev Deploys a new instance of L1AssetHandler.
     constructor() {
-        l1AssetHandlerImplementation = new L1AssetHandler(
-            MAINNET_LAYER_ZERO_ENDPOINT
-        );
+        l1AssetHandlerImplementation = new L1AssetHandler();
     }
 
     /// @dev Provides the facet cuts to be used for setting up L1AssetHandler as a facet of the L1PerpetualMint diamond.

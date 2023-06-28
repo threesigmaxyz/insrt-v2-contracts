@@ -13,18 +13,15 @@ import { IL1AssetHandler } from "../../../../contracts/facets/L1/AssetHandler/IA
 abstract contract L1AssetHandlerTest is L1PerpetualMintTest {
     IL1AssetHandler public l1AssetHandler;
 
+    /// @dev The LayerZero Ethereum mainnet endpoint address.
+    address internal constant MAINNET_LAYER_ZERO_ENDPOINT =
+        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
+
     /// @dev Address used to simulate non-owner access.
     address internal immutable NON_OWNER_TEST_ADDRESS = vm.addr(1);
 
-    /// @dev Test LayerZero endpoint address.
-    address internal immutable TEST_LAYER_ZERO_ENDPOINT = vm.addr(666);
-
-    /// @dev Test LayerZero chain ID used to test contract functionality.
-    uint16 internal constant TEST_LAYER_ZERO_CHAIN_ID_DESTINATION = 666;
-
-    // The slot in contract storage where L1AssetHandler data is stored as Layout struct.
-    bytes32 internal constant STORAGE_SLOT =
-        keccak256("insrt.contracts.storage.L1AssetHandler");
+    /// @dev The LayerZero proprietary chain ID for setting Arbitrum as the destination blockchain.
+    uint16 internal constant DESTINATION_LAYER_ZERO_CHAIN_ID = 110;
 
     /// @dev Sets up L1AssetHandler for testing.
     function setUp() public override {
