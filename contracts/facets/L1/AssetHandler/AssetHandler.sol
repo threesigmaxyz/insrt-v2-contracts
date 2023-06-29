@@ -125,7 +125,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
 
     /// @notice Handles received LayerZero cross-chain messages.
     /// @dev Overridden from the SolidStateLayerZeroClient contract. It processes data payloads based on the asset type and transfers unstaked NFT assets accordingly.
-    /// @param data The cross-chain message data payload. Decoded based on profix and processed accordingly.
+    /// @param data The cross-chain message data payload. Decoded based on prefix and processed accordingly.
     function _handleLayerZeroMessage(
         uint16,
         bytes calldata,
@@ -167,7 +167,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
             );
 
             emit ERC1155AssetsUnstaked(sender, collection, tokenIds, amounts);
-        } else if (assetType == PayloadEncoder.AssetType.ERC721) {
+        } else {
             // Decode the payload to get the sender, the collection, and the tokenIds
             (
                 ,
