@@ -28,6 +28,10 @@ abstract contract L2AssetHandlerTest is L2PerpetualMintTest {
     /// @dev Address used to simulate non-owner access.
     address internal immutable NON_OWNER_TEST_ADDRESS = vm.addr(1);
 
+    /// @dev Address used to simulate trusted remote address. Stored as bytes.
+    bytes internal TRUSTED_REMOTE_ADDRESS_TEST_ADDRESS_IN_BYTES =
+        abi.encodePacked(vm.addr(1234));
+
     /// @dev The LayerZero proprietary chain ID for setting Ethereum as the destination blockchain.
     uint16 internal constant DESTINATION_LAYER_ZERO_CHAIN_ID = 101;
 
@@ -36,6 +40,9 @@ abstract contract L2AssetHandlerTest is L2PerpetualMintTest {
     uint256[] internal bongBearTokenIds = new uint256[](1);
 
     uint256[] internal bongBearTokenAmounts = new uint256[](1);
+
+    /// @dev Required to receive refund Ether from LayerZero _lzSend relay calls.
+    receive() external payable {}
 
     /// @dev Sets up L2AssetHandler for testing.
     function setUp() public override {
