@@ -7,10 +7,14 @@ import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidSt
 import { L2AssetHandlerHelper } from "./AssetHandlerHelper.t.sol";
 import { L2PerpetualMintTest } from "../../../diamonds/L2/PerpetualMint.t.sol";
 import { IL2AssetHandler } from "../../../../contracts/facets/L2/AssetHandler/IAssetHandler.sol";
+import { IAssetHandlerEvents } from "../../../../contracts/interfaces/IAssetHandlerEvents.sol";
 
 /// @title L2AssetHandlerTest
 /// @dev L2AssetHandler test helper contract. Configures L2AssetHandler as a facet of the L2PerpetualMint diamond.
-abstract contract L2AssetHandlerTest is L2PerpetualMintTest {
+abstract contract L2AssetHandlerTest is
+    IAssetHandlerEvents,
+    L2PerpetualMintTest
+{
     IL2AssetHandler public l2AssetHandler;
 
     /// @dev The LayerZero Arbitrum endpoint address.
@@ -45,14 +49,14 @@ abstract contract L2AssetHandlerTest is L2PerpetualMintTest {
     receive() external payable {}
 
     /// @dev Sets up L2AssetHandler for testing.
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
 
         initL2AssetHandler();
 
         bongBearTokenIds[
             0
-        ] = 66075445032688988859229341194671037535804503065310441849644897861040871571457;
+        ] = 66075445032688988859229341194671037535804503065310441849644897861040871571457; // Bong Bear #01
         bongBearTokenAmounts[0] = 1;
 
         boredApeYachtClubTokenIds[0] = 1;
