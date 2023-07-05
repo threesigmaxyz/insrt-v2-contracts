@@ -20,9 +20,6 @@ contract L2AssetHandler_unstakeERC721Assets is
     L2AssetHandlerTest,
     L2ForkTest
 {
-    /// @dev LayerZero message fee.
-    uint256 internal constant LAYER_ZERO_MESSAGE_FEE = 0.02 ether; // Arbitrum ETH
-
     /// @dev LayerZero message fee error message.
     bytes internal constant LAYER_ZERO_MESSAGE_FEE_REVERT =
         "LayerZero: not enough native for fees";
@@ -33,7 +30,7 @@ contract L2AssetHandler_unstakeERC721Assets is
 
         // staked ERC721 records are stored in a mapping, so we need to compute the storage slot to set up this test case
         bytes32 stakedERC721TokenIdStakedStorageSlot = keccak256(
-            abi.encodePacked(
+            abi.encode(
                 boredApeYachtClubTokenIds[0], // the staked ERC721 token ID
                 keccak256(
                     abi.encode(
@@ -41,11 +38,7 @@ contract L2AssetHandler_unstakeERC721Assets is
                         keccak256(
                             abi.encode(
                                 address(this), // the stake
-                                bytes32(
-                                    uint256(
-                                        L2AssetHandlerStorage.STORAGE_SLOT
-                                    ) + 1 // the stakedERC721Assets storage slot
-                                )
+                                uint256(L2AssetHandlerStorage.STORAGE_SLOT) + 1 // the stakedERC721Assets storage slot
                             )
                         )
                     )
@@ -188,7 +181,7 @@ contract L2AssetHandler_unstakeERC721Assets is
 
         // staked ERC721 records are stored in a mapping, so we need to compute the storage slot to set up this test case
         bytes32 stakedERC721TokenIdStakedStorageSlot = keccak256(
-            abi.encodePacked(
+            abi.encode(
                 boredApeYachtClubTokenIds[0], // the staked ERC721 token ID
                 keccak256(
                     abi.encode(
@@ -196,11 +189,7 @@ contract L2AssetHandler_unstakeERC721Assets is
                         keccak256(
                             abi.encode(
                                 msg.sender, // the staker
-                                bytes32(
-                                    uint256(
-                                        L2AssetHandlerStorage.STORAGE_SLOT
-                                    ) + 1 // the stakedERC721Assets storage slot
-                                )
+                                uint256(L2AssetHandlerStorage.STORAGE_SLOT) + 1 // the stakedERC721Assets storage slot
                             )
                         )
                     )

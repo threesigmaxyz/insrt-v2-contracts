@@ -17,9 +17,6 @@ contract L1AssetHandler_stakeERC721Assets is
     L1AssetHandlerTest,
     L1ForkTest
 {
-    /// @dev LayerZero message fee.
-    uint256 internal constant LAYER_ZERO_MESSAGE_FEE = 0.001 ether;
-
     /// @dev LayerZero message fee error message.
     bytes internal constant LAYER_ZERO_MESSAGE_FEE_REVERT =
         "LayerZero: not enough native for fees";
@@ -204,7 +201,7 @@ contract L1AssetHandler_stakeERC721Assets is
 
         vm.expectRevert(LAYER_ZERO_MESSAGE_FEE_REVERT);
 
-        l1AssetHandler.stakeERC721Assets{ value: LAYER_ZERO_MESSAGE_FEE / 2 }( // insufficient message fee
+        l1AssetHandler.stakeERC721Assets{ value: LAYER_ZERO_MESSAGE_FEE / 3 }( // insufficient message fee
             BORED_APE_YACHT_CLUB,
             DESTINATION_LAYER_ZERO_CHAIN_ID,
             boredApeYachtClubTokenIds
