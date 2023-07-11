@@ -93,7 +93,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
         uint16 layerZeroDestinationChainId,
         uint256[] calldata tokenIds
     ) external payable {
-        for (uint i = 0; i < tokenIds.length; i++) {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
             IERC721(collection).safeTransferFrom(
                 msg.sender,
                 address(this),
@@ -164,7 +164,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
                 );
 
             // Transfer the ERC721 assets to the sender
-            for (uint i = 0; i < tokenIds.length; i++) {
+            for (uint256 i = 0; i < tokenIds.length; i++) {
                 IERC721(collection).safeTransferFrom(
                     address(this),
                     sender,
