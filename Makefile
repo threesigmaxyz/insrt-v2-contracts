@@ -13,7 +13,7 @@ install:
 update:; forge update
 
 # Build & test
-build  :; forge build
+build  :; forge build --sizes
 .PHONY: test
 test:
 	forge test
@@ -21,3 +21,5 @@ trace   :; forge test -vvv
 clean  :; forge clean
 snapshot :; forge snapshot
 fmt    :; forge fmt
+prettier    :; pnpm prettier --write contracts/**/**/**/*.sol
+

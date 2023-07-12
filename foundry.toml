@@ -7,9 +7,13 @@ optimizer_runs = 1_000_000
 remappings = [
   "@solidstate/contracts/=lib/solidstate-solidity/contracts/",
   "@solidstate/layerzero-client/=lib/layerzero-client/contracts/",
-  "forge-std/=lib/forge-std/src/"
+  "forge-std/=lib/forge-std/src/",
+  "@chainlink/vrf/=lib/chainlink/contracts/src/v0.8/vrf/",
+  "@chainlink/interfaces/=lib/chainlink/contracts/src/v0.8/interfaces/",
+  "@abdk/=lib/abdk-libraries-solidity/"
 ]
 solc_version = '0.8.20'
+evm_version = "shanghai"
 src = "contracts"
 verbosity = 1
 
