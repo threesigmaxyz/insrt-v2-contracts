@@ -2,16 +2,21 @@
 
 pragma solidity 0.8.20;
 
+import { EnumerableSet } from "@solidstate/contracts/data/EnumerableSet.sol";
 import { SolidStateLayerZeroClient } from "@solidstate/layerzero-client/SolidStateLayerZeroClient.sol";
 
 import { IL2AssetHandler } from "./IAssetHandler.sol";
-import { L2AssetHandlerStorage as Storage } from "./Storage.sol";
+import { L2AssetHandlerStorage } from "./Storage.sol";
+import { PerpetualMintStorage } from "../PerpetualMint/Storage.sol";
 import { IAssetHandler } from "../../../interfaces/IAssetHandler.sol";
 import { PayloadEncoder } from "../../../libraries/PayloadEncoder.sol";
 
 /// @title L2AssetHandler
 /// @dev Handles NFT assets on L2 and allows them to be deposited & withdrawn cross-chain via LayerZero.
 contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.UintSet;
+
     /// @notice Deploys a new instance of the L2AssetHandler contract.
     constructor() {
         // Set initial ownership of the contract to the deployer
@@ -45,21 +50,25 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
             revert ERC1155TokenIdsAndAmountsLengthMismatch();
         }
 
+        L2AssetHandlerStorage.Layout
+            storage l2AssetHandlerStorageLayout = L2AssetHandlerStorage
+                .layout();
+
         // For each tokenId, check if deposited amount is less than requested withdraw amount
         // If it is, revert the transaction with a custom error
         // If not, reduce deposited amount by withdraw amount
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (
-                Storage.layout().depositedERC1155Assets[msg.sender][collection][
-                    tokenIds[i]
-                ] < amounts[i]
+                l2AssetHandlerStorageLayout.depositedERC1155Assets[msg.sender][
+                    collection
+                ][tokenIds[i]] < amounts[i]
             ) {
                 revert ERC1155TokenAmountExceedsDepositedAmount();
             }
 
-            Storage.layout().depositedERC1155Assets[msg.sender][collection][
-                tokenIds[i]
-            ] -= amounts[i];
+            l2AssetHandlerStorageLayout.depositedERC1155Assets[msg.sender][
+                collection
+            ][tokenIds[i]] -= amounts[i];
         }
 
         _withdrawERC1155Assets(
@@ -78,21 +87,25 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
         uint16 layerZeroDestinationChainId,
         uint256[] calldata tokenIds
     ) external payable {
+        L2AssetHandlerStorage.Layout
+            storage l2AssetHandlerStorageLayout = L2AssetHandlerStorage
+                .layout();
+
         // For each tokenId, check if token is deposited
         // If it's not, revert the transaction with a custom error
         // If it is, remove it from the set of deposited tokens
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (
-                Storage.layout().depositedERC721Assets[msg.sender][collection][
-                    tokenIds[i]
-                ] == false
+                l2AssetHandlerStorageLayout.depositedERC721Assets[msg.sender][
+                    collection
+                ][tokenIds[i]] == false
             ) {
                 revert ERC721TokenNotDeposited();
             }
 
-            Storage.layout().depositedERC721Assets[msg.sender][collection][
-                tokenIds[i]
-            ] = false;
+            l2AssetHandlerStorageLayout.depositedERC721Assets[msg.sender][
+                collection
+            ][tokenIds[i]] = false;
         }
 
         _withdrawERC721Assets(
@@ -119,6 +132,9 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
             (PayloadEncoder.AssetType)
         );
 
+        PerpetualMintStorage.Layout
+            storage perpetualMintStorageLayout = PerpetualMintStorage.layout();
+
         if (assetType == PayloadEncoder.AssetType.ERC1155) {
             // Decode the payload to get the depositor, the collection, the tokenIds and the amounts for each tokenId
             (
@@ -142,10 +158,41 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
 
             // Update the deposited ERC1155 assets in the contract's storage
             for (uint256 i = 0; i < tokenIds.length; i++) {
-                Storage.layout().depositedERC1155Assets[depositor][collection][
+                L2AssetHandlerStorage.layout().depositedERC1155Assets[
+                    depositor
+                ][collection][tokenIds[i]] += amounts[i];
+
+                perpetualMintStorageLayout
+                .activeERC1155Owners[collection][tokenIds[i]].add(depositor);
+
+                perpetualMintStorageLayout.activeTokenIds[collection].add(
                     tokenIds[i]
+                );
+
+                perpetualMintStorageLayout.activeERC1155Tokens[depositor][
+                    collection
+                ][tokenIds[i]] += amounts[i];
+
+                perpetualMintStorageLayout.depositorTokenRisk[collection][
+                    depositor
+                ][tokenIds[i]] = risks[i];
+
+                perpetualMintStorageLayout.totalActiveTokens[
+                    collection
                 ] += amounts[i];
+
+                perpetualMintStorageLayout.totalDepositorRisk[collection][
+                    depositor
+                ] += risks[i];
+
+                perpetualMintStorageLayout.totalRisk[collection] += risks[i];
+
+                perpetualMintStorageLayout.totalTokenRisk[collection][
+                    tokenIds[i]
+                ] += risks[i];
             }
+
+            perpetualMintStorageLayout.activeCollections.add(collection);
 
             emit ERC1155AssetsDeposited(
                 depositor,
@@ -175,10 +222,36 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
 
             // Update the deposited ERC721 assets in the contract's storage
             for (uint256 i = 0; i < tokenIds.length; i++) {
-                Storage.layout().depositedERC721Assets[depositor][collection][
+                L2AssetHandlerStorage.layout().depositedERC721Assets[depositor][
+                    collection
+                ][tokenIds[i]] = true;
+
+                perpetualMintStorageLayout.activeTokenIds[collection].add(
                     tokenIds[i]
-                ] = true;
+                );
+
+                perpetualMintStorageLayout.activeTokens[depositor][
+                    collection
+                ]++;
+
+                perpetualMintStorageLayout.depositorTokenRisk[collection][
+                    depositor
+                ][tokenIds[i]] = risks[i];
+
+                perpetualMintStorageLayout.tokenRisk[collection][
+                    tokenIds[i]
+                ] += risks[i];
+
+                perpetualMintStorageLayout.totalActiveTokens[collection]++;
+
+                perpetualMintStorageLayout.totalDepositorRisk[collection][
+                    depositor
+                ] += risks[i];
+
+                perpetualMintStorageLayout.totalRisk[collection] += risks[i];
             }
+
+            perpetualMintStorageLayout.activeCollections.add(collection);
 
             emit ERC721AssetsDeposited(depositor, collection, risks, tokenIds);
         }

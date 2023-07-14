@@ -5,12 +5,13 @@ pragma solidity 0.8.20;
 import "forge-std/Test.sol";
 
 import { ILayerZeroClientBaseInternal } from "@solidstate/layerzero-client/base/ILayerZeroClientBaseInternal.sol";
+import { ILayerZeroEndpoint } from "@solidstate/layerzero-client/interfaces/ILayerZeroEndpoint.sol";
 
 import { L1AssetHandlerTest } from "../AssetHandler.t.sol";
-import { L1ForkTest } from "../../../../L1ForkTest.t.sol";
 import { ILayerZeroClientBaseInternalEvents } from "../../../../interfaces/ILayerZeroClientBaseInternalEvents.sol";
-import { PayloadEncoder } from "../../../../../contracts/libraries/PayloadEncoder.sol";
+import { L1ForkTest } from "../../../../L1ForkTest.t.sol";
 import { IAssetHandler } from "../../../../../contracts/interfaces/IAssetHandler.sol";
+import { PayloadEncoder } from "../../../../../contracts/libraries/PayloadEncoder.sol";
 
 /// @title L1AssetHandler_depositERC1155Assets
 /// @dev L1AssetHandler test contract for testing expected L1 depositERC1155Assets behavior. Tested on a Mainnet fork.
@@ -25,9 +26,31 @@ contract L1AssetHandler_depositERC1155Assets is
     bytes internal constant LAYER_ZERO_MESSAGE_FEE_REVERT =
         "LayerZero: not enough native for fees";
 
+    /// @dev Test ERC1155 deposit payload.
+    bytes internal TEST_ERC1155_DEPOSIT_PAYLOAD;
+
     /// @dev Sets up the test case environment.
     function setUp() public override {
         super.setUp();
+
+        TEST_ERC1155_DEPOSIT_PAYLOAD = abi.encode(
+            PayloadEncoder.AssetType.ERC1155,
+            address(this),
+            BONG_BEARS,
+            testRisks,
+            bongBearTokenIds,
+            bongBearTokenAmounts
+        );
+
+        (LAYER_ZERO_MESSAGE_FEE, ) = ILayerZeroEndpoint(
+            MAINNET_LAYER_ZERO_ENDPOINT
+        ).estimateFees(
+                DESTINATION_LAYER_ZERO_CHAIN_ID,
+                address(l1AssetHandler),
+                TEST_ERC1155_DEPOSIT_PAYLOAD,
+                false,
+                ""
+            );
 
         stdstore
             .target(BONG_BEARS)
@@ -100,14 +123,7 @@ contract L1AssetHandler_depositERC1155Assets is
         vm.expectEmit();
         emit MessageSent(
             DESTINATION_LAYER_ZERO_CHAIN_ID,
-            abi.encode(
-                PayloadEncoder.AssetType.ERC1155,
-                address(this),
-                BONG_BEARS,
-                testRisks,
-                bongBearTokenIds,
-                bongBearTokenAmounts
-            ),
+            TEST_ERC1155_DEPOSIT_PAYLOAD,
             address(this),
             address(0),
             "",

@@ -2,9 +2,8 @@
 
 pragma solidity 0.8.20;
 
-import "@solidstate/contracts/interfaces/IERC1155.sol";
-import "@solidstate/contracts/interfaces/IERC721.sol";
-
+import { IERC1155 } from "@solidstate/contracts/interfaces/IERC1155.sol";
+import { IERC721 } from "@solidstate/contracts/interfaces/IERC721.sol";
 import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidStateDiamond.sol";
 
 import { L1AssetHandlerHelper } from "./AssetHandlerHelper.t.sol";
@@ -49,6 +48,9 @@ abstract contract L1AssetHandlerTest is IAssetHandlerEvents, L1CoreTest {
     uint256[] internal bongBearTokenIds = new uint256[](1);
 
     uint256[] internal bongBearTokenAmounts = new uint256[](1);
+
+    /// @dev LayerZero message fee.
+    uint256 internal LAYER_ZERO_MESSAGE_FEE;
 
     /// @dev Required to receive refund Ether from LayerZero _lzSend relay calls.
     receive() external payable {}
