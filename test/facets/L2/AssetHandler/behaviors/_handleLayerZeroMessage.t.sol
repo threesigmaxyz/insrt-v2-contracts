@@ -15,13 +15,6 @@ contract L2AssetHandler_handleLayerZeroMessage is
     L2AssetHandlerTest,
     L2ForkTest
 {
-    /// @dev Dummy trusted remote test path.
-    bytes internal TEST_PATH =
-        bytes.concat(bytes20(vm.addr(1234)), bytes20(vm.addr(5678)));
-
-    /// @dev Dummy test nonce value.
-    uint64 internal constant TEST_NONCE = 0;
-
     /// @dev Tests _handleLayerZeroMessage functionality for depositing ERC1155 tokens.
     function test_handleLayerZeroMessageERC1155Deposit() public {
         bytes memory encodedData = abi.encode(
@@ -33,7 +26,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
             bongBearTokenAmounts
         );
 
-        L2AssetHandlerMock(address(this)).mock_HandleLayerZeroMessage(
+        this.mock_HandleLayerZeroMessage(
             DESTINATION_LAYER_ZERO_CHAIN_ID, // would be the expected source chain ID in production, here this is a dummy value
             TEST_PATH, // would be the expected path in production, here this is a dummy value
             TEST_NONCE, // dummy nonce value
@@ -89,7 +82,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
             bongBearTokenAmounts
         );
 
-        L2AssetHandlerMock(address(this)).mock_HandleLayerZeroMessage(
+        this.mock_HandleLayerZeroMessage(
             DESTINATION_LAYER_ZERO_CHAIN_ID, // would be the expected source chain ID in production, here this is a dummy value
             TEST_PATH, // would be the expected path in production, here this is a dummy value
             TEST_NONCE, // dummy nonce value
@@ -110,7 +103,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
         // record the storage slot of the deposited ERC721 token ID
         vm.record();
 
-        L2AssetHandlerMock(address(this)).mock_HandleLayerZeroMessage(
+        this.mock_HandleLayerZeroMessage(
             DESTINATION_LAYER_ZERO_CHAIN_ID, // would be the expected source chain ID in production, here this is a dummy value
             TEST_PATH, // would be the expected path in production, here this is a dummy value
             TEST_NONCE, // dummy nonce value
@@ -147,7 +140,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
             boredApeYachtClubTokenIds
         );
 
-        L2AssetHandlerMock(address(this)).mock_HandleLayerZeroMessage(
+        this.mock_HandleLayerZeroMessage(
             DESTINATION_LAYER_ZERO_CHAIN_ID, // would be the expected source chain ID in production, here this is a dummy value
             TEST_PATH, // would be the expected path in production, here this is a dummy value
             TEST_NONCE, // dummy nonce value
@@ -170,7 +163,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
 
         vm.expectRevert();
 
-        L2AssetHandlerMock(address(this)).mock_HandleLayerZeroMessage(
+        this.mock_HandleLayerZeroMessage(
             DESTINATION_LAYER_ZERO_CHAIN_ID, // would be the expected source chain ID in production, here this is a dummy value
             TEST_PATH, // would be the expected path in production, here this is a dummy value
             TEST_NONCE, // dummy nonce value
