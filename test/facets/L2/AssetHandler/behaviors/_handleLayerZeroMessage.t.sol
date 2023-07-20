@@ -484,7 +484,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
         );
 
         // this assertion proves that the risk for the token ID in the collection was incremented correctly
-        assertEq(tokenRisk, testRisks[0] * boredApeYachtClubTokenIds.length);
+        assertEq(tokenRisk, testRisks[0]);
 
         // the total number of active tokens in the collection is stored in a mapping
         bytes32 totalActiveTokensStorageSlot = keccak256(
