@@ -7,8 +7,34 @@ import { IAssetHandler } from "../../../interfaces/IAssetHandler.sol";
 /// @title IL2AssetHandler
 /// @dev Defines interface for the L2AssetHandler contract. Extends IAssetHandler.
 interface IL2AssetHandler is IAssetHandler {
+    /// @notice Thrown when a user tries to withdraw and claim ERC1155 token that is not escrowed.
+    error ERC1155TokenNotEscrowed();
     /// @notice Thrown when a user tries to withdraw an ERC721 token that is not deposited.
     error ERC721TokenNotDeposited();
+
+    event ERC1155AssetsClaimed(
+        address indexed claimant,
+        address indexed collection,
+        ERC1155Claim[] claims
+    );
+
+    /// @notice Defines the data structure for an ERC1155 claim.
+    struct ERC1155Claim {
+        address originalOwner;
+        uint256 tokenId;
+        uint256 amount;
+    }
+
+    /// @notice Used to claim ERC1155 assets.
+    /// @dev Debits specified ERC1155 token claims from the user and withdraws them cross-chain.
+    /// @param collection The address of the ERC1155 token contract.
+    /// @param layerZeroSourceChainId The destination chain ID.
+    /// @param claims An array of ERC1155 claims that the user wants to claim and withdraw.
+    function claimERC1155Assets(
+        address collection,
+        uint16 layerZeroSourceChainId,
+        ERC1155Claim[] calldata claims
+    ) external payable;
 
     /// @notice Used to withdraw ERC1155 assets.
     /// @dev Debits specified ERC1155 tokens from the user and withdraws them cross-chain.

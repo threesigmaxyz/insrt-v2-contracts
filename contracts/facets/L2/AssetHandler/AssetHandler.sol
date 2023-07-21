@@ -23,6 +23,72 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
         _setOwner(msg.sender);
     }
 
+    /// @inheritdoc IL2AssetHandler
+    function claimERC1155Assets(
+        address collection,
+        uint16 layerZeroDestinationChainId,
+        ERC1155Claim[] calldata claims
+    ) external payable {
+        PerpetualMintStorage.Layout
+            storage perpetualMintStorageLayout = PerpetualMintStorage.layout();
+
+        uint256[] memory amounts;
+        uint256[] memory tokenIds;
+
+        // Iterate over each claim
+        for (uint256 i = 0; i < claims.length; i++) {
+            // If the sender (claimer) is not the escrowed claimant of the ERC1155 token, revert the transaction
+            if (
+                !perpetualMintStorageLayout
+                .escrowedERC1155Owners[collection][claims[i].tokenId].contains(
+                        msg.sender
+                    )
+            ) {
+                revert ERC1155TokenNotEscrowed();
+            }
+
+            // Reduce the original owners' (depositors') claimable balance of the ERC1155 token
+            perpetualMintStorageLayout.claimableERC1155Tokens[collection][
+                claims[i].originalOwner
+            ][claims[i].tokenId] -= claims[i].amount;
+
+            // Reduce the senders' (claimants') claimable balance of the ERC1155 token
+            perpetualMintStorageLayout.inactiveERC1155Tokens[msg.sender][
+                collection
+            ][claims[i].tokenId] -= claims[i].amount;
+
+            // Reduce the original owners' (depositors') deposit balance of the ERC1155 token
+            L2AssetHandlerStorage.layout().erc1155Deposits[
+                claims[i].originalOwner
+            ][collection][claims[i].tokenId] -= claims[i].amount;
+
+            // If the claimant has no more ERC1155 tokens of a particular ID available to claim,
+            // remove them from the list of escrowed claimants for the token ID
+            if (
+                perpetualMintStorageLayout.inactiveERC1155Tokens[msg.sender][
+                    collection
+                ][claims[i].tokenId] == 0
+            ) {
+                perpetualMintStorageLayout
+                .escrowedERC1155Owners[collection][claims[i].tokenId].remove(
+                        msg.sender
+                    );
+            }
+
+            amounts[i] = claims[i].amount;
+            tokenIds[i] = claims[i].tokenId;
+        }
+
+        _withdrawERC1155Assets(
+            collection,
+            layerZeroDestinationChainId,
+            tokenIds,
+            amounts
+        );
+
+        emit ERC1155AssetsClaimed(msg.sender, collection, claims);
+    }
+
     /// @inheritdoc IAssetHandler
     function setLayerZeroEndpoint(
         address layerZeroEndpoint
@@ -56,7 +122,7 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
         // Iterate over each token ID
         for (uint256 i = 0; i < tokenIds.length; i++) {
             // Reduce the number of the deposited ERC1155 assets for the sender (depositor)
-            L2AssetHandlerStorage.layout().depositedERC1155Assets[msg.sender][
+            L2AssetHandlerStorage.layout().erc1155Deposits[msg.sender][
                 collection
             ][tokenIds[i]] -= amounts[i];
 
@@ -151,7 +217,7 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             // If the token is not deposited by the sender, revert the transaction
             if (
-                l2AssetHandlerStorageLayout.depositedERC721Assets[msg.sender][
+                l2AssetHandlerStorageLayout.erc721Deposits[msg.sender][
                     collection
                 ][tokenIds[i]] == false
             ) {
@@ -159,9 +225,9 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
             }
 
             // Reset the token as not deposited by the sender
-            l2AssetHandlerStorageLayout.depositedERC721Assets[msg.sender][
-                collection
-            ][tokenIds[i]] = false;
+            l2AssetHandlerStorageLayout.erc721Deposits[msg.sender][collection][
+                tokenIds[i]
+            ] = false;
 
             // Remove the token ID from the active token IDs in the collection
             perpetualMintStorageLayout.activeTokenIds[collection].remove(
@@ -253,9 +319,9 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
             // Iterate over each token ID
             for (uint256 i = 0; i < tokenIds.length; i++) {
                 // Update the amount of deposited ERC1155 assets for the depositor and the token ID in the collection
-                L2AssetHandlerStorage.layout().depositedERC1155Assets[
-                    depositor
-                ][collection][tokenIds[i]] += amounts[i];
+                L2AssetHandlerStorage.layout().erc1155Deposits[depositor][
+                    collection
+                ][tokenIds[i]] += amounts[i];
 
                 // Add the depositor to the set of active owners for the token ID in the collection
                 perpetualMintStorageLayout
@@ -331,7 +397,7 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
             // Iterate over each token ID
             for (uint256 i = 0; i < tokenIds.length; i++) {
                 // Mark the ERC721 token as deposited by the depositor in the collection
-                L2AssetHandlerStorage.layout().depositedERC721Assets[depositor][
+                L2AssetHandlerStorage.layout().erc721Deposits[depositor][
                     collection
                 ][tokenIds[i]] = true;
 
@@ -382,8 +448,8 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
     function _withdrawERC1155Assets(
         address collection,
         uint16 layerZeroDestinationChainId,
-        uint256[] calldata tokenIds,
-        uint256[] calldata amounts
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
     ) private {
         _lzSend(
             layerZeroDestinationChainId,
