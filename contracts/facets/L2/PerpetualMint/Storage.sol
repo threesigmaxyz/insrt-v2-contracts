@@ -41,8 +41,6 @@ library PerpetualMintStorage {
         /// source of truth for checking which address may change token state (withdraw, setRisk etc)
         mapping(address collection => mapping(uint256 tokenId => address owner)) escrowedERC721Owner;
         //ERC1155
-        /// @dev set of owners of each tokenId for an ERC1155 collection
-        mapping(address collection => mapping(uint256 tokenId => EnumerableSet.AddressSet owners)) escrowedERC1155Owners;
         /// @dev set of ERC1155 token owners which have tokens escrowed and available for minting, of a given tokenId for a collection
         mapping(address collection => mapping(uint256 tokenId => EnumerableSet.AddressSet owners)) activeERC1155Owners;
         ///User specific
@@ -65,9 +63,6 @@ library PerpetualMintStorage {
         mapping(address depositor => mapping(address collection => mapping(uint256 tokenId => uint256 amount))) activeERC1155Tokens;
         /// @dev number of tokens of particular tokenId for an ERC1155 collection of a user which are not able to be minted
         mapping(address depositor => mapping(address collection => mapping(uint256 tokenId => uint256 amount))) inactiveERC1155Tokens;
-        /// @dev number of tokens of particular tokenId for an ERC1155 collection of a depositor which are able to be claimed
-        /// Represents the amount of each specific ERC1155 token that a depositor has lost and can be claimed by claimants.
-        mapping(address collection => mapping(address depositor => mapping(uint256 tokenId => uint256 amount))) claimableERC1155Tokens;
     }
 
     bytes32 internal constant STORAGE_SLOT =

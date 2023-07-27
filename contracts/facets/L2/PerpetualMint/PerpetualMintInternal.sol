@@ -86,20 +86,11 @@ abstract contract PerpetualMintInternal is
         Storage.Layout storage l = Storage.layout();
 
         --l.activeERC1155Tokens[from][collection][tokenId];
-        ++l.claimableERC1155Tokens[collection][from][tokenId];
         ++l.inactiveERC1155Tokens[to][collection][tokenId];
-
-        if (!l.escrowedERC1155Owners[collection][tokenId].contains(to)) {
-            l.escrowedERC1155Owners[collection][tokenId].add(from);
-        }
 
         if (l.activeERC1155Tokens[from][collection][tokenId] == 0) {
             l.activeERC1155Owners[collection][tokenId].remove(from);
             delete l.depositorTokenRisk[from][collection][tokenId];
-
-            if (l.inactiveERC1155Tokens[from][collection][tokenId] == 0) {
-                l.escrowedERC1155Owners[collection][tokenId].remove(from);
-            }
         }
     }
 
