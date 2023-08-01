@@ -9,7 +9,23 @@ import { AssetType } from "../../../enums/AssetType.sol";
 /// @title PerpetualMintStorage
 /// @dev defines storage layout for the PerpetualMint facet
 library PerpetualMintStorage {
+    /// @dev Encapsulates variables related to Chainlink VRF
+    /// @dev see: https://docs.chain.link/vrf/v2/subscription#set-up-your-contract-and-request
+    struct VRFConfig {
+        /// @dev Chainlink identifier for prioritizing transactions
+        /// different keyhashes have different gas prices thus different priorities
+        bytes32 keyHash;
+        /// @dev id of Chainlink subscription to VRF for PerpetualMint contract
+        uint64 subscriptionId;
+        /// @dev maximum amount of gas a user is willing to pay for completing the callback VRF function
+        uint32 callbackGasLimit;
+        /// @dev number of block confirmations the VRF service will wait to respond
+        uint16 minConfirmations;
+    }
+
     struct Layout {
+        /// @dev all variables related to Chainlink VRF configuration
+        VRFConfig vrfConfig;
         /// @dev amount of protocol fees accrued in ETH (native token) from mint attempts
         uint256 protocolFees;
         /// @dev tokenId for minting consolation prizes (will be reworked)
@@ -51,21 +67,21 @@ library PerpetualMintStorage {
         mapping(address depositor => mapping(address collection => uint256 amount)) depositorDeductions;
         /// @dev amount of earnings in ETH (native token) for a depositor for a collection
         mapping(address depositor => mapping(address collection => uint256 amount)) depositorEarnings;
-        /// @dev amount of tokens escrowed by the contract on behalf of a depositor for a collection
+        /// @dev amount of tokens escrowed by the contract on behalf of a depositor for an ERC721 collection
         /// which are able to be minted via mint attempts
         mapping(address depositor => mapping(address collection => uint256 amount)) activeTokens;
-        /// @dev amount of tokens escrowed by the contract on behalf of a depositor for a collection
+        /// @dev amount of tokens escrowed by the contract on behalf of a depositor for an ERC721 collection
         /// which are not able to be minted via mint attempts
         mapping(address depositor => mapping(address collection => uint256 amount)) inactiveTokens;
         /// @dev sum of risks of tokens deposited by a depositor for a collection
         mapping(address depositor => mapping(address collection => uint64 risk)) totalDepositorRisk;
         /// @dev risk for a given tokenId in an ERC1155 for a depositor
-        /// an implication is that even if a depositor has deposited 5 tokens of the same tokenId, their risk is the same
+        /// an implication is that even if a depositor has deposited 5 tokens of the same tokenId, each token has the same risk
         mapping(address depositor => mapping(address collection => mapping(uint256 tokenId => uint64 risk))) depositorTokenRisk;
         /// @dev number of tokens of particular tokenId for an ERC1155 collection of a user which are able to be minted
-        mapping(address depositor => mapping(address collection => mapping(uint256 tokenId => uint256 amount))) activeERC1155Tokens;
+        mapping(address depositor => mapping(address collection => mapping(uint256 tokenId => uint64 amount))) activeERC1155Tokens;
         /// @dev number of tokens of particular tokenId for an ERC1155 collection of a user which are not able to be minted
-        mapping(address depositor => mapping(address collection => mapping(uint256 tokenId => uint256 amount))) inactiveERC1155Tokens;
+        mapping(address depositor => mapping(address collection => mapping(uint256 tokenId => uint64 amount))) inactiveERC1155Tokens;
     }
 
     bytes32 internal constant STORAGE_SLOT =

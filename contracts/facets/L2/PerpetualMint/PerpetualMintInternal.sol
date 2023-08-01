@@ -26,32 +26,11 @@ abstract contract PerpetualMintInternal is
     /// @dev denominator used in percentage calculations
     uint32 internal constant BASIS = 1000000000;
 
-    /// @dev see: https://docs.chain.link/vrf/v2/subscription#set-up-your-contract-and-request
-    /// @dev Chainlink identifier for prioritizing transactions
-    /// different keyhashes have different gas prices thus different priorities
-    bytes32 private immutable KEY_HASH;
-    /// @dev address of Cchainlink VRFCoordinatorV2 contract
+    /// @dev address of Chainlink VRFCoordinatorV2 contract
     address private immutable VRF;
-    /// @dev id of Chainlink subscription to VRF for PerpetualMint contract
-    /// TODO: identify whether this needs to be updated thus be stored in storage
-    uint64 private immutable SUBSCRIPTION_ID;
-    /// @dev maximum amount of gas a user is willing to pay for completing the callback VRF function
-    uint32 private immutable CALLBACK_GAS_LIMIT;
-    /// @dev number of block confirmations the VRF service will wait to respond
-    uint16 private immutable MIN_CONFIRMATIONS;
 
-    constructor(
-        bytes32 keyHash,
-        address vrfCoordinator,
-        uint64 subscriptionId,
-        uint32 callbackGasLimit,
-        uint16 minConfirmations
-    ) VRFConsumerBaseV2(vrfCoordinator) {
-        KEY_HASH = keyHash;
+    constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {
         VRF = vrfCoordinator;
-        SUBSCRIPTION_ID = subscriptionId;
-        CALLBACK_GAS_LIMIT = callbackGasLimit;
-        MIN_CONFIRMATIONS = minConfirmations;
     }
 
     /// @notice calculates the available earnings for a depositor across all collections
@@ -78,21 +57,64 @@ abstract contract PerpetualMintInternal is
     /// @param to address that asset will be assigned to
     /// @param collection address of ERC1155 collection
     /// @param tokenId token id
+    /// @param tokenRisk risk of token set by from address prior to transfer
     function _assignEscrowedERC1155Asset(
         address from,
         address to,
         address collection,
-        uint256 tokenId
-    ) private {
+        uint256 tokenId,
+        uint64 tokenRisk
+    ) internal {
         Storage.Layout storage l = Storage.layout();
+
+        _updateDepositorEarnings(from, collection);
+        _updateDepositorEarnings(to, collection);
 
         --l.activeERC1155Tokens[from][collection][tokenId];
         ++l.inactiveERC1155Tokens[to][collection][tokenId];
+        --l.totalActiveTokens[collection];
+        l.totalRisk[collection] -= tokenRisk;
+        l.tokenRisk[collection][tokenId] -= tokenRisk;
+        l.totalDepositorRisk[from][collection] -= tokenRisk;
 
         if (l.activeERC1155Tokens[from][collection][tokenId] == 0) {
             l.activeERC1155Owners[collection][tokenId].remove(from);
-            delete l.depositorTokenRisk[from][collection][tokenId];
+            l.depositorTokenRisk[from][collection][tokenId] = 0;
         }
+
+        if (l.tokenRisk[collection][tokenId] == 0) {
+            l.activeTokenIds[collection].remove(tokenId);
+        }
+    }
+
+    /// @notice assigns an ERC721 asset from one account to another, updating the required
+    /// state variables simultaneously
+    /// @param from address asset currently is escrowed for
+    /// @param to address that asset will be assigned to
+    /// @param collection address of ERC721 collection
+    /// @param tokenId token id
+    /// @param tokenRisk risk of token set by from address prior to transfer
+    function _assignEscrowedERC721Asset(
+        address from,
+        address to,
+        address collection,
+        uint256 tokenId,
+        uint64 tokenRisk
+    ) internal {
+        Storage.Layout storage l = Storage.layout();
+
+        _updateDepositorEarnings(from, collection);
+        _updateDepositorEarnings(to, collection);
+
+        --l.activeTokens[from][collection];
+        ++l.inactiveTokens[to][collection];
+
+        l.activeTokenIds[collection].remove(tokenId);
+        l.escrowedERC721Owner[collection][tokenId] = to;
+        l.totalRisk[collection] -= tokenRisk;
+        l.totalDepositorRisk[from][collection] -= tokenRisk;
+        --l.totalActiveTokens[collection];
+        l.tokenRisk[collection][tokenId] = 0;
     }
 
     /// @notice attempts to mint a token from a collection for a minter
@@ -148,10 +170,10 @@ abstract contract PerpetualMintInternal is
     /// @return chunks array of 2 uint64 values
     function _chunk128to64(
         uint128 value
-    ) private pure returns (uint64[2] memory chunks) {
+    ) internal pure returns (uint64[2] memory chunks) {
         unchecked {
             for (uint64 i = 0; i < 2; ++i) {
-                chunks[i] = uint64(value << (i * 64));
+                chunks[i] = uint64(value >> (i * 64));
             }
         }
     }
@@ -161,10 +183,10 @@ abstract contract PerpetualMintInternal is
     /// @return chunks array of 2 uint128 values
     function _chunk256to128(
         uint256 value
-    ) private pure returns (uint128[2] memory chunks) {
+    ) internal pure returns (uint128[2] memory chunks) {
         unchecked {
             for (uint256 i = 0; i < 2; ++i) {
-                chunks[i] = uint128(value << (i * 128));
+                chunks[i] = uint128(value >> (i * 128));
             }
         }
     }
@@ -193,18 +215,85 @@ abstract contract PerpetualMintInternal is
         _updateDepositorEarnings(depositor, collection);
         uint256 earnings = l.depositorEarnings[depositor][collection];
 
-        delete l.depositorEarnings[depositor][collection];
+        //TODO: should set to depositorDeductions and not to 0
+        l.depositorEarnings[depositor][collection] = 0;
         payable(depositor).sendValue(earnings);
     }
 
-    /// @notice returns the product of the amount of assets of a collction with the BASIS
+    /// @notice enforces that a value does not exceed the BASIS
+    /// @param value value to check
+    function _enforceBasis(uint64 value) internal pure {
+        if (value > BASIS) {
+            revert BasisExceeded();
+        }
+    }
+
+    /// @notice enforces that a depositor is an owner of a tokenId in an ERC1155 collection
+    /// @param l storage struct for PerpetualMint
+    /// @param depositor address of depositor
+    /// @param collection address of ERC1155 collection
+    /// @param tokenId id of token
+    /// will be deprecated upon PR consolidation
+    function _enforceERC1155Ownership(
+        Storage.Layout storage l,
+        address depositor,
+        address collection,
+        uint256 tokenId
+    ) internal view {
+        if (
+            l.inactiveERC1155Tokens[depositor][collection][tokenId] +
+                l.activeERC1155Tokens[depositor][collection][tokenId] ==
+            0
+        ) {
+            revert OnlyEscrowedTokenOwner();
+        }
+    }
+
+    /// @notice enforces that a depositor is the owner of an ERC721 token
+    /// @param l storage struct for PerpetualMint
+    /// @param depositor address of depositor
+    /// @param collection address of ERC721 collection
+    /// @param tokenId id of token
+    function _enforceERC721Ownership(
+        Storage.Layout storage l,
+        address depositor,
+        address collection,
+        uint256 tokenId
+    ) internal view {
+        if (depositor != l.escrowedERC721Owner[collection][tokenId]) {
+            revert OnlyEscrowedTokenOwner();
+        }
+    }
+
+    /// @notice enforces that a risk value is non-zero
+    /// @param risk value to check
+    function _enforceNonZeroRisk(uint64 risk) internal pure {
+        if (risk == 0) {
+            revert TokenRiskMustBeNonZero();
+        }
+    }
+
+    /// @notice enforces that two uint256 arrays have the same length
+    /// @param firstArr first array
+    /// @param secondArr second array
+    function _enforceUint256ArrayLengthMatch(
+        uint256[] calldata firstArr,
+        uint256[] calldata secondArr
+    ) internal pure {
+        if (firstArr.length != secondArr.length) {
+            revert ArrayLengthMismatch();
+        }
+    }
+
+    /// @notice returns owner of escrowed ERC721 token
     /// @param collection address of collection
-    /// @return basis product of the amoutn of assets with the basis
-    /// Note: May not need
-    function _cumulativeBasis(
-        address collection
-    ) private view returns (uint256 basis) {
-        basis = Storage.layout().totalActiveTokens[collection] * BASIS;
+    /// @param tokenId id of token
+    /// @return owner address of token owner
+    function _escrowedERC721TokenOwner(
+        address collection,
+        uint256 tokenId
+    ) internal view returns (address owner) {
+        owner = Storage.layout().escrowedERC721Owner[collection][tokenId];
     }
 
     /// @notice internal Chainlink VRF callback
@@ -227,13 +316,88 @@ abstract contract PerpetualMintInternal is
         }
     }
 
+    /// @notice sets the token risk of a set of ERC1155 tokens to zero thereby making them idle - still escrowed
+    /// by the PerpetualMint contracts but not actively accruing earnings nor incurring risk from mint attempts
+    /// @param depositor address of depositor of token
+    /// @param collection address of ERC1155 collection
+    /// @param tokenIds ids of token of collection
+    /// @param amounts amount of each tokenId to idle
+    function _idleERC1155Tokens(
+        address depositor,
+        address collection,
+        uint256[] calldata tokenIds,
+        uint256[] calldata amounts
+    ) internal {
+        Storage.Layout storage l = Storage.layout();
+
+        _updateDepositorEarnings(depositor, collection);
+
+        for (uint256 i; i < tokenIds.length; ++i) {
+            uint256 tokenId = tokenIds[i];
+            uint256 amount = amounts[i];
+
+            _enforceERC1155Ownership(l, depositor, collection, tokenId);
+
+            uint64 activeTokens = l.activeERC1155Tokens[depositor][collection][
+                tokenId
+            ];
+
+            uint64 riskChange = uint64(amount) *
+                l.depositorTokenRisk[depositor][collection][tokenId];
+            l.totalRisk[collection] -= riskChange;
+            l.totalActiveTokens[collection] -= amount;
+            l.totalDepositorRisk[depositor][collection] -= riskChange;
+            l.activeERC1155Tokens[depositor][collection][tokenId] -= uint64(
+                amount
+            );
+            l.inactiveERC1155Tokens[depositor][collection][tokenId] += uint64(
+                amount
+            );
+
+            if (amount == activeTokens) {
+                l.depositorTokenRisk[depositor][collection][tokenId] = 0;
+                l.activeERC1155Owners[collection][tokenId].remove(depositor);
+            }
+        }
+    }
+
+    /// @notice sets the token risk of a set of ERC721 tokens to zero thereby making them idle - still escrowed
+    /// by the PerpetualMint contracts but not actively accruing earnings nor incurring risk from mint attemps
+    /// @param depositor address of depositor of token
+    /// @param collection address of ERC721 collection
+    /// @param tokenIds ids of token of collection
+    function _idleERC721Tokens(
+        address depositor,
+        address collection,
+        uint256[] calldata tokenIds
+    ) internal {
+        Storage.Layout storage l = Storage.layout();
+
+        _updateDepositorEarnings(depositor, collection);
+
+        for (uint256 i; i < tokenIds.length; ++i) {
+            uint256 tokenId = tokenIds[i];
+            _enforceERC721Ownership(l, depositor, collection, tokenId);
+
+            uint64 oldRisk = l.tokenRisk[collection][tokenId];
+
+            l.totalRisk[collection] -= oldRisk;
+            l.activeTokenIds[collection].remove(tokenId);
+            --l.totalActiveTokens[collection];
+            --l.activeTokens[depositor][collection];
+            ++l.inactiveTokens[depositor][collection];
+            l.totalDepositorRisk[depositor][collection] -= oldRisk;
+            l.tokenRisk[collection][tokenId] = 0;
+        }
+    }
+
     /// @notice ensures a value is within the BASIS range
     /// @param value value to normalize
     /// @return normalizedValue value after normalization
     function _normalizeValue(
         uint128 value,
         uint128 basis
-    ) private pure returns (uint128 normalizedValue) {
+    ) internal pure returns (uint128 normalizedValue) {
         normalizedValue = value % basis;
     }
 
@@ -249,10 +413,10 @@ abstract contract PerpetualMintInternal is
         Storage.Layout storage l = Storage.layout();
 
         uint256 requestId = VRFCoordinatorV2Interface(VRF).requestRandomWords(
-            KEY_HASH,
-            SUBSCRIPTION_ID,
-            MIN_CONFIRMATIONS,
-            CALLBACK_GAS_LIMIT,
+            l.vrfConfig.keyHash,
+            l.vrfConfig.subscriptionId,
+            l.vrfConfig.minConfirmations,
+            l.vrfConfig.callbackGasLimit,
             numWords
         );
 
@@ -293,10 +457,13 @@ abstract contract PerpetualMintInternal is
                 randomValues64[1]
             );
 
-            _updateDepositorEarnings(oldOwner, collection);
-            _updateDepositorEarnings(minter, collection);
-
-            _assignEscrowedERC1155Asset(oldOwner, minter, collection, tokenId);
+            _assignEscrowedERC1155Asset(
+                oldOwner,
+                minter,
+                collection,
+                tokenId,
+                l.depositorTokenRisk[oldOwner][collection][tokenId]
+            );
         }
 
         emit ERC1155MintResolved(collection, result);
@@ -316,7 +483,7 @@ abstract contract PerpetualMintInternal is
         uint128[2] memory randomValues = _chunk256to128(randomWords[0]);
 
         bool result = _averageCollectionRisk(collection) >
-            _normalizeValue(uint128(randomValues[0]), BASIS);
+            _normalizeValue(randomValues[0], BASIS);
 
         //TODO: update based on consolation spec
         if (!result) {
@@ -327,16 +494,13 @@ abstract contract PerpetualMintInternal is
         if (result) {
             uint256 tokenId = _selectToken(collection, randomValues[1]);
 
-            address oldOwner = l.escrowedERC721Owner[collection][tokenId];
-
-            _updateDepositorEarnings(oldOwner, collection);
-            _updateDepositorEarnings(minter, collection);
-
-            --l.activeTokens[oldOwner][collection];
-            ++l.inactiveTokens[minter][collection];
-
-            l.activeTokenIds[collection].remove(tokenId);
-            l.escrowedERC721Owner[collection][tokenId] = minter;
+            _assignEscrowedERC721Asset(
+                l.escrowedERC721Owner[collection][tokenId],
+                minter,
+                collection,
+                tokenId,
+                l.tokenRisk[collection][tokenId]
+            );
         }
 
         emit ERC721MintResolved(collection, result);
@@ -351,17 +515,16 @@ abstract contract PerpetualMintInternal is
         address collection,
         uint256 tokenId,
         uint64 randomValue
-    ) private view returns (address owner) {
+    ) internal view returns (address owner) {
         Storage.Layout storage l = Storage.layout();
 
         EnumerableSet.AddressSet storage owners = l.activeERC1155Owners[
             collection
         ][tokenId];
 
-        uint256 cumulativeRisk;
         uint256 tokenIndex;
-        uint256 normalizedValue = randomValue %
-            l.tokenRisk[collection][tokenId];
+        uint64 cumulativeRisk;
+        uint64 normalizedValue = randomValue % l.tokenRisk[collection][tokenId];
 
         /// @dev identifies the owner index at which the the cumulative risk is less than
         /// the normalized value, in order to select the owner at the index
@@ -371,7 +534,7 @@ abstract contract PerpetualMintInternal is
                 l.depositorTokenRisk[owner][collection][tokenId] *
                 l.activeERC1155Tokens[owner][collection][tokenId];
             ++tokenIndex;
-        } while (cumulativeRisk <= normalizedValue);
+        } while (cumulativeRisk < normalizedValue);
     }
 
     /// @notice selects the token which was won after a successfull mint attempt
@@ -381,14 +544,14 @@ abstract contract PerpetualMintInternal is
     function _selectToken(
         address collection,
         uint128 randomValue
-    ) private view returns (uint256 tokenId) {
+    ) internal view returns (uint256 tokenId) {
         Storage.Layout storage l = Storage.layout();
 
         EnumerableSet.UintSet storage tokenIds = l.activeTokenIds[collection];
 
         uint256 tokenIndex;
-        uint256 cumulativeRisk;
-        uint256 normalizedValue = randomValue % l.totalRisk[collection];
+        uint64 cumulativeRisk;
+        uint64 normalizedValue = uint64(randomValue % l.totalRisk[collection]);
 
         /// @dev identifies the token index at which the the cumulative risk is less than
         /// the normalized value, in order to select the tokenId at the index
@@ -396,16 +559,34 @@ abstract contract PerpetualMintInternal is
             tokenId = tokenIds.at(tokenIndex);
             cumulativeRisk += l.tokenRisk[collection][tokenId];
             ++tokenIndex;
-        } while (cumulativeRisk <= normalizedValue);
+        } while (cumulativeRisk < normalizedValue);
     }
 
-    /// @notice updates the earnings of a depositor  based on current conitions
+    /// @notice set the mint price for a given collection
+    /// @param collection address of collection
+    /// @param price mint price of the collection
+    function _setCollectionMintPrice(
+        address collection,
+        uint256 price
+    ) internal {
+        Storage.layout().collectionMintPrice[collection] = price;
+        emit MintPriceSet(collection, price);
+    }
+
+    /// @notice sets the Chainlink VRF config
+    /// @param config VRFConfig struct holding all related data to ChainlinkVRF
+    function _setVRFConfig(Storage.VRFConfig calldata config) internal {
+        Storage.layout().vrfConfig = config;
+        emit VRFConfigSet(config);
+    }
+
+    /// @notice updates the earnings of a depositor  based on current conditions
     /// @param collection address of collection earnings relate to
     /// @param depositor address of depositor
     function _updateDepositorEarnings(
         address depositor,
         address collection
-    ) private {
+    ) internal {
         Storage.Layout storage l = Storage.layout();
 
         uint256 totalDepositorRisk = l.totalDepositorRisk[depositor][
@@ -426,5 +607,156 @@ abstract contract PerpetualMintInternal is
                 collection
             ];
         }
+    }
+
+    /// @notice updates the risk associated with escrowed ERC1155 tokens of a depositor
+    /// @param depositor address of escrowed token owner
+    /// @param collection address of token collection
+    /// @param tokenIds array of token ids
+    /// @param amounts amount of inactive tokens to activate for each tokenId
+    /// @param risks array of new risk values for token ids
+    function _updateERC1155TokenRisks(
+        address depositor,
+        address collection,
+        uint256[] calldata tokenIds,
+        uint256[] calldata amounts,
+        uint64[] calldata risks
+    ) internal {
+        Storage.Layout storage l = Storage.layout();
+
+        if (
+            tokenIds.length != amounts.length || tokenIds.length != risks.length
+        ) {
+            revert ArrayLengthMismatch();
+        }
+
+        if (l.collectionType[collection] != AssetType.ERC1155) {
+            revert CollectionTypeMismatch();
+        }
+
+        _updateDepositorEarnings(depositor, collection);
+
+        for (uint256 i; i < tokenIds.length; ++i) {
+            _updateSingleERC1155TokenRisk(
+                depositor,
+                collection,
+                tokenIds[i],
+                uint64(amounts[i]),
+                risks[i]
+            );
+        }
+    }
+
+    /// @notice updates the risk associated with an escrowed ERC721 tokens of a depositor
+    /// @param depositor address of escrowed token owner
+    /// @param collection address of token collection
+    /// @param tokenIds array of token ids
+    /// @param risks array of new risk values for token ids
+    function _updateERC721TokenRisks(
+        address depositor,
+        address collection,
+        uint256[] calldata tokenIds,
+        uint64[] calldata risks
+    ) internal {
+        Storage.Layout storage l = Storage.layout();
+
+        if (tokenIds.length != risks.length) {
+            revert ArrayLengthMismatch();
+        }
+
+        if (l.collectionType[collection] != AssetType.ERC721) {
+            revert CollectionTypeMismatch();
+        }
+
+        _updateDepositorEarnings(depositor, collection);
+
+        for (uint256 i; i < tokenIds.length; ++i) {
+            uint256 tokenId = tokenIds[i];
+            uint64 risk = risks[i];
+
+            if (risk > BASIS) {
+                revert BasisExceeded();
+            }
+
+            if (risk == 0) {
+                revert TokenRiskMustBeNonZero();
+            }
+
+            if (depositor != l.escrowedERC721Owner[collection][tokenIds[i]]) {
+                revert OnlyEscrowedTokenOwner();
+            }
+
+            uint64 oldRisk = l.tokenRisk[collection][tokenId];
+
+            l.tokenRisk[collection][tokenId] = risk;
+            uint64 riskChange;
+
+            if (risk > oldRisk) {
+                riskChange = risk - oldRisk;
+                l.totalRisk[collection] += riskChange;
+                l.totalDepositorRisk[depositor][collection] += riskChange;
+            } else {
+                riskChange = oldRisk - risk;
+                l.totalRisk[collection] -= riskChange;
+                l.totalDepositorRisk[depositor][collection] -= riskChange;
+            }
+        }
+    }
+
+    /// @notice updates the risk for a single ERC1155 tokenId
+    /// @param depositor address of escrowed token owner
+    /// @param collection address of token collection
+    /// @param tokenId id of token
+    /// @param amount amount of inactive tokens to activate for tokenId
+    /// @param risk new risk value for token id
+    function _updateSingleERC1155TokenRisk(
+        address depositor,
+        address collection,
+        uint256 tokenId,
+        uint64 amount,
+        uint64 risk
+    ) internal {
+        Storage.Layout storage l = Storage.layout();
+
+        _enforceBasis(risk);
+        _enforceNonZeroRisk(risk);
+        _enforceERC1155Ownership(l, depositor, collection, tokenId);
+
+        uint64 oldRisk = l.depositorTokenRisk[depositor][collection][tokenId];
+        uint64 riskChange;
+
+        if (risk > oldRisk) {
+            riskChange =
+                (risk - oldRisk) *
+                l.activeERC1155Tokens[depositor][collection][tokenId] +
+                risk *
+                amount;
+            l.totalDepositorRisk[depositor][collection] += riskChange;
+            l.tokenRisk[collection][tokenId] += riskChange;
+        } else {
+            uint64 activeTokenRiskChange = (oldRisk - risk) *
+                l.activeERC1155Tokens[depositor][collection][tokenId];
+            uint64 inactiveTokenRiskChange = risk * amount;
+
+            // determine whether overall risk increases or decreases - determined
+            // from whether enough inactive tokens are activated to exceed the decrease
+            // of active token risk
+            // if the changes are equal, no state changes need to be made - eg when the risk
+            // value is set to half of its previous amount, and the inactive tokens are equal to
+            // the active tokens
+            if (activeTokenRiskChange > inactiveTokenRiskChange) {
+                riskChange = activeTokenRiskChange - inactiveTokenRiskChange;
+                l.totalDepositorRisk[depositor][collection] -= riskChange;
+                l.tokenRisk[collection][tokenId] -= riskChange;
+            } else {
+                riskChange = inactiveTokenRiskChange - activeTokenRiskChange;
+                l.totalDepositorRisk[depositor][collection] += riskChange;
+                l.tokenRisk[collection][tokenId] += riskChange;
+            }
+        }
+
+        l.activeERC1155Tokens[depositor][collection][tokenId] += amount;
+        l.inactiveERC1155Tokens[depositor][collection][tokenId] -= amount;
+        l.depositorTokenRisk[depositor][collection][tokenId] = risk;
     }
 }

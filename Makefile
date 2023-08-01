@@ -18,7 +18,8 @@ build  :; forge build
 clean  :; forge clean
 # run built-in formatter
 fmt    :; forge fmt
-prettier    :; pnpm prettier --write contracts/**/**/**/*.sol
+# run prettier formatter on tests and contracts
+prettier    :; pnpm prettier --write contracts/**/**/**/*.sol test/**/**/**/**/*.sol
 # show contract sizes
 size  :; forge build --sizes
  # create a snapshot of each test's gas usage

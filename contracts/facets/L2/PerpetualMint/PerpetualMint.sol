@@ -2,27 +2,16 @@
 
 pragma solidity ^0.8.21;
 
+import { Ownable } from "@solidstate/contracts/access/ownable/Ownable.sol";
+
 import { IPerpetualMint } from "./IPerpetualMint.sol";
 import { PerpetualMintInternal } from "./PerpetualMintInternal.sol";
+import { PerpetualMintStorage as Storage } from "./Storage.sol";
 
 /// @title PerpetualMint facet contract
 /// @dev contains all externally called functions
-contract PerpetualMint is IPerpetualMint, PerpetualMintInternal {
-    constructor(
-        bytes32 keyHash,
-        address vrf,
-        uint64 subscriptionId,
-        uint32 callbackGasLimit,
-        uint16 minConfirmations
-    )
-        PerpetualMintInternal(
-            keyHash,
-            vrf,
-            subscriptionId,
-            callbackGasLimit,
-            minConfirmations
-        )
-    {}
+contract PerpetualMint is IPerpetualMint, PerpetualMintInternal, Ownable {
+    constructor(address vrf) PerpetualMintInternal(vrf) {}
 
     /// @inheritdoc IPerpetualMint
     function allAvailableEarnings()
@@ -60,6 +49,71 @@ contract PerpetualMint is IPerpetualMint, PerpetualMintInternal {
     /// @inheritdoc IPerpetualMint
     function claimEarnings(address collection) external {
         _claimEarnings(msg.sender, collection);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function escrowedERC721TokenOwner(
+        address collection,
+        uint256 tokenId
+    ) external view returns (address owner) {
+        owner = _escrowedERC721TokenOwner(collection, tokenId);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function idleERC1155Tokens(
+        address collection,
+        uint256[] calldata tokenIds,
+        uint256[] calldata amounts
+    ) external {
+        _idleERC1155Tokens(msg.sender, collection, tokenIds, amounts);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function idleERC721Tokens(
+        address collection,
+        uint256[] calldata tokenIds
+    ) external {
+        _idleERC721Tokens(msg.sender, collection, tokenIds);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function setCollectionMintPrice(
+        address collection,
+        uint256 price
+    ) external onlyOwner {
+        _setCollectionMintPrice(collection, price);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function setVRFConfig(
+        Storage.VRFConfig calldata config
+    ) external onlyOwner {
+        _setVRFConfig(config);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function updateERC1155TokenRisks(
+        address collection,
+        uint256[] calldata tokenIds,
+        uint256[] calldata amounts,
+        uint64[] calldata risks
+    ) external {
+        _updateERC1155TokenRisks(
+            msg.sender,
+            collection,
+            tokenIds,
+            amounts,
+            risks
+        );
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function updateERC721TokenRisks(
+        address collection,
+        uint256[] calldata tokenIds,
+        uint64[] calldata risks
+    ) external {
+        _updateERC721TokenRisks(msg.sender, collection, tokenIds, risks);
     }
 
     /// @notice Chainlink VRF Coordinator callback
