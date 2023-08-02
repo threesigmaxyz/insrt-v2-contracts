@@ -11,20 +11,17 @@ import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidSt
 import { AssetType } from "../../../../contracts/enums/AssetType.sol";
 import { PerpetualMintStorage as Storage } from "../../../../contracts/facets/L2/PerpetualMint/Storage.sol";
 import { L2CoreTest } from "../../../diamonds/L2/Core.t.sol";
-import { IDepositFacetMock } from "../../../interfaces/IDepositFacetMock.sol";
 import { StorageRead } from "../common/StorageRead.t.sol";
-import { IPerpetualMintTest } from "./IPerpetualMintTest.t.sol";
+import { IPerpetualMintTest } from "./IPerpetualMintTest.sol";
 import { PerpetualMintHelper } from "./PerpetualMintHelper.t.sol";
 
 /// @title PerpetualMintTest
-/// @dev PerpetualMintTest helper contract. Configures PerpetualMint and DepositFacetMock as facets of L1Core test.
+/// @dev PerpetualMintTest helper contract. Configures PerpetualMint and L2AssetHandlerMock as facets of L2Core test.
 /// @dev Should functoin identically across all forks given appropriate Chainlink VRF details are set.
 abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
     using stdStorage for StdStorage;
 
     IPerpetualMintTest public perpetualMint;
-    IERC1155 public parallelAlpha;
-    IERC721 public boredApeYachtClub;
 
     //denominator used in percentage calculations
     uint32 internal constant BASIS = 1000000000;
@@ -37,9 +34,13 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
     address internal constant BORED_APE_YACHT_CLUB =
         0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D;
 
-    uint256[] internal boredApeYachtClubTokenIds = new uint256[](2);
+    // Token Ids used of Bored Ape Yacht Club collection
+    uint256 BORED_APE_YACHT_CLUB_TOKEN_ID_ONE = 101;
+    uint256 BORED_APE_YACHT_CLUB_TOKEN_ID_TWO = 102;
 
-    uint256[] internal parallelAlphaTokenIds = new uint256[](2);
+    // Token Ids used of Parallel Alpha collection
+    uint256 PARALLEL_ALPHA_TOKEN_ID_ONE = 10951;
+    uint256 PARALLEL_ALPHA_TOKEN_ID_TWO = 11022;
 
     // all depositors will deposit the same amount of ParallelAlpha tokens
     uint256 internal parallelAlphaTokenAmount = 10;
@@ -57,6 +58,38 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
     uint64 internal constant riskTwo = 800; // for BAYC
     uint64 internal constant riskThree = 100; //for parallelAlpha
 
+    /// @dev Dummy trusted remote test path.
+    bytes internal TEST_PATH =
+        bytes.concat(bytes20(vm.addr(1234)), bytes20(vm.addr(5678)));
+
+    /// @dev Dummy test nonce value.
+    uint64 internal constant TEST_NONCE = 0;
+
+    /// @dev The LayerZero proprietary chain ID for setting Ethereum mainnet as the destination blockchain.
+    uint16 internal constant DESTINATION_LAYER_ZERO_CHAIN_ID = 101;
+
+    /// @dev BAYC depositor test data holders
+    /// @dev BAYC risks for tokens that depositorOne and depositorTwo will deposit respectively
+    uint64[] internal depositorOneBAYCRisks;
+    uint64[] internal depositorTwoBAYCRisks;
+
+    /// @dev BAYC tokenIds for tokens that depositorOne and depositorTwo will deposit respectively
+    uint256[] internal depositorOneBAYCIds;
+    uint256[] internal depositorTwoBAYCIds;
+
+    /// @dev Parallel Alpha depositor test data holders
+    /// @dev Parallel Alpha token risks for tokens thatn depositorOne and depositorTwo will deposit respectively
+    uint64[] internal depositorOneParallelAlphaRisks;
+    uint64[] internal depositorTwoParallelAlphaRisks;
+
+    /// @dev Parallel Alpha token ids for tokens thatn depositorOne and depositorTwo will deposit respectively
+    uint256[] internal depositorOneParallelAlphaTokenIds;
+    uint256[] internal depositorTwoParallelAlphaTokenIds;
+
+    /// @dev Parallel Alpha token amounts for tokens thatn depositorOne and depositorTwo will deposit respectively
+    uint256[] internal depositorOneParallelAlphaAmounts;
+    uint256[] internal depositorTwoParallelAlphaAmounts;
+
     /// @dev sets up PerpetualMint for testing
     function setUp() public virtual override {
         super.setUp();
@@ -64,14 +97,6 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
         initPerpetualMint();
 
         perpetualMint = IPerpetualMintTest(address(l2CoreDiamond));
-        boredApeYachtClub = IERC721(BORED_APE_YACHT_CLUB);
-        parallelAlpha = IERC1155(PARALLEL_ALPHA);
-
-        boredApeYachtClubTokenIds[0] = 101;
-        boredApeYachtClubTokenIds[1] = 102;
-
-        parallelAlphaTokenIds[0] = 10951;
-        parallelAlphaTokenIds[1] = 11022;
 
         perpetualMint.setVRFConfig(
             Storage.VRFConfig({
@@ -110,7 +135,7 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
         );
     }
 
-    /// @dev initialzies PerpetualMint and DepositFacetMock as facets by executing a diamond cut on L1CoreDiamond.
+    /// @dev initialzies PerpetualMint and L2AssetHandlerMock as facets by executing a diamond cut on L2CoreDiamond.
     function initPerpetualMint() internal {
         PerpetualMintHelper perpetualMintHelper = new PerpetualMintHelper();
 
@@ -121,48 +146,96 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
     }
 
     /// @dev deposits bored ape tokens from depositors into the PerpetualMint contracts
+    /// using the L2AssetHandlerMock facet logic
     function depositBoredApeYachtClubAssetsMock() internal {
-        vm.prank(depositorOne);
-        perpetualMint.depositAsset(
+        // add token risks to depositor risk arrays
+        depositorOneBAYCRisks.push(riskOne);
+        depositorTwoBAYCRisks.push(riskTwo);
+
+        // add token ids to depositor token arrays
+        depositorOneBAYCIds.push(BORED_APE_YACHT_CLUB_TOKEN_ID_ONE);
+        depositorTwoBAYCIds.push(BORED_APE_YACHT_CLUB_TOKEN_ID_TWO);
+
+        bytes memory depositOneData = abi.encode(
+            AssetType.ERC721,
+            depositorOne,
             BORED_APE_YACHT_CLUB,
-            boredApeYachtClubTokenIds[0],
-            1,
-            riskOne
+            depositorOneBAYCRisks,
+            depositorOneBAYCIds
         );
 
-        vm.prank(depositorTwo);
-        perpetualMint.depositAsset(
+        bytes memory depositTwoData = abi.encode(
+            AssetType.ERC721,
+            depositorTwo,
             BORED_APE_YACHT_CLUB,
-            boredApeYachtClubTokenIds[1],
-            1,
-            riskTwo
+            depositorTwoBAYCRisks,
+            depositorTwoBAYCIds
+        );
+
+        perpetualMint.mock_HandleLayerZeroMessage(
+            DESTINATION_LAYER_ZERO_CHAIN_ID, // would be the expected source chain ID in production, here this is a dummy value
+            TEST_PATH, // would be the expected path in production, here this is a dummy value
+            TEST_NONCE, // dummy nonce value
+            depositOneData
+        );
+
+        perpetualMint.mock_HandleLayerZeroMessage(
+            DESTINATION_LAYER_ZERO_CHAIN_ID, // would be the expected source chain ID in production, here this is a dummy value
+            TEST_PATH, // would be the expected path in production, here this is a dummy value
+            TEST_NONCE, // dummy nonce value
+            depositTwoData
         );
     }
 
     /// @dev deposits bong bear tokens into the PerpetualMint contracts
     function depositParallelAlphaAssetsMock() internal {
-        vm.prank(depositorOne);
-        perpetualMint.depositAsset(
+        // each encoded deposit is done in sequence: risk, tokenId, amount, as arrays need to be ordered
+        // set up encoded deposit array data for depositorOne
+        // depositorOne deposits two different tokenIds, with the same amount and same risk
+        depositorOneParallelAlphaRisks.push(riskThree);
+        depositorOneParallelAlphaTokenIds.push(PARALLEL_ALPHA_TOKEN_ID_ONE);
+        depositorOneParallelAlphaAmounts.push(parallelAlphaTokenAmount);
+
+        depositorOneParallelAlphaRisks.push(riskThree);
+        depositorOneParallelAlphaTokenIds.push(PARALLEL_ALPHA_TOKEN_ID_TWO);
+        depositorOneParallelAlphaAmounts.push(parallelAlphaTokenAmount);
+
+        // set up encoded deposit array data for depositorTwo
+        // // depositorOne deposits one tokenId, with the same amount and same risk as depositorOne
+        depositorTwoParallelAlphaRisks.push(riskThree);
+        depositorTwoParallelAlphaTokenIds.push(PARALLEL_ALPHA_TOKEN_ID_ONE);
+        depositorTwoParallelAlphaAmounts.push(parallelAlphaTokenAmount);
+
+        bytes memory depositOneData = abi.encode(
+            AssetType.ERC1155,
+            depositorOne,
             PARALLEL_ALPHA,
-            parallelAlphaTokenIds[0],
-            uint64(parallelAlphaTokenAmount),
-            riskThree
+            depositorOneParallelAlphaRisks,
+            depositorOneParallelAlphaTokenIds,
+            depositorOneParallelAlphaAmounts
         );
 
-        vm.prank(depositorTwo);
-        perpetualMint.depositAsset(
+        bytes memory depositTwoData = abi.encode(
+            AssetType.ERC1155,
+            depositorTwo,
             PARALLEL_ALPHA,
-            parallelAlphaTokenIds[0],
-            uint64(parallelAlphaTokenAmount),
-            riskThree
+            depositorTwoParallelAlphaRisks,
+            depositorTwoParallelAlphaTokenIds,
+            depositorTwoParallelAlphaAmounts
         );
 
-        vm.prank(depositorOne);
-        perpetualMint.depositAsset(
-            PARALLEL_ALPHA,
-            parallelAlphaTokenIds[1],
-            uint64(parallelAlphaTokenAmount),
-            riskThree
+        perpetualMint.mock_HandleLayerZeroMessage(
+            DESTINATION_LAYER_ZERO_CHAIN_ID, // would be the expected source chain ID in production, here this is a dummy value
+            TEST_PATH, // would be the expected path in production, here this is a dummy value
+            TEST_NONCE, // dummy nonce value
+            depositOneData
+        );
+
+        perpetualMint.mock_HandleLayerZeroMessage(
+            DESTINATION_LAYER_ZERO_CHAIN_ID, // would be the expected source chain ID in production, here this is a dummy value
+            TEST_PATH, // would be the expected path in production, here this is a dummy value
+            TEST_NONCE, // dummy nonce value
+            depositTwoData
         );
     }
 }
