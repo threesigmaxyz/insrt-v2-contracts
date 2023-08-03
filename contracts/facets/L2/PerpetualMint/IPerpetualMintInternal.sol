@@ -31,6 +31,9 @@ interface IPerpetualMintInternal {
     /// @notice thrown when a non-owner is attempting to modify token parameters
     error OnlyEscrowedTokenOwner();
 
+    /// @notice thrown when a token that is not idled (inactive) is attempted to be reactivated
+    error TokenAlreadyActive();
+
     /// @notice thrown when an attempt is made to update token risk to 0
     error TokenRiskMustBeNonZero();
 
@@ -38,6 +41,18 @@ interface IPerpetualMintInternal {
     /// @param collection address of collection that attempted mint is for
     /// @param result success status of mint attempt
     event ERC1155MintResolved(address indexed collection, bool result);
+
+    /// @notice emitted when ERC721 assets are successfully reactivated.
+    /// @param depositor The indexed address of the depositor.
+    /// @param collection The indexed address of the ERC721 collection.
+    /// @param risks The risk settings for the reactivated assets.
+    /// @param tokenIds Token IDs of the reactivated ERC721 assets.
+    event ERC721AssetsReactivated(
+        address indexed depositor,
+        address indexed collection,
+        uint256[] risks,
+        uint256[] tokenIds
+    );
 
     /// @notice emitted when the outcome of an attempted mint is resolved
     /// @param collection address of collection that attempted mint is for
