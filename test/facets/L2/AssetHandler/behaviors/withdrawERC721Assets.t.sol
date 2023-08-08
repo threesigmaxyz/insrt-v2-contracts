@@ -206,8 +206,8 @@ contract L2AssetHandler_withdrawERC721Assets is
             )
         );
 
-        uint64 depositorTokenRisk = uint64(
-            uint256(vm.load(address(this), depositorTokenRiskStorageSlot))
+        uint256 depositorTokenRisk = uint256(
+            vm.load(address(this), depositorTokenRiskStorageSlot)
         );
 
         // this assertion proves that the risk for the depositor and the token ID in the collection was reset correctly
@@ -226,8 +226,8 @@ contract L2AssetHandler_withdrawERC721Assets is
             )
         );
 
-        uint64 tokenRisk = uint64(
-            uint256(vm.load(address(this), tokenRiskStorageSlot))
+        uint256 tokenRisk = uint256(
+            vm.load(address(this), tokenRiskStorageSlot)
         );
 
         // this assertion proves that the risk for the token ID in the collection was decremented correctly
@@ -261,8 +261,8 @@ contract L2AssetHandler_withdrawERC721Assets is
             )
         );
 
-        uint64 totalDepositorRisk = uint64(
-            uint256(vm.load(address(this), totalDepositorRiskStorageSlot))
+        uint256 totalDepositorRisk = uint256(
+            vm.load(address(this), totalDepositorRiskStorageSlot)
         );
 
         // this assertion proves that the total risk for the depositor in the collection was decremented correctly
@@ -272,12 +272,12 @@ contract L2AssetHandler_withdrawERC721Assets is
         bytes32 totalRiskStorageSlot = keccak256(
             abi.encode(
                 BORED_APE_YACHT_CLUB, // the active ERC721 token collection
-                uint256(PerpetualMintStorage.STORAGE_SLOT) + 9 // the totalRisk storage slot
+                uint256(PerpetualMintStorage.STORAGE_SLOT) + 11 // the totalRisk storage slot
             )
         );
 
-        uint64 totalRisk = uint64(
-            uint256(vm.load(address(this), totalRiskStorageSlot))
+        uint256 totalRisk = uint256(
+            vm.load(address(this), totalRiskStorageSlot)
         );
 
         // this assertion proves that the total risk in the collection was decremented correctly

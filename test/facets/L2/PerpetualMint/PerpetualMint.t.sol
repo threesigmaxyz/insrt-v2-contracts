@@ -54,9 +54,9 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
     address payable internal minter = payable(address(3));
 
     // token risk values
-    uint64 internal constant riskOne = 400; // for BAYC
-    uint64 internal constant riskTwo = 800; // for BAYC
-    uint64 internal constant riskThree = 100; //for parallelAlpha
+    uint256 internal constant riskOne = 400; // for BAYC
+    uint256 internal constant riskTwo = 800; // for BAYC
+    uint256 internal constant riskThree = 100; //for parallelAlpha
 
     /// @dev Dummy trusted remote test path.
     bytes internal TEST_PATH =
@@ -70,8 +70,8 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
 
     /// @dev BAYC depositor test data holders
     /// @dev BAYC risks for tokens that depositorOne and depositorTwo will deposit respectively
-    uint64[] internal depositorOneBAYCRisks;
-    uint64[] internal depositorTwoBAYCRisks;
+    uint256[] internal depositorOneBAYCRisks;
+    uint256[] internal depositorTwoBAYCRisks;
 
     /// @dev BAYC tokenIds for tokens that depositorOne and depositorTwo will deposit respectively
     uint256[] internal depositorOneBAYCIds;
@@ -79,8 +79,8 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
 
     /// @dev Parallel Alpha depositor test data holders
     /// @dev Parallel Alpha token risks for tokens thatn depositorOne and depositorTwo will deposit respectively
-    uint64[] internal depositorOneParallelAlphaRisks;
-    uint64[] internal depositorTwoParallelAlphaRisks;
+    uint256[] internal depositorOneParallelAlphaRisks;
+    uint256[] internal depositorTwoParallelAlphaRisks;
 
     /// @dev Parallel Alpha token ids for tokens thatn depositorOne and depositorTwo will deposit respectively
     uint256[] internal depositorOneParallelAlphaTokenIds;
