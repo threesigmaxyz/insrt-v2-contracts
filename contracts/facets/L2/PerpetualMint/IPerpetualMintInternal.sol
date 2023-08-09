@@ -21,12 +21,18 @@ interface IPerpetualMintInternal {
     /// @notice thrown when attempting to set a value of risk larger than basis
     error BasisExceeded();
 
-    /// @notice thrown when attempting to update risks of  tokens which belong to a different collection
+    /// @notice thrown when attempting to mint a collection that is not available for minting
+    error CollectionNotActive();
+
+    /// @notice thrown when attempting to update risks of tokens which belong to a different collection
     /// type than that specified in the functional call
     error CollectionTypeMismatch();
 
     /// @notice thrown when an incorrent amount of ETH is received
     error IncorrectETHReceived();
+
+    /// @notice thrown when attempting to mint 0 tokens
+    error InvalidNumberOfMints();
 
     /// @notice thrown when a non-owner is attempting to modify token parameters
     error OnlyEscrowedTokenOwner();

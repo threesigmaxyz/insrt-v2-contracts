@@ -23,8 +23,11 @@ contract PerpetualMint is IPerpetualMint, PerpetualMintInternal, Ownable {
     }
 
     /// @inheritdoc IPerpetualMint
-    function attemptMint(address collection) external {
-        _attemptMint(msg.sender, collection);
+    function attemptBatchMint(
+        address collection,
+        uint32 numberOfMints
+    ) external payable {
+        _attemptBatchMint(msg.sender, collection, numberOfMints);
     }
 
     /// @inheritdoc IPerpetualMint
@@ -107,6 +110,11 @@ contract PerpetualMint is IPerpetualMint, PerpetualMintInternal, Ownable {
         uint256 price
     ) external onlyOwner {
         _setCollectionMintPrice(collection, price);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function setMintFeeBP(uint32 mintFeeBP) external onlyOwner {
+        _setMintFeeBP(mintFeeBP);
     }
 
     /// @inheritdoc IPerpetualMint

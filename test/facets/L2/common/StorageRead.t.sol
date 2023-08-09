@@ -37,10 +37,8 @@ abstract contract StorageRead is Test {
     function _protocolFees(
         address target
     ) internal view returns (uint256 fees) {
-        bytes32 slot = keccak256(
-            abi.encode(
-                uint256(Storage.STORAGE_SLOT) + 2 //protocolFees storage slot
-            )
+        bytes32 slot = bytes32(
+            uint256(Storage.STORAGE_SLOT) + 2 // protocolFees storage slot
         );
 
         fees = uint256(vm.load(target, slot));
@@ -50,13 +48,11 @@ abstract contract StorageRead is Test {
     /// @param target address of contract to read storage from
     /// @return feeBP mintFeeBP value
     function _mintFeeBP(address target) internal view returns (uint32 feeBP) {
-        bytes32 slot = keccak256(
-            abi.encode(
-                uint256(Storage.STORAGE_SLOT) + 4 //mintFeeBP storage slot
-            )
+        bytes32 slot = bytes32(
+            uint256(Storage.STORAGE_SLOT) + 3 // mintFeeBP storage slot
         );
 
-        feeBP = uint32(uint256(vm.load(target, slot)));
+        feeBP = uint32(uint256(vm.load(target, slot)) >> 64); // Shift right by 64 bits to move mintFeeBP into the lower-order bytes
     }
 
     /// @dev read activeCollections values from activeCollections EnumerableSet.AddressSet
