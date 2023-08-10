@@ -58,33 +58,35 @@ abstract contract PerpetualMintInternal is
 
     /// @notice assigns an ERC1155 asset from one account to another, updating the required
     /// state variables simultaneously
-    /// @param from address asset currently is escrowed for
-    /// @param to address that asset will be assigned to
+    /// @param l the PerpetualMint storage layout
+    /// @param originalOwner address asset currently is escrowed for
+    /// @param newOwner address that asset will be assigned to
     /// @param collection address of ERC1155 collection
     /// @param tokenId token id
-    /// @param tokenRisk risk of token set by from address prior to transfer
     function _assignEscrowedERC1155Asset(
-        address from,
-        address to,
+        Storage.Layout storage l,
+        address originalOwner,
+        address newOwner,
         address collection,
-        uint256 tokenId,
-        uint256 tokenRisk
+        uint256 tokenId
     ) internal {
-        Storage.Layout storage l = Storage.layout();
+        uint256 tokenRisk = l.depositorTokenRisk[originalOwner][collection][
+            tokenId
+        ];
 
-        _updateDepositorEarnings(from, collection);
-        _updateDepositorEarnings(to, collection);
+        _updateDepositorEarnings(l, originalOwner, collection);
+        _updateDepositorEarnings(l, newOwner, collection);
 
-        --l.activeERC1155Tokens[from][collection][tokenId];
-        ++l.inactiveERC1155Tokens[to][collection][tokenId];
+        --l.activeERC1155Tokens[originalOwner][collection][tokenId];
+        ++l.inactiveERC1155Tokens[newOwner][collection][tokenId];
         --l.totalActiveTokens[collection];
         l.totalRisk[collection] -= tokenRisk;
         l.tokenRisk[collection][tokenId] -= tokenRisk;
-        l.totalDepositorRisk[from][collection] -= tokenRisk;
+        l.totalDepositorRisk[originalOwner][collection] -= tokenRisk;
 
-        if (l.activeERC1155Tokens[from][collection][tokenId] == 0) {
-            l.activeERC1155Owners[collection][tokenId].remove(from);
-            l.depositorTokenRisk[from][collection][tokenId] = 0;
+        if (l.activeERC1155Tokens[originalOwner][collection][tokenId] == 0) {
+            l.activeERC1155Owners[collection][tokenId].remove(originalOwner);
+            l.depositorTokenRisk[originalOwner][collection][tokenId] = 0;
         }
 
         if (l.tokenRisk[collection][tokenId] == 0) {
@@ -94,30 +96,29 @@ abstract contract PerpetualMintInternal is
 
     /// @notice assigns an ERC721 asset from one account to another, updating the required
     /// state variables simultaneously
-    /// @param from address asset currently is escrowed for
-    /// @param to address that asset will be assigned to
+    /// @param l the PerpetualMint storage layout
+    /// @param newOwner address that asset will be assigned to
     /// @param collection address of ERC721 collection
     /// @param tokenId token id
-    /// @param tokenRisk risk of token set by from address prior to transfer
     function _assignEscrowedERC721Asset(
-        address from,
-        address to,
+        Storage.Layout storage l,
+        address newOwner,
         address collection,
-        uint256 tokenId,
-        uint256 tokenRisk
+        uint256 tokenId
     ) internal {
-        Storage.Layout storage l = Storage.layout();
+        address originalOwner = l.escrowedERC721Owner[collection][tokenId];
+        uint256 tokenRisk = l.tokenRisk[collection][tokenId];
 
-        _updateDepositorEarnings(from, collection);
-        _updateDepositorEarnings(to, collection);
+        _updateDepositorEarnings(l, originalOwner, collection);
+        _updateDepositorEarnings(l, newOwner, collection);
 
-        --l.activeTokens[from][collection];
-        ++l.inactiveTokens[to][collection];
+        --l.activeTokens[originalOwner][collection];
+        ++l.inactiveTokens[newOwner][collection];
 
         l.activeTokenIds[collection].remove(tokenId);
-        l.escrowedERC721Owner[collection][tokenId] = to;
+        l.escrowedERC721Owner[collection][tokenId] = newOwner;
         l.totalRisk[collection] -= tokenRisk;
-        l.totalDepositorRisk[from][collection] -= tokenRisk;
+        l.totalDepositorRisk[originalOwner][collection] -= tokenRisk;
         --l.totalActiveTokens[collection];
         l.tokenRisk[collection][tokenId] = 0;
     }
@@ -180,12 +181,13 @@ abstract contract PerpetualMintInternal is
     }
 
     /// @notice calculations the weighted collection-wide risk of a collection
+    /// @param l the PerpetualMint storage layout
     /// @param collection address of collection
     /// @return risk value of collection-wide risk
     function _averageCollectionRisk(
+        Storage.Layout storage l,
         address collection
     ) internal view returns (uint256 risk) {
-        Storage.Layout storage l = Storage.layout();
         risk = l.totalRisk[collection] / l.totalActiveTokens[collection];
     }
 
@@ -210,7 +212,7 @@ abstract contract PerpetualMintInternal is
     function _claimEarnings(address depositor, address collection) internal {
         Storage.Layout storage l = Storage.layout();
 
-        _updateDepositorEarnings(depositor, collection);
+        _updateDepositorEarnings(l, depositor, collection);
         uint256 earnings = l.depositorEarnings[depositor][collection];
 
         //TODO: should set to depositorDeductions and not to 0
@@ -324,9 +326,9 @@ abstract contract PerpetualMintInternal is
         address collection = l.requestCollection[requestId];
 
         if (l.collectionType[collection] == AssetType.ERC721) {
-            _resolveERC721Mint(minter, collection, randomWords);
+            _resolveERC721Mints(l, minter, collection, randomWords);
         } else {
-            _resolveERC1155Mint(minter, collection, randomWords);
+            _resolveERC1155Mints(l, minter, collection, randomWords);
         }
     }
 
@@ -344,7 +346,7 @@ abstract contract PerpetualMintInternal is
     ) internal {
         Storage.Layout storage l = Storage.layout();
 
-        _updateDepositorEarnings(depositor, collection);
+        _updateDepositorEarnings(l, depositor, collection);
 
         for (uint256 i; i < tokenIds.length; ++i) {
             uint256 tokenId = tokenIds[i];
@@ -383,7 +385,7 @@ abstract contract PerpetualMintInternal is
     ) internal {
         Storage.Layout storage l = Storage.layout();
 
-        _updateDepositorEarnings(depositor, collection);
+        _updateDepositorEarnings(l, depositor, collection);
 
         for (uint256 i; i < tokenIds.length; ++i) {
             uint256 tokenId = tokenIds[i];
@@ -441,7 +443,7 @@ abstract contract PerpetualMintInternal is
         }
 
         // update the depositor's collection earnings
-        _updateDepositorEarnings(depositor, collection);
+        _updateDepositorEarnings(l, depositor, collection);
 
         // iterate over the token ids
         for (uint256 i; i < tokenIdsLength; ++i) {
@@ -585,7 +587,7 @@ abstract contract PerpetualMintInternal is
         }
 
         // update the depositor's collection earnings
-        _updateDepositorEarnings(depositor, collection);
+        _updateDepositorEarnings(l, depositor, collection);
 
         // iterate over the token ids
         for (uint256 i; i < numberOfTokens; ++i) {
@@ -651,94 +653,109 @@ abstract contract PerpetualMintInternal is
         l.requestCollection[requestId] = collection;
     }
 
-    /// @notice resolves the outcome of an attempted mint of an ERC1155 collection
-    /// @param minter address of mitner
-    /// @param collection address of collection which token may be minted from
-    /// @param randomWords random values relating to attempt
-    function _resolveERC1155Mint(
+    /// @notice resolves the outcome of attempted mints for an ERC1155 collection
+    /// @param l the PerpetualMint storage layout
+    /// @param minter address of minter
+    /// @param collection address of ERC1155 collection for mint attempts
+    /// @param randomWords an array of random values relating to number of attempts
+    function _resolveERC1155Mints(
+        Storage.Layout storage l,
         address minter,
         address collection,
         uint256[] memory randomWords
     ) internal {
-        Storage.Layout storage l = Storage.layout();
-
-        bool result = _averageCollectionRisk(collection) >
-            _normalizeValue(randomWords[0], BASIS);
-
-        //TODO: update based on consolation spec
-        if (!result) {
-            _mint(minter, l.id);
-            ++l.id;
+        // ensure the number of random words is a multiple of 3
+        // each valid ERC1155 mint attempt requires three random words
+        if (randomWords.length % 3 != 0) {
+            revert UnmatchedRandomWords();
         }
 
-        if (result) {
-            uint256 tokenId = _selectToken(collection, randomWords[1]);
+        for (uint256 i = 0; i < randomWords.length; i += 3) {
+            bool result = _averageCollectionRisk(l, collection) >
+                _normalizeValue(randomWords[i], BASIS);
 
-            address oldOwner = _selectERC1155Owner(
-                collection,
-                tokenId,
-                randomWords[2]
-            );
+            //TODO: update based on consolation spec
+            if (!result) {
+                _mint(minter, l.id);
+                ++l.id;
+            } else {
+                uint256 tokenId = _selectToken(
+                    l,
+                    collection,
+                    randomWords[i + 1]
+                );
 
-            _assignEscrowedERC1155Asset(
-                oldOwner,
-                minter,
-                collection,
-                tokenId,
-                l.depositorTokenRisk[oldOwner][collection][tokenId]
-            );
+                address originalOwner = _selectERC1155Owner(
+                    l,
+                    collection,
+                    tokenId,
+                    randomWords[i + 2]
+                );
+
+                _assignEscrowedERC1155Asset(
+                    l,
+                    originalOwner,
+                    minter,
+                    collection,
+                    tokenId
+                );
+            }
+
+            emit ERC1155MintResolved(collection, result);
         }
-
-        emit ERC1155MintResolved(collection, result);
     }
 
-    /// @notice resolves the outcome of an attempted mint of an ERC721 collection
+    /// @notice resolves the outcomes of attempted mints for an ERC721 collection
+    /// @param l the PerpetualMint storage layout
     /// @param minter address of minter
-    /// @param collection address of collection which token may be minted from
-    /// @param randomWords random values relating to attempt
-    function _resolveERC721Mint(
+    /// @param collection address of ERC721 collection for mint attempts
+    /// @param randomWords array of random values relating to number of attempts
+    function _resolveERC721Mints(
+        Storage.Layout storage l,
         address minter,
         address collection,
         uint256[] memory randomWords
     ) internal {
-        Storage.Layout storage l = Storage.layout();
-
-        bool result = _averageCollectionRisk(collection) >
-            _normalizeValue(randomWords[0], BASIS);
-
-        //TODO: update based on consolation spec
-        if (!result) {
-            _mint(minter, l.id);
-            ++l.id;
+        // ensure the number of random words is even
+        // each valid ERC721 mint attempt requires two random words
+        if (randomWords.length % 2 != 0) {
+            revert UnmatchedRandomWords();
         }
 
-        if (result) {
-            uint256 tokenId = _selectToken(collection, randomWords[1]);
+        for (uint256 i = 0; i < randomWords.length; i += 2) {
+            bool result = _averageCollectionRisk(l, collection) >
+                _normalizeValue(randomWords[i], BASIS);
 
-            _assignEscrowedERC721Asset(
-                l.escrowedERC721Owner[collection][tokenId],
-                minter,
-                collection,
-                tokenId,
-                l.tokenRisk[collection][tokenId]
-            );
+            //TODO: update based on consolation spec
+            if (!result) {
+                _mint(minter, l.id);
+                ++l.id;
+            } else {
+                uint256 tokenId = _selectToken(
+                    l,
+                    collection,
+                    randomWords[i + 1]
+                );
+
+                _assignEscrowedERC721Asset(l, minter, collection, tokenId);
+            }
+
+            emit ERC721MintResolved(collection, result);
         }
-
-        emit ERC721MintResolved(collection, result);
     }
 
     /// @notice selects the account which will have an ERC1155 reassigned to the successful minter
+    /// @param l the PerpetualMint storage layout
     /// @param collection address of ERC1155 collection
     /// @param tokenId id of token
     /// @param randomValue random value used for selection
     /// @return owner address of selected account
     function _selectERC1155Owner(
+        Storage.Layout storage l,
         address collection,
         uint256 tokenId,
         uint256 randomValue
     ) internal view returns (address owner) {
-        Storage.Layout storage l = Storage.layout();
-
         EnumerableSet.AddressSet storage owners = l.activeERC1155Owners[
             collection
         ][tokenId];
@@ -760,15 +777,15 @@ abstract contract PerpetualMintInternal is
     }
 
     /// @notice selects the token which was won after a successfull mint attempt
+    /// @param l the PerpetualMint storage layout
     /// @param collection address of collection
     /// @param randomValue seed used to select the tokenId
     /// @return tokenId id of won token
     function _selectToken(
+        Storage.Layout storage l,
         address collection,
         uint256 randomValue
     ) internal view returns (uint256 tokenId) {
-        Storage.Layout storage l = Storage.layout();
-
         EnumerableSet.UintSet storage tokenIds = l.activeTokenIds[collection];
 
         uint256 tokenIndex;
@@ -810,15 +827,15 @@ abstract contract PerpetualMintInternal is
         emit VRFConfigSet(config);
     }
 
-    /// @notice updates the earnings of a depositor  based on current conditions
+    /// @notice updates the earnings of a depositor based on current conditions
+    /// @param l the PerpetualMint storage layout
     /// @param collection address of collection earnings relate to
     /// @param depositor address of depositor
     function _updateDepositorEarnings(
+        Storage.Layout storage l,
         address depositor,
         address collection
     ) internal {
-        Storage.Layout storage l = Storage.layout();
-
         uint256 totalDepositorRisk = l.totalDepositorRisk[depositor][
             collection
         ];
@@ -860,7 +877,7 @@ abstract contract PerpetualMintInternal is
             revert CollectionTypeMismatch();
         }
 
-        _updateDepositorEarnings(depositor, collection);
+        _updateDepositorEarnings(l, depositor, collection);
 
         for (uint256 i; i < tokenIds.length; ++i) {
             _updateSingleERC1155TokenRisk(
@@ -894,7 +911,7 @@ abstract contract PerpetualMintInternal is
             revert CollectionTypeMismatch();
         }
 
-        _updateDepositorEarnings(depositor, collection);
+        _updateDepositorEarnings(l, depositor, collection);
 
         for (uint256 i; i < tokenIds.length; ++i) {
             uint256 tokenId = tokenIds[i];
