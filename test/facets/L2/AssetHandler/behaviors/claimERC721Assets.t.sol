@@ -36,6 +36,7 @@ contract L2AssetHandler_claimERC721Assets is
             AssetType.ERC721,
             address(this),
             BORED_APE_YACHT_CLUB,
+            address(this),
             boredApeYachtClubTokenIds
         );
 
@@ -178,6 +179,7 @@ contract L2AssetHandler_claimERC721Assets is
         emit ERC721AssetsWithdrawn(
             address(this),
             BORED_APE_YACHT_CLUB,
+            address(this),
             boredApeYachtClubTokenIds
         );
 

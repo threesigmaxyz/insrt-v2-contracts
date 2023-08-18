@@ -140,47 +140,63 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
             // Decode the payload to get the sender, the collection, the tokenIds and the amounts for each tokenId
             (
                 ,
-                address sender,
+                address beneficiary,
                 address collection,
+                address executor,
                 uint256[] memory tokenIds,
                 uint256[] memory amounts
             ) = abi.decode(
                     data,
-                    (AssetType, address, address, uint256[], uint256[])
+                    (AssetType, address, address, address, uint256[], uint256[])
                 );
 
             // Transfer the ERC1155 assets to the sender
             IERC1155(collection).safeBatchTransferFrom(
                 address(this),
-                sender,
+                beneficiary,
                 tokenIds,
                 amounts,
                 ""
             );
 
-            emit ERC1155AssetsWithdrawn(sender, collection, tokenIds, amounts);
+            emit ERC1155AssetsWithdrawn(
+                beneficiary,
+                collection,
+                executor,
+                tokenIds,
+                amounts
+            );
         } else {
             // Decode the payload to get the sender, the collection, and the tokenIds
             (
                 ,
-                address sender,
+                address beneficiary,
                 address collection,
+                address executor,
                 uint256[] memory tokenIds
-            ) = abi.decode(data, (AssetType, address, address, uint256[]));
+            ) = abi.decode(
+                    data,
+                    (AssetType, address, address, address, uint256[])
+                );
 
-            // Transfer the ERC721 assets to the sender
+            // Transfer the ERC721 assets to the beneficiary
             unchecked {
                 for (uint256 i = 0; i < tokenIds.length; ++i) {
                     IERC721(collection).safeTransferFrom(
                         address(this),
-                        sender,
+                        beneficiary,
                         tokenIds[i],
                         ""
                     );
                 }
             }
 
-            emit ERC721AssetsWithdrawn(sender, collection, tokenIds);
+            emit ERC721AssetsWithdrawn(
+                beneficiary,
+                collection,
+                executor,
+                tokenIds
+            );
         }
     }
 
