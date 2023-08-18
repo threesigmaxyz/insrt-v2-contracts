@@ -17,11 +17,15 @@ contract PerpetualMint_resolveERC1155Mints is
     uint256 internal constant COLLECTION_EARNINGS = 1 ether;
     uint256[] randomWords;
 
-    // grab PARALLEL_ALPHA collection earnings storage slot
+    // declare collection context for the test cases
+    // as PARALLEL_ALPHA collection
+    address internal constant COLLECTION = PARALLEL_ALPHA;
+
+    // grab COLLECTION collection earnings storage slot
     bytes32 internal collectionEarningsStorageSlot =
         keccak256(
             abi.encode(
-                PARALLEL_ALPHA, // the ERC721 collection
+                COLLECTION, // the ERC721 collection
                 uint256(Storage.STORAGE_SLOT) + 9 // the collectionEarnings storage slot
             )
         );
@@ -40,7 +44,7 @@ contract PerpetualMint_resolveERC1155Mints is
     /// @dev address of depositor matching expectedTokenId (depositorOne) prior to minting
     address internal oldOwner;
 
-    /// @dev total risk of ERC1155 collection (PARALLEL_ALPHA) prior to minting
+    /// @dev total risk of ERC1155 collection (COLLECTION) prior to minting
     uint256 internal totalRisk;
 
     /// @dev risk of token set by depositor
@@ -67,17 +71,17 @@ contract PerpetualMint_resolveERC1155Mints is
         randomWords.push(tokenOneSelectValue);
         randomWords.push(depositorOneSelectValue);
 
-        totalRisk = _totalRisk(address(perpetualMint), PARALLEL_ALPHA);
+        totalRisk = _totalRisk(address(perpetualMint), COLLECTION);
         oldOwner = depositorOne;
         totalDepositorRisk = _totalDepositorRisk(
             address(perpetualMint),
             oldOwner,
-            PARALLEL_ALPHA
+            COLLECTION
         );
-        oldDepositorDeductions = _depositorDeductions(
+        oldDepositorDeductions = _multiplierOffset(
             address(perpetualMint),
             oldOwner,
-            PARALLEL_ALPHA
+            COLLECTION
         );
         tokenRisk = riskThree;
     }
@@ -95,7 +99,7 @@ contract PerpetualMint_resolveERC1155Mints is
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
     }
@@ -107,7 +111,7 @@ contract PerpetualMint_resolveERC1155Mints is
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
@@ -115,7 +119,7 @@ contract PerpetualMint_resolveERC1155Mints is
             _inactiveERC1155Tokens(
                 address(perpetualMint),
                 minter,
-                PARALLEL_ALPHA,
+                COLLECTION,
                 expectedTokenId
             ) == 1
         );
@@ -123,29 +127,43 @@ contract PerpetualMint_resolveERC1155Mints is
             _activeERC1155Tokens(
                 address(perpetualMint),
                 depositorOne,
-                PARALLEL_ALPHA,
+                COLLECTION,
                 expectedTokenId
             ) == parallelAlphaTokenAmount - 1
         );
     }
 
-    /// @dev tests that depositEarnings are updated correctly when depositor has no risk, after a win
-    function test_resolveERC1155MintsWinUpdateDepositorEarningsForMinterWhenMinterHasNoRisk()
+    /// @dev ensures that baseMultiplier and lastCollectionEarnings are updated when minter has no risk
+    /// and wins the mint
+    function test_resolveERC1155MintWinUpdateDepositorEarningsForMinterWhenMinterHasNoRisk()
         public
     {
+        uint256 currentEarnings = _collectionEarnings(
+            address(perpetualMint),
+            COLLECTION
+        );
+        uint256 lastEarnings = _lastCollectionEarnings(
+            address(perpetualMint),
+            COLLECTION
+        );
+        uint256 baseMultiplier = (currentEarnings - lastEarnings) /
+            _totalRisk(address(perpetualMint), COLLECTION);
+
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
         assert(
-            _depositorDeductions(
-                address(perpetualMint),
-                minter,
-                PARALLEL_ALPHA
-            ) == COLLECTION_EARNINGS
+            baseMultiplier ==
+                _baseMultiplier(address(perpetualMint), COLLECTION)
+        );
+
+        assert(
+            currentEarnings ==
+                _lastCollectionEarnings(address(perpetualMint), COLLECTION)
         );
     }
 
@@ -153,33 +171,61 @@ contract PerpetualMint_resolveERC1155Mints is
     function test_resolveERC1155MintsWinUpdateDepositorEarningsForMinterWhenMinterHasRisk()
         public
     {
+        uint256 currentEarnings = _collectionEarnings(
+            address(perpetualMint),
+            COLLECTION
+        );
+        uint256 lastEarnings = _lastCollectionEarnings(
+            address(perpetualMint),
+            COLLECTION
+        );
+        uint256 baseMultiplier = (currentEarnings - lastEarnings) /
+            _totalRisk(address(perpetualMint), COLLECTION);
+
+        uint256 oldDepositorEarnings = _depositorEarnings(
+            address(perpetualMint),
+            depositorTwo,
+            COLLECTION
+        );
+        totalDepositorRisk = _totalDepositorRisk(
+            address(perpetualMint),
+            depositorTwo,
+            COLLECTION
+        );
+        uint256 multiplierOffset = _multiplierOffset(
+            address(perpetualMint),
+            depositorTwo,
+            COLLECTION
+        );
+
+        uint256 expectedEarnings = (baseMultiplier - multiplierOffset) *
+            totalDepositorRisk;
+
         vm.prank(depositorTwo);
         perpetualMint.exposed_resolveERC1155Mints(
             depositorTwo,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
-        uint256 newDepositorDeductions = _depositorDeductions(
-            address(perpetualMint),
-            oldOwner,
-            PARALLEL_ALPHA
-        );
-
-        uint256 expectedEarnings = (COLLECTION_EARNINGS * totalDepositorRisk) /
-            totalRisk -
-            oldDepositorDeductions;
-
         assert(
-            expectedEarnings ==
+            expectedEarnings + oldDepositorEarnings ==
                 _depositorEarnings(
                     address(perpetualMint),
-                    oldOwner,
-                    PARALLEL_ALPHA
+                    depositorTwo,
+                    COLLECTION
                 )
         );
 
-        assert(newDepositorDeductions == expectedEarnings);
+        assert(
+            baseMultiplier ==
+                _baseMultiplier(address(perpetualMint), COLLECTION)
+        );
+
+        assert(
+            currentEarnings ==
+                _lastCollectionEarnings(address(perpetualMint), COLLECTION)
+        );
     }
 
     /// @dev tests that depositorEarnings of depositor are updated correctly after a succesful mint
@@ -189,33 +235,61 @@ contract PerpetualMint_resolveERC1155Mints is
         assert(totalDepositorRisk != 0);
         assert(totalRisk != 0);
 
+        uint256 currentEarnings = _collectionEarnings(
+            address(perpetualMint),
+            COLLECTION
+        );
+        uint256 lastEarnings = _lastCollectionEarnings(
+            address(perpetualMint),
+            COLLECTION
+        );
+        uint256 baseMultiplier = (currentEarnings - lastEarnings) /
+            _totalRisk(address(perpetualMint), COLLECTION);
+
+        uint256 oldDepositorEarnings = _depositorEarnings(
+            address(perpetualMint),
+            depositorOne,
+            COLLECTION
+        );
+        totalDepositorRisk = _totalDepositorRisk(
+            address(perpetualMint),
+            depositorOne,
+            COLLECTION
+        );
+        uint256 multiplierOffset = _multiplierOffset(
+            address(perpetualMint),
+            depositorOne,
+            COLLECTION
+        );
+
+        uint256 expectedEarnings = (baseMultiplier - multiplierOffset) *
+            totalDepositorRisk;
+
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
-        uint256 newDepositorDeductions = _depositorDeductions(
-            address(perpetualMint),
-            oldOwner,
-            PARALLEL_ALPHA
-        );
-
-        uint256 expectedEarnings = (COLLECTION_EARNINGS * totalDepositorRisk) /
-            totalRisk -
-            oldDepositorDeductions;
-
         assert(
-            expectedEarnings ==
+            expectedEarnings + oldDepositorEarnings ==
                 _depositorEarnings(
                     address(perpetualMint),
-                    oldOwner,
-                    PARALLEL_ALPHA
+                    depositorOne,
+                    COLLECTION
                 )
         );
 
-        assert(newDepositorDeductions == expectedEarnings);
+        assert(
+            baseMultiplier ==
+                _baseMultiplier(address(perpetualMint), COLLECTION)
+        );
+
+        assert(
+            currentEarnings ==
+                _lastCollectionEarnings(address(perpetualMint), COLLECTION)
+        );
     }
 
     /// @dev test that activeTokens of depositor are decremented after successful mint
@@ -223,21 +297,21 @@ contract PerpetualMint_resolveERC1155Mints is
         uint256 oldActiveTokens = _activeERC1155Tokens(
             address(perpetualMint),
             depositorOne,
-            PARALLEL_ALPHA,
+            COLLECTION,
             expectedTokenId
         );
 
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
         uint256 newActiveTokens = _activeERC1155Tokens(
             address(perpetualMint),
             depositorOne,
-            PARALLEL_ALPHA,
+            COLLECTION,
             expectedTokenId
         );
 
@@ -249,21 +323,21 @@ contract PerpetualMint_resolveERC1155Mints is
         uint256 oldInactiveTokens = _inactiveERC1155Tokens(
             address(perpetualMint),
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             expectedTokenId
         );
 
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
         uint256 newInactiveTokens = _inactiveERC1155Tokens(
             address(perpetualMint),
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             expectedTokenId
         );
 
@@ -274,19 +348,19 @@ contract PerpetualMint_resolveERC1155Mints is
     function test_resolveERC1155MintsDecrementsTotalAciveTokens() public {
         uint256 oldActiveTokens = _totalActiveTokens(
             address(perpetualMint),
-            PARALLEL_ALPHA
+            COLLECTION
         );
 
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
         uint256 newActiveTokens = _totalActiveTokens(
             address(perpetualMint),
-            PARALLEL_ALPHA
+            COLLECTION
         );
 
         assert(oldActiveTokens - newActiveTokens == 1);
@@ -294,22 +368,16 @@ contract PerpetualMint_resolveERC1155Mints is
 
     /// @dev test that totalRisk is decremented after by tokenRisk after successful mint
     function test_resolveERC1155MintsDecreasesTotalRiskByTokenRisk() public {
-        uint256 oldTotalRisk = _totalRisk(
-            address(perpetualMint),
-            PARALLEL_ALPHA
-        );
+        uint256 oldTotalRisk = _totalRisk(address(perpetualMint), COLLECTION);
 
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
-        uint256 newTotalRisk = _totalRisk(
-            address(perpetualMint),
-            PARALLEL_ALPHA
-        );
+        uint256 newTotalRisk = _totalRisk(address(perpetualMint), COLLECTION);
 
         assert(oldTotalRisk - newTotalRisk == tokenRisk);
     }
@@ -320,20 +388,20 @@ contract PerpetualMint_resolveERC1155Mints is
     {
         uint256 oldTokenRisk = _tokenRisk(
             address(perpetualMint),
-            PARALLEL_ALPHA,
+            COLLECTION,
             expectedTokenId
         );
 
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
         uint256 newTokenRisk = _tokenRisk(
             address(perpetualMint),
-            PARALLEL_ALPHA,
+            COLLECTION,
             expectedTokenId
         );
 
@@ -347,20 +415,20 @@ contract PerpetualMint_resolveERC1155Mints is
         uint256 oldDepositorRisk = _totalDepositorRisk(
             address(perpetualMint),
             depositorOne,
-            PARALLEL_ALPHA
+            COLLECTION
         );
 
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
         uint256 newDepositorRisk = _totalDepositorRisk(
             address(perpetualMint),
             depositorOne,
-            PARALLEL_ALPHA
+            COLLECTION
         );
 
         assert(oldDepositorRisk - newDepositorRisk == tokenRisk);
@@ -376,11 +444,11 @@ contract PerpetualMint_resolveERC1155Mints is
                 expectedTokenId, // id of token
                 keccak256(
                     abi.encode(
-                        PARALLEL_ALPHA, // address of collection
+                        COLLECTION, // address of collection
                         keccak256(
                             abi.encode(
                                 depositorOne, // address of depositor
-                                uint256(Storage.STORAGE_SLOT) + 23 // activeERC1155Tokens mapping storage slot
+                                uint256(Storage.STORAGE_SLOT) + 25 // activeERC1155Tokens mapping storage slot
                             )
                         )
                     )
@@ -393,11 +461,11 @@ contract PerpetualMint_resolveERC1155Mints is
                 expectedTokenId, // id of token
                 keccak256(
                     abi.encode(
-                        PARALLEL_ALPHA, // address of collection
+                        COLLECTION, // address of collection
                         keccak256(
                             abi.encode(
                                 depositorTwo, // address of depositor
-                                uint256(Storage.STORAGE_SLOT) + 23 // activeERC1155Tokens mapping storage slot
+                                uint256(Storage.STORAGE_SLOT) + 25 // activeERC1155Tokens mapping storage slot
                             )
                         )
                     )
@@ -410,8 +478,8 @@ contract PerpetualMint_resolveERC1155Mints is
                 expectedTokenId, // id of token
                 keccak256(
                     abi.encode(
-                        PARALLEL_ALPHA, // address of collection
-                        uint256(Storage.STORAGE_SLOT) + 14 // tokenRisk mapping storage slot
+                        COLLECTION, // address of collection
+                        uint256(Storage.STORAGE_SLOT) + 16 // tokenRisk mapping storage slot
                     )
                 )
             )
@@ -429,13 +497,13 @@ contract PerpetualMint_resolveERC1155Mints is
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
         address[] memory owners = _activeERC1155Owners(
             address(perpetualMint),
-            PARALLEL_ALPHA,
+            COLLECTION,
             expectedTokenId
         );
 
@@ -454,11 +522,11 @@ contract PerpetualMint_resolveERC1155Mints is
                 expectedTokenId, // id of token
                 keccak256(
                     abi.encode(
-                        PARALLEL_ALPHA, // address of collection
+                        COLLECTION, // address of collection
                         keccak256(
                             abi.encode(
                                 depositorOne, // address of depositor
-                                uint256(Storage.STORAGE_SLOT) + 23 // activeERC1155Tokens mapping storage slot
+                                uint256(Storage.STORAGE_SLOT) + 25 // activeERC1155Tokens mapping storage slot
                             )
                         )
                     )
@@ -471,11 +539,11 @@ contract PerpetualMint_resolveERC1155Mints is
                 expectedTokenId, // id of token
                 keccak256(
                     abi.encode(
-                        PARALLEL_ALPHA, // address of collection
+                        COLLECTION, // address of collection
                         keccak256(
                             abi.encode(
                                 depositorTwo, // address of depositor
-                                uint256(Storage.STORAGE_SLOT) + 23 // activeERC1155Tokens mapping storage slot
+                                uint256(Storage.STORAGE_SLOT) + 25 // activeERC1155Tokens mapping storage slot
                             )
                         )
                     )
@@ -488,8 +556,8 @@ contract PerpetualMint_resolveERC1155Mints is
                 expectedTokenId, // id of token
                 keccak256(
                     abi.encode(
-                        PARALLEL_ALPHA, // address of collection
-                        uint256(Storage.STORAGE_SLOT) + 14 // tokenRisk mapping storage slot
+                        COLLECTION, // address of collection
+                        uint256(Storage.STORAGE_SLOT) + 16 // tokenRisk mapping storage slot
                     )
                 )
             )
@@ -507,14 +575,14 @@ contract PerpetualMint_resolveERC1155Mints is
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
         uint256 risk = _depositorTokenRisk(
             address(perpetualMint),
             depositorOne,
-            PARALLEL_ALPHA,
+            COLLECTION,
             expectedTokenId
         );
 
@@ -530,8 +598,8 @@ contract PerpetualMint_resolveERC1155Mints is
                 expectedTokenId, // id of token
                 keccak256(
                     abi.encode(
-                        PARALLEL_ALPHA, // address of collection
-                        uint256(Storage.STORAGE_SLOT) + 14 // tokenRisk mapping storage slot
+                        COLLECTION, // address of collection
+                        uint256(Storage.STORAGE_SLOT) + 16 // tokenRisk mapping storage slot
                     )
                 )
             )
@@ -547,13 +615,13 @@ contract PerpetualMint_resolveERC1155Mints is
         vm.prank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
         uint256[] memory tokenIds = _activeTokenIds(
             address(perpetualMint),
-            PARALLEL_ALPHA
+            COLLECTION
         );
 
         for (uint i; i < tokenIds.length; ++i) {
@@ -573,7 +641,7 @@ contract PerpetualMint_resolveERC1155Mints is
         vm.startPrank(minter);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
 
@@ -584,7 +652,7 @@ contract PerpetualMint_resolveERC1155Mints is
         vm.expectRevert(IPerpetualMintInternal.UnmatchedRandomWords.selector);
         perpetualMint.exposed_resolveERC1155Mints(
             minter,
-            PARALLEL_ALPHA,
+            COLLECTION,
             randomWords
         );
     }

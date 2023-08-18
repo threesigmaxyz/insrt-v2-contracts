@@ -172,12 +172,17 @@ abstract contract PerpetualMintInternal is
     ) internal view returns (uint256 earnings) {
         Storage.Layout storage l = Storage.layout();
 
-        earnings =
-            l.depositorEarnings[depositor][collection] +
-            ((l.collectionEarnings[collection] *
-                l.totalDepositorRisk[depositor][collection]) /
-                l.totalRisk[collection]) -
-            l.depositorDeductions[depositor][collection];
+        earnings = l.depositorEarnings[depositor][collection];
+
+        if (l.totalDepositorRisk[depositor][collection] != 0) {
+            uint256 virtualBaseMultiplier = (l.collectionEarnings[collection] -
+                l.lastCollectionEarnings[collection]) / l.totalRisk[collection];
+
+            earnings +=
+                l.totalDepositorRisk[depositor][collection] *
+                (virtualBaseMultiplier -
+                    l.multiplierOffset[depositor][collection]);
+        }
     }
 
     /// @notice calculations the weighted collection-wide risk of a collection
@@ -213,10 +218,10 @@ abstract contract PerpetualMintInternal is
         Storage.Layout storage l = Storage.layout();
 
         _updateDepositorEarnings(l, depositor, collection);
-        uint256 earnings = l.depositorEarnings[depositor][collection];
 
-        //TODO: should set to depositorDeductions and not to 0
+        uint256 earnings = l.depositorEarnings[depositor][collection];
         l.depositorEarnings[depositor][collection] = 0;
+
         payable(depositor).sendValue(earnings);
     }
 
@@ -827,6 +832,25 @@ abstract contract PerpetualMintInternal is
         emit VRFConfigSet(config);
     }
 
+    /// @notice updates the baseMultiplier for a given collection
+    /// @param l the PerpetualMint storage layout
+    /// @param collection address of token collection
+    /// @param totalRisk total risk of collection
+    function _updateBaseMultiplier(
+        Storage.Layout storage l,
+        address collection,
+        uint256 totalRisk
+    ) internal {
+        // update global earnings by dividing the collection earnings increment from last risk update
+        // until current risk update by total collection risk
+        l.baseMultiplier[collection] +=
+            (l.collectionEarnings[collection] -
+                l.lastCollectionEarnings[collection]) /
+            totalRisk;
+
+        l.lastCollectionEarnings[collection] = l.collectionEarnings[collection];
+    }
+
     /// @notice updates the earnings of a depositor based on current conditions
     /// @param l the PerpetualMint storage layout
     /// @param collection address of collection earnings relate to
@@ -836,21 +860,32 @@ abstract contract PerpetualMintInternal is
         address depositor,
         address collection
     ) internal {
-        uint256 totalDepositorRisk = l.totalDepositorRisk[depositor][
-            collection
-        ];
+        uint256 totalRisk = l.totalRisk[collection];
 
-        if (totalDepositorRisk != 0) {
-            l.depositorEarnings[depositor][collection] +=
-                ((l.collectionEarnings[collection] * totalDepositorRisk) /
-                    l.totalRisk[collection]) -
-                l.depositorDeductions[depositor][collection];
+        // if totalRisk of collection is non-zero, it means collection has been active and
+        // so baseMultiplier must be updated upon risk change
+        if (totalRisk != 0) {
+            // update global earnings by dividing the collection earnings increment from last risk update
+            // until current risk update by total collection risk
+            _updateBaseMultiplier(l, collection, totalRisk);
 
-            l.depositorDeductions[depositor][collection] = l.depositorEarnings[
-                depositor
-            ][collection];
-        } else {
-            l.depositorDeductions[depositor][collection] = l.collectionEarnings[
+            uint256 totalDepositorRisk = l.totalDepositorRisk[depositor][
+                collection
+            ];
+
+            // if totalDepositorRisk is non-zero, depositor must have their earnings updated
+            if (totalDepositorRisk != 0) {
+                // increase depositorEarnings by difference in baseMultiplier and multiplierOffset
+                // of depositor multiplied by totalDepositorRisk of collection
+                l.depositorEarnings[depositor][collection] +=
+                    totalDepositorRisk *
+                    (l.baseMultiplier[collection] -
+                        l.multiplierOffset[depositor][collection]);
+            }
+
+            // update multiplierOffset of depositor for collection by setting it to
+            // globalEarningsMultipler of collection
+            l.multiplierOffset[depositor][collection] = l.baseMultiplier[
                 collection
             ];
         }
