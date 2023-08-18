@@ -21,6 +21,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
             AssetType.ERC1155,
             msg.sender,
             BONG_BEARS,
+            msg.sender,
             testRisks,
             bongBearTokenIds,
             bongBearTokenAmounts
@@ -119,6 +120,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
             AssetType.ERC1155,
             msg.sender,
             BONG_BEARS,
+            msg.sender,
             testRisks,
             bongBearTokenIds,
             bongBearTokenAmounts
@@ -128,6 +130,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
         emit ERC1155AssetsDeposited(
             msg.sender,
             BONG_BEARS,
+            msg.sender,
             testRisks,
             bongBearTokenIds,
             bongBearTokenAmounts
@@ -147,6 +150,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
             AssetType.ERC721,
             msg.sender,
             BORED_APE_YACHT_CLUB,
+            msg.sender,
             testRisks,
             boredApeYachtClubTokenIds
         );
@@ -249,6 +253,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
             AssetType.ERC721,
             msg.sender,
             BORED_APE_YACHT_CLUB,
+            msg.sender,
             testRisks,
             boredApeYachtClubTokenIds
         );
@@ -257,6 +262,7 @@ contract L2AssetHandler_handleLayerZeroMessage is
         emit ERC721AssetsDeposited(
             msg.sender,
             BORED_APE_YACHT_CLUB,
+            msg.sender,
             testRisks,
             boredApeYachtClubTokenIds
         );

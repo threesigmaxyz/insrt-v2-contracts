@@ -22,6 +22,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
 
     /// @inheritdoc IL1AssetHandler
     function depositERC1155Assets(
+        address beneficiary,
         address collection,
         uint16 layerZeroDestinationChainId,
         uint256[] calldata risks,
@@ -44,6 +45,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
         );
 
         _depositERC1155Assets(
+            beneficiary,
             collection,
             layerZeroDestinationChainId,
             risks,
@@ -52,8 +54,9 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
         );
 
         emit ERC1155AssetsDeposited(
-            msg.sender,
+            beneficiary,
             collection,
+            msg.sender,
             risks,
             tokenIds,
             amounts
@@ -62,6 +65,7 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
 
     /// @inheritdoc IL1AssetHandler
     function depositERC721Assets(
+        address beneficiary,
         address collection,
         uint16 layerZeroDestinationChainId,
         uint256[] calldata risks,
@@ -79,13 +83,20 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
         }
 
         _depositERC721Assets(
+            beneficiary,
             collection,
             layerZeroDestinationChainId,
             risks,
             tokenIds
         );
 
-        emit ERC721AssetsDeposited(msg.sender, collection, risks, tokenIds);
+        emit ERC721AssetsDeposited(
+            beneficiary,
+            collection,
+            msg.sender,
+            risks,
+            tokenIds
+        );
     }
 
     /// @inheritdoc IL1AssetHandler
@@ -201,12 +212,14 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
     }
 
     /// @notice Deposits ERC1155 assets cross-chain using LayerZero.
+    /// @param beneficary Address that will receive credit for the deposited assets on the destination chain.
     /// @param collection Address of the ERC1155 collection.
     /// @param layerZeroDestinationChainId The LayerZero destination chain ID.
     /// @param risks The risk settings for the assets being deposited.
     /// @param tokenIds IDs of the tokens to be deposited.
     /// @param amounts The amounts of the tokens to be deposited.
     function _depositERC1155Assets(
+        address beneficary,
         address collection,
         uint16 layerZeroDestinationChainId,
         uint256[] calldata risks,
@@ -216,8 +229,9 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
         _lzSend(
             layerZeroDestinationChainId,
             PayloadEncoder.encodeDepositERC1155AssetsPayload(
-                msg.sender,
+                beneficary,
                 collection,
+                msg.sender,
                 risks,
                 tokenIds,
                 amounts
@@ -230,11 +244,13 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
     }
 
     /// @notice Deposits ERC721 assets cross-chain using LayerZero.
+    /// @param beneficiary Address that will receive credit for the deposited assets on the destination chain.
     /// @param collection Address of the ERC721 collection.
     /// @param layerZeroDestinationChainId The LayerZero destination chain ID.
     /// @param risks The risk settings for the assets being deposited.
     /// @param tokenIds IDs of the tokens to be deposited.
     function _depositERC721Assets(
+        address beneficiary,
         address collection,
         uint16 layerZeroDestinationChainId,
         uint256[] calldata risks,
@@ -243,8 +259,9 @@ contract L1AssetHandler is IL1AssetHandler, SolidStateLayerZeroClient {
         _lzSend(
             layerZeroDestinationChainId,
             PayloadEncoder.encodeDepositERC721AssetsPayload(
-                msg.sender,
+                beneficiary,
                 collection,
+                msg.sender,
                 risks,
                 tokenIds
             ),
