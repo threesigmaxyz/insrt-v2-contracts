@@ -8,12 +8,12 @@ import { IERC1155 } from "@solidstate/contracts/interfaces/IERC1155.sol";
 import { IERC721 } from "@solidstate/contracts/interfaces/IERC721.sol";
 import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidStateDiamond.sol";
 
+import { PerpetualMintHelper } from "./PerpetualMintHelper.t.sol";
+import { IPerpetualMintTest } from "./IPerpetualMintTest.sol";
+import { StorageRead } from "../common/StorageRead.t.sol";
+import { L2CoreTest } from "../../../diamonds/L2/Core.t.sol";
 import { AssetType } from "../../../../contracts/enums/AssetType.sol";
 import { PerpetualMintStorage as Storage } from "../../../../contracts/facets/L2/PerpetualMint/Storage.sol";
-import { L2CoreTest } from "../../../diamonds/L2/Core.t.sol";
-import { StorageRead } from "../common/StorageRead.t.sol";
-import { IPerpetualMintTest } from "./IPerpetualMintTest.sol";
-import { PerpetualMintHelper } from "./PerpetualMintHelper.t.sol";
 
 /// @title PerpetualMintTest
 /// @dev PerpetualMintTest helper contract. Configures PerpetualMint and L2AssetHandlerMock as facets of L2Core test.
@@ -221,7 +221,7 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
         depositorOneParallelAlphaAmounts.push(parallelAlphaTokenAmount);
 
         // set up encoded deposit array data for depositorTwo
-        // // depositorOne deposits one tokenId, with the same amount and same risk as depositorOne
+        // depositorOne deposits one tokenId, with the same amount and same risk as depositorOne
         depositorTwoParallelAlphaRisks.push(riskThree);
         depositorTwoParallelAlphaTokenIds.push(PARALLEL_ALPHA_TOKEN_ID_ONE);
         depositorTwoParallelAlphaAmounts.push(parallelAlphaTokenAmount);
@@ -265,7 +265,7 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
     /// @dev assumes 0 mint fees for simplicity
     /// @param collection address of collection
     /// @param mintAmount amount of unsuccessful mint attemps
-    function mockUnsuccessfulCollectionMints(
+    function mock_unsuccessfulMintAttempts(
         address collection,
         uint256 mintAmount
     ) internal {
@@ -288,6 +288,57 @@ abstract contract PerpetualMintTest is L2CoreTest, StorageRead {
             address(perpetualMint),
             collectionEarningsStorageSlot,
             bytes32(newEarnings)
+        );
+    }
+
+    /// @notice mocks a deposit by a depositor for a given collection
+    /// @param beneficiary Address of the beneficiary.
+    /// @param collection Address of the collection.
+    /// @param depositor Address of the depositor.
+    /// @param risks The risk settings for the assets being deposited.
+    /// @param tokenIds Array of token ids.
+    /// @param amounts Array of amounts, corresponding to the token ids.
+    function mock_deposit(
+        address beneficiary,
+        address collection,
+        address depositor,
+        uint256[] memory tokenIds,
+        uint256[] memory risks,
+        uint256[] memory amounts
+    ) internal {
+        bytes memory depositData;
+
+        if (
+            _collectionType(address(perpetualMint), collection) ==
+            AssetType.ERC721
+        ) {
+            depositData = abi.encode(
+                AssetType.ERC721,
+                beneficiary,
+                collection,
+                depositor,
+                risks,
+                tokenIds
+            );
+        } else {
+            depositData = abi.encode(
+                AssetType.ERC1155,
+                beneficiary,
+                collection,
+                depositor,
+                risks,
+                tokenIds,
+                amounts
+            );
+        }
+
+        /// note: prior to adding an `_updateDepositorEarnings` call in deposits,
+        /// `_updateDepositorEarnings` will be called manually in scenario testing
+        perpetualMint.mock_HandleLayerZeroMessage(
+            DESTINATION_LAYER_ZERO_CHAIN_ID, // would be the expected source chain ID in production, here this is a dummy value
+            TEST_PATH, // would be the expected path in production, here this is a dummy value
+            TEST_NONCE, // dummy nonce value
+            depositData
         );
     }
 }
