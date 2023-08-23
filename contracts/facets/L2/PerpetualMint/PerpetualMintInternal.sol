@@ -374,6 +374,7 @@ abstract contract PerpetualMintInternal is
 
             uint256 riskChange = amount *
                 l.depositorTokenRisk[depositor][collection][tokenId];
+            l.tokenRisk[collection][tokenId] -= riskChange;
             l.totalRisk[collection] -= riskChange;
             l.totalActiveTokens[collection] -= amount;
             l.totalDepositorRisk[depositor][collection] -= riskChange;
@@ -383,6 +384,10 @@ abstract contract PerpetualMintInternal is
             if (amount == activeTokens) {
                 l.depositorTokenRisk[depositor][collection][tokenId] = 0;
                 l.activeERC1155Owners[collection][tokenId].remove(depositor);
+            }
+
+            if (l.tokenRisk[collection][tokenId] == 0) {
+                l.activeTokenIds[collection].remove(tokenId);
             }
         }
     }
@@ -474,9 +479,6 @@ abstract contract PerpetualMintInternal is
                 risks[i]
             );
         }
-
-        // add the collection to the set of active collections
-        l.activeCollections.add(collection);
 
         emit ERC1155AssetsReactivated(
             depositor,
@@ -1003,12 +1005,14 @@ abstract contract PerpetualMintInternal is
                 l.activeERC1155Tokens[depositor][collection][tokenId];
             l.totalDepositorRisk[depositor][collection] += riskChange;
             l.tokenRisk[collection][tokenId] += riskChange;
+            l.totalRisk[collection] += riskChange;
         } else {
             riskChange =
                 (oldRisk - risk) *
                 l.activeERC1155Tokens[depositor][collection][tokenId];
             l.totalDepositorRisk[depositor][collection] -= riskChange;
             l.tokenRisk[collection][tokenId] -= riskChange;
+            l.totalRisk[collection] -= riskChange;
         }
 
         l.depositorTokenRisk[depositor][collection][tokenId] = risk;
