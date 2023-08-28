@@ -130,6 +130,11 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function setMaxActiveTokensLimit(uint256 limit) external onlyOwner {
+        _setMaxActiveTokensLimit(limit);
+    }
+
+    /// @inheritdoc IPerpetualMint
     function setMintFeeBP(uint32 mintFeeBP) external onlyOwner {
         _setMintFeeBP(mintFeeBP);
     }

@@ -6,6 +6,7 @@ import { EnumerableSet } from "@solidstate/contracts/data/EnumerableSet.sol";
 import { SolidStateLayerZeroClient } from "@solidstate/layerzero-client/SolidStateLayerZeroClient.sol";
 
 import { IL2AssetHandler } from "./IAssetHandler.sol";
+import { GuardsInternal } from "../common/GuardsInternal.sol";
 import { PerpetualMintStorage } from "../PerpetualMint/Storage.sol";
 import { AssetType } from "../../../enums/AssetType.sol";
 import { IAssetHandler } from "../../../interfaces/IAssetHandler.sol";
@@ -13,7 +14,11 @@ import { PayloadEncoder } from "../../../libraries/PayloadEncoder.sol";
 
 /// @title L2AssetHandler
 /// @dev Handles NFT assets on L2 and allows them to be deposited & withdrawn cross-chain via LayerZero.
-contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
+contract L2AssetHandler is
+    IL2AssetHandler,
+    GuardsInternal,
+    SolidStateLayerZeroClient
+{
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
 
@@ -384,6 +389,14 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
                     tokenIds[i]
                 );
 
+                // enforce the maxActiveTokens limit on the collection
+                _enforceMaxActiveTokensLimit(
+                    perpetualMintStorageLayout,
+                    perpetualMintStorageLayout
+                        .activeTokenIds[collection]
+                        .length()
+                );
+
                 // Set the risk for the beneficiary and the token ID in the collection
                 // Currently for ERC1155 tokens, the risk is always the same for all token IDs in the collection
                 perpetualMintStorageLayout.depositorTokenRisk[beneficiary][
@@ -446,6 +459,14 @@ contract L2AssetHandler is IL2AssetHandler, SolidStateLayerZeroClient {
                 // Add the token ID to the set of active token IDs in the collection
                 perpetualMintStorageLayout.activeTokenIds[collection].add(
                     tokenIds[i]
+                );
+
+                // enforce the maxActiveTokens limit on the collection
+                _enforceMaxActiveTokensLimit(
+                    perpetualMintStorageLayout,
+                    perpetualMintStorageLayout
+                        .activeTokenIds[collection]
+                        .length()
                 );
 
                 // Increment the count of active tokens for the beneficiary in the collection

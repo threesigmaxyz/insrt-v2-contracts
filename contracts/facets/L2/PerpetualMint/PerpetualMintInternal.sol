@@ -10,6 +10,7 @@ import { AddressUtils } from "@solidstate/contracts/utils/AddressUtils.sol";
 
 import { IPerpetualMintInternal } from "./IPerpetualMintInternal.sol";
 import { PerpetualMintStorage as Storage } from "./Storage.sol";
+import { GuardsInternal } from "../common/GuardsInternal.sol";
 import { AssetType } from "../../../enums/AssetType.sol";
 
 /// @title PerpetualMintInternal facet contract
@@ -17,6 +18,7 @@ import { AssetType } from "../../../enums/AssetType.sol";
 abstract contract PerpetualMintInternal is
     VRFConsumerBaseV2,
     ERC721BaseInternal,
+    GuardsInternal,
     IPerpetualMintInternal
 {
     using AddressUtils for address payable;
@@ -570,6 +572,9 @@ abstract contract PerpetualMintInternal is
         // add the token ID to the set of active token IDs in the collection
         l.activeTokenIds[collection].add(tokenId);
 
+        // enforce the maxActiveTokens limit on the collection
+        _enforceMaxActiveTokensLimit(l, l.activeTokenIds[collection].length());
+
         // set the new risk for the depositor and the token ID in the collection
         // currently for ERC1155 tokens, the risk is always the same for all token IDs in the collection
         l.depositorTokenRisk[depositor][collection][tokenId] = risk;
@@ -633,6 +638,12 @@ abstract contract PerpetualMintInternal is
 
             // add the token to the active token list
             l.activeTokenIds[collection].add(tokenIds[i]);
+
+            // enforce the maxActiveTokens limit on the collection
+            _enforceMaxActiveTokensLimit(
+                l,
+                l.activeTokenIds[collection].length()
+            );
 
             // update the depositor's total risk for the collection
             l.totalDepositorRisk[depositor][collection] += risks[i];
@@ -831,6 +842,13 @@ abstract contract PerpetualMintInternal is
         Storage.layout().collectionMintPrice[collection] = price;
 
         emit MintPriceSet(collection, price);
+    }
+
+    /// @dev sets a new value for maxActiveTokens
+    /// @param limit new maxActiveTokens value
+    function _setMaxActiveTokensLimit(uint256 limit) internal {
+        Storage.layout().maxActiveTokensLimit = limit;
+        emit MaxActiveTokensLimitSet(limit);
     }
 
     /// @notice sets the mint fee in basis points
