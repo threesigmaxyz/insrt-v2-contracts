@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 
 import { PerpetualMintTest } from "../PerpetualMint.t.sol";
 import { L2ForkTest } from "../../../../L2ForkTest.t.sol";
+import { IGuardsInternal } from "../../../../../contracts/facets/L2/common/IGuardsInternal.sol";
 import { IPerpetualMintInternal } from "../../../../../contracts/facets/L2/PerpetualMint/IPerpetualMintInternal.sol";
 import { PerpetualMintStorage as Storage } from "../../../../../contracts/facets/L2/PerpetualMint/Storage.sol";
 
@@ -534,6 +535,60 @@ contract PerpetualMint_updateERC1155TokenRisks is
             PARALLEL_ALPHA_ID
         );
         vm.expectRevert(IPerpetualMintInternal.IdenticalRisk.selector);
+        vm.prank(depositorOne);
+        perpetualMint.updateERC1155TokenRisks(COLLECTION, tokenIds, risks);
+    }
+
+    /// @dev tests that if there are pending mint requests updating ERC1155 token risks reverts
+    function test_updateeERC1155TokenRisksRevertsWhen_ThereIsAtLeastOnePendingRequest()
+        public
+    {
+        uint256 mockMintRequestId = 5;
+
+        // calculate pendingRequests enumerable set slot
+        bytes32 pendingRequestsSlot = keccak256(
+            abi.encode(
+                COLLECTION, // address of collection
+                uint256(Storage.STORAGE_SLOT) + 28 // requestIds mapping storage slot
+            )
+        );
+
+        // store EnumerableSet.UintSet._inner._values length
+        vm.store(
+            address(perpetualMint),
+            pendingRequestsSlot,
+            bytes32(uint256(1))
+        );
+
+        // calculate the PerpetualMint pending request id slot
+        bytes32 pendingRequestIdValueSlot = keccak256(
+            abi.encodePacked(pendingRequestsSlot)
+        );
+
+        // store the mockMintRequestId in the pendingRequests enumerable set
+        vm.store(
+            address(perpetualMint),
+            pendingRequestIdValueSlot,
+            bytes32(mockMintRequestId)
+        );
+
+        // calcaulte the PerpetualMint pending request id index slot
+        bytes32 pendingRequestIdIndexSlot = keccak256(
+            abi.encode(
+                bytes32(mockMintRequestId),
+                uint256(pendingRequestsSlot) + 1
+            )
+        );
+
+        // store 1 as the index of mockMintRequestId
+        vm.store(
+            address(perpetualMint),
+            pendingRequestIdIndexSlot,
+            bytes32(uint256(1))
+        );
+
+        vm.expectRevert(IGuardsInternal.PendingRequests.selector);
+
         vm.prank(depositorOne);
         perpetualMint.updateERC1155TokenRisks(COLLECTION, tokenIds, risks);
     }

@@ -342,6 +342,8 @@ abstract contract PerpetualMintInternal is
         } else {
             _resolveERC1155Mints(l, minter, collection, randomWords);
         }
+
+        l.pendingRequests[collection].remove(requestId);
     }
 
     /// @notice sets the token risk of a set of ERC1155 tokens to zero thereby making them idle - still escrowed
@@ -361,6 +363,8 @@ abstract contract PerpetualMintInternal is
         if (l.collectionType[collection] != AssetType.ERC1155) {
             revert CollectionTypeMismatch();
         }
+
+        _enforceNoPendingMints(l, collection);
 
         _updateDepositorEarnings(l, depositor, collection);
 
@@ -409,6 +413,8 @@ abstract contract PerpetualMintInternal is
         if (l.collectionType[collection] != AssetType.ERC721) {
             revert CollectionTypeMismatch();
         }
+
+        _enforceNoPendingMints(l, collection);
 
         _updateDepositorEarnings(l, depositor, collection);
 
@@ -682,6 +688,7 @@ abstract contract PerpetualMintInternal is
 
         l.requestMinter[requestId] = minter;
         l.requestCollection[requestId] = collection;
+        l.pendingRequests[collection].add(requestId);
     }
 
     /// @notice resolves the outcome of attempted mints for an ERC1155 collection
@@ -937,6 +944,8 @@ abstract contract PerpetualMintInternal is
     ) internal {
         Storage.Layout storage l = Storage.layout();
 
+        _enforceNoPendingMints(l, collection);
+
         if (tokenIds.length != risks.length) {
             revert ArrayLengthMismatch();
         }
@@ -970,6 +979,8 @@ abstract contract PerpetualMintInternal is
         uint256[] calldata risks
     ) internal {
         Storage.Layout storage l = Storage.layout();
+
+        _enforceNoPendingMints(l, collection);
 
         if (tokenIds.length != risks.length) {
             revert ArrayLengthMismatch();

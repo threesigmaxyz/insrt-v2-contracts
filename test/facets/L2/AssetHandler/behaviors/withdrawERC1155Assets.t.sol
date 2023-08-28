@@ -12,6 +12,7 @@ import { L2ForkTest } from "../../../../L2ForkTest.t.sol";
 import { L2AssetHandlerMock } from "../../../../mocks/L2AssetHandlerMock.t.sol";
 import { AssetType } from "../../../../../contracts/enums/AssetType.sol";
 import { IL2AssetHandler } from "../../../../../contracts/facets/L2/AssetHandler/IAssetHandler.sol";
+import { IGuardsInternal } from "../../../../../contracts/facets/L2/common/IGuardsInternal.sol";
 import { PerpetualMintStorage } from "../../../../../contracts/facets/L2/PerpetualMint/Storage.sol";
 import { IAssetHandler } from "../../../../../contracts/interfaces/IAssetHandler.sol";
 
@@ -481,6 +482,57 @@ contract L2AssetHandler_withdrawERC1155Assets is
 
         this.withdrawERC1155Assets{ value: LAYER_ZERO_MESSAGE_FEE }(
             msg.sender,
+            BONG_BEARS,
+            DESTINATION_LAYER_ZERO_CHAIN_ID,
+            bongBearTokenIds,
+            bongBearTokenAmounts
+        );
+    }
+
+    /// @dev tests that if there are pending mint requests withdrawing ERC721 assets reverts
+    function test_withdrawERC721AssetsRevertsWhen_ThereIsAtLeastOnePendingRequest()
+        public
+    {
+        uint256 mockMintRequestId = 5;
+
+        // calculate pendingRequests enumerable set slot
+        bytes32 pendingRequestsSlot = keccak256(
+            abi.encode(
+                BONG_BEARS, // address of collection
+                uint256(PerpetualMintStorage.STORAGE_SLOT) + 28 // requestIds mapping storage slot
+            )
+        );
+
+        // store EnumerableSet.UintSet._inner._values length
+        vm.store(address(this), pendingRequestsSlot, bytes32(uint256(1)));
+
+        // calculate the PerpetualMint pending request id slot
+        bytes32 pendingRequestIdValueSlot = keccak256(
+            abi.encodePacked(pendingRequestsSlot)
+        );
+
+        // store the mockMintRequestId in the pendingRequests enumerable set
+        vm.store(
+            address(this),
+            pendingRequestIdValueSlot,
+            bytes32(mockMintRequestId)
+        );
+
+        // calcaulte the PerpetualMint pending request id index slot
+        bytes32 pendingRequestIdIndexSlot = keccak256(
+            abi.encode(
+                bytes32(mockMintRequestId),
+                uint256(pendingRequestsSlot) + 1
+            )
+        );
+
+        // store 1 as the index of mockMintRequestId
+        vm.store(address(this), pendingRequestIdIndexSlot, bytes32(uint256(1)));
+
+        vm.expectRevert(IGuardsInternal.PendingRequests.selector);
+
+        this.withdrawERC1155Assets{ value: LAYER_ZERO_MESSAGE_FEE }(
+            address(this),
             BONG_BEARS,
             DESTINATION_LAYER_ZERO_CHAIN_ID,
             bongBearTokenIds,
