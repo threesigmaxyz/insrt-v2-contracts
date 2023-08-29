@@ -20,13 +20,21 @@ interface IPerpetualMint is IPausable {
     /// @return accruedFees the current amount of accrued protocol fees
     function accruedProtocolFees() external view returns (uint256 accruedFees);
 
-    /// @notice attempts a batch mint for the msg.sender for a single collection
+    /// @notice Attempts a batch mint for the msg.sender for a single collection using ETH as payment.
     /// @param collection address of collection for mint attempts
     /// @param numberOfMints number of mints to attempt
-    function attemptBatchMint(
+    function attemptBatchMintWithEth(
         address collection,
         uint32 numberOfMints
     ) external payable;
+
+    /// @notice Attempts a batch mint for the msg.sender for a single collection using $MINT tokens as payment.
+    /// @param collection address of collection for mint attempts
+    /// @param numberOfMints number of mints to attempt
+    function attemptBatchMintWithMint(
+        address collection,
+        uint32 numberOfMints
+    ) external;
 
     /// @notice claims all accrued mint earnings across collections
     function claimMintEarnings() external;

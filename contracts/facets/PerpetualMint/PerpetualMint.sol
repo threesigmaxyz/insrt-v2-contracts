@@ -34,11 +34,19 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
-    function attemptBatchMint(
+    function attemptBatchMintWithEth(
         address collection,
         uint32 numberOfMints
     ) external payable whenNotPaused {
-        _attemptBatchMint(msg.sender, collection, numberOfMints);
+        _attemptBatchMintWithEth(msg.sender, collection, numberOfMints);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function attemptBatchMintWithMint(
+        address collection,
+        uint32 numberOfMints
+    ) external whenNotPaused {
+        _attemptBatchMintWithEth(msg.sender, collection, numberOfMints);
     }
 
     /// @inheritdoc IPerpetualMint

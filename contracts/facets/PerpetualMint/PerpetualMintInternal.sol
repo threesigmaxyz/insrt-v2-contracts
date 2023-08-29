@@ -58,11 +58,11 @@ abstract contract PerpetualMintInternal is
         accruedFees = Storage.layout().protocolFees;
     }
 
-    /// @notice attempts a batch mint for the minter for a single collection
+    /// @notice Attempts a batch mint for the msg.sender for a single collection using ETH as payment.
     /// @param minter address of minter
     /// @param collection address of collection for mint attempts
     /// @param numberOfMints number of mints to attempt
-    function _attemptBatchMint(
+    function _attemptBatchMintWithEth(
         address minter,
         address collection,
         uint32 numberOfMints
@@ -91,6 +91,49 @@ abstract contract PerpetualMintInternal is
 
         l.protocolFees += mintFee;
         l.mintEarnings += msgValue - mintFee;
+
+        // if the number of words requested is greater than the max allowed by the VRF coordinator,
+        // the request for random words will fail (max random words is currently 500 per request).
+        uint32 numWords = numberOfMints; // 1 word per mint, current max of 500 mints per tx
+
+        _requestRandomWords(l, collectionData, minter, collection, numWords);
+    }
+
+    /// @notice Attempts a batch mint for the msg.sender for a single collection using $MINT tokens as payment.
+    /// @param minter address of minter
+    /// @param collection address of collection for mint attempts
+    /// @param numberOfMints number of mints to attempt
+    function _attemptBatchMintWithMint(
+        address minter,
+        address collection,
+        uint32 numberOfMints
+    ) internal {
+        Storage.Layout storage l = Storage.layout();
+
+        if (numberOfMints == 0) {
+            revert InvalidNumberOfMints();
+        }
+
+        CollectionData storage collectionData = l.collections[collection];
+
+        uint256 collectionMintPrice = collectionData.mintPrice;
+
+        collectionMintPrice = collectionMintPrice == 0
+            ? DEFAULT_COLLECTION_MINT_PRICE
+            : collectionMintPrice;
+
+        uint256 ethToMintRatio = l.ethToMintRatio;
+
+        ethToMintRatio = ethToMintRatio == 0
+            ? DEFAULT_ETH_TO_MINT_RATIO
+            : ethToMintRatio;
+
+        uint256 requiredMintAmount = collectionMintPrice *
+            ethToMintRatio *
+            numberOfMints;
+
+        // TODO: integrate $MINT token
+        // MintToken.burn(requiredMintAmount);
 
         // if the number of words requested is greater than the max allowed by the VRF coordinator,
         // the request for random words will fail (max random words is currently 500 per request).
