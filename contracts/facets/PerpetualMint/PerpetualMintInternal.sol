@@ -19,14 +19,17 @@ abstract contract PerpetualMintInternal is
     using AddressUtils for address payable;
     using EnumerableSet for EnumerableSet.UintSet;
 
+    /// @dev denominator used in percentage calculations
+    uint32 internal constant BASIS = 1000000000;
+
     /// @dev default mint price for a collection
     uint64 internal constant DEFAULT_COLLECTION_MINT_PRICE = 0.01 ether;
 
     /// @dev default risk for a collection
     uint32 internal constant DEFAULT_COLLECTION_RISK = 1000000; // 0.1%
 
-    /// @dev denominator used in percentage calculations
-    uint32 internal constant BASIS = 1000000000;
+    // Starting default conversion ratio: 1 ETH = 1,000,000 $MINT
+    uint32 internal constant DEFAULT_ETH_TO_MINT_RATIO = 1000000;
 
     /// @dev address of Chainlink VRFCoordinatorV2 contract
     address private immutable VRF;
@@ -273,6 +276,10 @@ abstract contract PerpetualMintInternal is
         collectionData.risk = risk;
 
         emit CollectionRiskSet(collection, risk);
+    }
+
+    function _setEthToMintRatio(uint256 ratio) internal {
+        Storage.layout().ethToMintRatio = ratio;
     }
 
     /// @notice sets the mint fee in basis points

@@ -54,6 +54,10 @@ interface IPerpetualMint is IPausable {
     /// @param risk new risk value for collection
     function setCollectionRisk(address collection, uint32 risk) external;
 
+    /// @notice sets the ratio of ETH (native token) to $MINT for mint attempts using $MINT as payment
+    /// @param ratio ratio of ETH to $MINT
+    function setEthToMintRatio(uint256 ratio) external;
+
     /// @notice sets the mint fee in basis points
     /// @param mintFeeBP mint fee in basis points
     function setMintFeeBP(uint32 mintFeeBP) external;

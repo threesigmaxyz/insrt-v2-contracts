@@ -19,6 +19,8 @@ library PerpetualMintStorage {
         uint256 mintEarnings;
         /// @dev amount of protocol fees accrued in ETH (native token) from mint attempts
         uint256 protocolFees;
+        /// @dev ratio of ETH (native token) to $MINT for mint attempts using $MINT as payment
+        uint256 ethToMintRatio;
         /// @dev mapping of collection addresses to collection-specific data
         mapping(address collection => CollectionData) collections;
         /// @dev mapping of mint attempt VRF requests which have not yet been fulfilled

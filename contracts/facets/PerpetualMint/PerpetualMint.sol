@@ -84,6 +84,11 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function setEthToMintRatio(uint256 ratio) external onlyOwner {
+        _setEthToMintRatio(ratio);
+    }
+
+    /// @inheritdoc IPerpetualMint
     function setMintFeeBP(uint32 mintFeeBP) external onlyOwner {
         _setMintFeeBP(mintFeeBP);
     }
