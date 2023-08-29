@@ -5,6 +5,7 @@ pragma solidity ^0.8.21;
 import { VRFCoordinatorV2Interface } from "@chainlink/interfaces/VRFCoordinatorV2Interface.sol";
 import { VRFConsumerBaseV2 } from "@chainlink/vrf/VRFConsumerBaseV2.sol";
 import { EnumerableSet } from "@solidstate/contracts/data/EnumerableSet.sol";
+import { ERC1155BaseInternal } from "@solidstate/contracts/token/ERC1155/base/ERC1155BaseInternal.sol";
 import { AddressUtils } from "@solidstate/contracts/utils/AddressUtils.sol";
 
 import { IPerpetualMintInternal } from "./IPerpetualMintInternal.sol";
@@ -13,6 +14,7 @@ import { CollectionData, PerpetualMintStorage as Storage, RequestData, VRFConfig
 /// @title PerpetualMintInternal facet contract
 /// @dev defines modularly all logic for the PerpetualMint mechanism in internal functions
 abstract contract PerpetualMintInternal is
+    ERC1155BaseInternal,
     IPerpetualMintInternal,
     VRFConsumerBaseV2
 {
@@ -133,7 +135,7 @@ abstract contract PerpetualMintInternal is
             numberOfMints;
 
         // TODO: integrate $MINT token
-        // MintToken.burn(requiredMintAmount);
+        // MintToken.burn(requiredMintAmount); ??
 
         // if the number of words requested is greater than the max allowed by the VRF coordinator,
         // the request for random words will fail (max random words is currently 500 per request).
@@ -282,7 +284,12 @@ abstract contract PerpetualMintInternal is
             if (!result) {
                 // TODO: integrate $MINT token
             } else {
-                // TODO: integrate mint ERC1155 receipt
+                _safeMint(
+                    minter,
+                    uint256(bytes32(abi.encode(collection))), // encode collection address as tokenId
+                    1,
+                    ""
+                );
             }
 
             emit MintResolved(collection, result);

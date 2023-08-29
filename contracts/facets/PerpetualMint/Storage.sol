@@ -10,9 +10,6 @@ library PerpetualMintStorage {
     struct Layout {
         /// @dev all variables related to Chainlink VRF configuration
         VRFConfig vrfConfig;
-        /// @dev tokenId for minting consolation prize
-        /// TODO: NEEDS TO BE REWORKED
-        uint64 id;
         /// @dev mint fee in basis points
         uint32 mintFeeBP;
         /// @dev amount of mint earnings accrued in ETH (native token) from mint attempts
