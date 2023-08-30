@@ -56,6 +56,10 @@ interface IPerpetualMint is IPausable {
         address collection
     ) external view returns (uint32 risk);
 
+    /// @notice Returns the mint fee in basis points
+    /// @return mintFeeBP mint fee in basis points
+    function mintFeeBP() external view returns (uint32 mintFeeBP);
+
     /// @notice Triggers paused state, when contract is unpaused.
     function pause() external;
 

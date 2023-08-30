@@ -82,6 +82,11 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function mintFeeBP() external view returns (uint32 mintFeeBP) {
+        mintFeeBP = _mintFeeBP();
+    }
+
+    /// @inheritdoc IPerpetualMint
     function pause() external onlyOwner {
         _pause();
     }

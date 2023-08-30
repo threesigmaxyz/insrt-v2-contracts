@@ -251,6 +251,12 @@ abstract contract PerpetualMintInternal is
         risk = risk == 0 ? DEFAULT_COLLECTION_RISK : risk;
     }
 
+    /// @notice Returns the current mint fee in basis points
+    /// @return mintFeeBP mint fee in basis points
+    function _mintFeeBP() internal view returns (uint32 mintFeeBP) {
+        mintFeeBP = Storage.layout().mintFeeBP;
+    }
+
     /// @notice ensures a value is within the BASIS range
     /// @param value value to normalize
     /// @return normalizedValue value after normalization
