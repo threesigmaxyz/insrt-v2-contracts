@@ -45,14 +45,14 @@ interface IPerpetualMint is IPausable {
     /// @notice Returns the current mint price for a collection
     /// @param collection address of collection
     /// @return mintPrice current collection mint price
-    function getCollectionMintPrice(
+    function collectionMintPrice(
         address collection
     ) external view returns (uint256 mintPrice);
 
     /// @notice Returns the current collection-wide risk of a collection
     /// @param collection address of collection
     /// @return risk value of collection-wide risk
-    function getCollectionRisk(
+    function collectionRisk(
         address collection
     ) external view returns (uint32 risk);
 

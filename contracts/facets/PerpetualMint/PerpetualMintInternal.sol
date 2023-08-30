@@ -79,7 +79,7 @@ abstract contract PerpetualMintInternal is
 
         CollectionData storage collectionData = l.collections[collection];
 
-        uint256 collectionMintPrice = _getCollectionMintPrice(collectionData);
+        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
 
         if (msgValue != collectionMintPrice * numberOfMints) {
             revert IncorrectETHReceived();
@@ -121,7 +121,7 @@ abstract contract PerpetualMintInternal is
 
         CollectionData storage collectionData = l.collections[collection];
 
-        uint256 collectionMintPrice = _getCollectionMintPrice(collectionData);
+        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
 
         uint256 ethToMintRatio = l.ethToMintRatio;
 
@@ -232,7 +232,7 @@ abstract contract PerpetualMintInternal is
     /// @notice Returns the current mint price for a given collection
     /// @param collectionData the CollectionData struct for a given collection
     /// @return mintPrice current collection mint price
-    function _getCollectionMintPrice(
+    function _collectionMintPrice(
         CollectionData storage collectionData
     ) internal view returns (uint256 mintPrice) {
         mintPrice = collectionData.mintPrice;
@@ -243,7 +243,7 @@ abstract contract PerpetualMintInternal is
     /// @notice Returns the current collection-wide risk of a collection
     /// @param collectionData the CollectionData struct for a given collection
     /// @return risk value of collection-wide risk
-    function _getCollectionRisk(
+    function _collectionRisk(
         CollectionData storage collectionData
     ) internal view returns (uint32 risk) {
         risk = collectionData.risk;
@@ -310,7 +310,7 @@ abstract contract PerpetualMintInternal is
         bool paidInEth
     ) internal {
         for (uint256 i = 0; i < randomWords.length; ++i) {
-            bool result = _getCollectionRisk(collectionData) >
+            bool result = _collectionRisk(collectionData) >
                 _normalizeValue(randomWords[i], BASIS);
 
             if (!result) {
