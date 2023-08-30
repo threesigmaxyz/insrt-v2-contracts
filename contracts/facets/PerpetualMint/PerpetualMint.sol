@@ -60,6 +60,17 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function getCollectionMintPrice(
+        address collection
+    ) external view returns (uint256 mintPrice) {
+        CollectionData storage collectionData = Storage.layout().collections[
+            collection
+        ];
+
+        mintPrice = _getCollectionMintPrice(collectionData);
+    }
+
+    /// @inheritdoc IPerpetualMint
     function getCollectionRisk(
         address collection
     ) external view returns (uint32 risk) {

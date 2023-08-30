@@ -79,11 +79,7 @@ abstract contract PerpetualMintInternal is
 
         CollectionData storage collectionData = l.collections[collection];
 
-        uint256 collectionMintPrice = collectionData.mintPrice;
-
-        collectionMintPrice = collectionMintPrice == 0
-            ? DEFAULT_COLLECTION_MINT_PRICE
-            : collectionMintPrice;
+        uint256 collectionMintPrice = _getCollectionMintPrice(collectionData);
 
         if (msgValue != collectionMintPrice * numberOfMints) {
             revert IncorrectETHReceived();
@@ -125,11 +121,7 @@ abstract contract PerpetualMintInternal is
 
         CollectionData storage collectionData = l.collections[collection];
 
-        uint256 collectionMintPrice = collectionData.mintPrice;
-
-        collectionMintPrice = collectionMintPrice == 0
-            ? DEFAULT_COLLECTION_MINT_PRICE
-            : collectionMintPrice;
+        uint256 collectionMintPrice = _getCollectionMintPrice(collectionData);
 
         uint256 ethToMintRatio = l.ethToMintRatio;
 
@@ -206,17 +198,6 @@ abstract contract PerpetualMintInternal is
         }
     }
 
-    /// @notice Returns the current collection-wide risk of a collection
-    /// @param collectionData the CollectionData struct for a given collection
-    /// @return risk value of collection-wide risk
-    function _getCollectionRisk(
-        CollectionData storage collectionData
-    ) internal view returns (uint32 risk) {
-        risk = collectionData.risk;
-
-        risk = risk == 0 ? DEFAULT_COLLECTION_RISK : risk;
-    }
-
     /// @notice internal Chainlink VRF callback
     /// @notice is executed by the ChainlinkVRF Coordinator contract
     /// @param requestId id of chainlinkVRF request
@@ -246,6 +227,28 @@ abstract contract PerpetualMintInternal is
         collectionData.pendingRequests.remove(requestId);
 
         delete l.requests[requestId];
+    }
+
+    /// @notice Returns the current mint price for a given collection
+    /// @param collectionData the CollectionData struct for a given collection
+    /// @return mintPrice current collection mint price
+    function _getCollectionMintPrice(
+        CollectionData storage collectionData
+    ) internal view returns (uint256 mintPrice) {
+        mintPrice = collectionData.mintPrice;
+
+        mintPrice = mintPrice == 0 ? DEFAULT_COLLECTION_MINT_PRICE : mintPrice;
+    }
+
+    /// @notice Returns the current collection-wide risk of a collection
+    /// @param collectionData the CollectionData struct for a given collection
+    /// @return risk value of collection-wide risk
+    function _getCollectionRisk(
+        CollectionData storage collectionData
+    ) internal view returns (uint32 risk) {
+        risk = collectionData.risk;
+
+        risk = risk == 0 ? DEFAULT_COLLECTION_RISK : risk;
     }
 
     /// @notice ensures a value is within the BASIS range

@@ -42,6 +42,13 @@ interface IPerpetualMint is IPausable {
     /// @notice claims all accrued protocol fees
     function claimProtocolFees() external;
 
+    /// @notice Returns the current mint price for a collection
+    /// @param collection address of collection
+    /// @return mintPrice current collection mint price
+    function getCollectionMintPrice(
+        address collection
+    ) external view returns (uint256 mintPrice);
+
     /// @notice Returns the current collection-wide risk of a collection
     /// @param collection address of collection
     /// @return risk value of collection-wide risk
