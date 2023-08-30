@@ -131,8 +131,8 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
-    function setMintFeeBP(uint32 mintFeeBP) external onlyOwner {
-        _setMintFeeBP(mintFeeBP);
+    function setMintFeeBP(uint32 _mintFeeBP) external onlyOwner {
+        _setMintFeeBP(_mintFeeBP);
     }
 
     /// @inheritdoc IPerpetualMint
