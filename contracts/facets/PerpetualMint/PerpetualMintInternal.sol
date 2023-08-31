@@ -379,6 +379,8 @@ abstract contract PerpetualMintInternal is
         emit CollectionRiskSet(collection, risk);
     }
 
+    /// @notice sets the ratio of ETH (native token) to $MINT for mint attempts using $MINT as payment
+    /// @param ratio new ratio of ETH to $MINT
     function _setEthToMintRatio(uint256 ratio) internal {
         Storage.layout().ethToMintRatio = ratio;
     }
