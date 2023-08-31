@@ -91,6 +91,11 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function defaultCollectionRisk() external pure returns (uint32 risk) {
+        risk = _defaultCollectionRisk();
+    }
+
+    /// @inheritdoc IPerpetualMint
     function mintFeeBP() external view returns (uint32 mintFeeBasisPoints) {
         mintFeeBasisPoints = _mintFeeBP();
     }

@@ -204,6 +204,12 @@ abstract contract PerpetualMintInternal is
         mintPrice = DEFAULT_COLLECTION_MINT_PRICE;
     }
 
+    /// @notice Returns the default risk for a collection
+    /// @return risk default collection risk
+    function _defaultCollectionRisk() internal pure returns (uint32 risk) {
+        risk = DEFAULT_COLLECTION_RISK;
+    }
+
     /// @notice enforces that a risk value does not exceed the BASIS
     /// @param risk risk value to check
     function _enforceBasis(uint32 risk) internal pure {
