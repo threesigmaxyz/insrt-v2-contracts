@@ -212,14 +212,6 @@ abstract contract PerpetualMintInternal is
         }
     }
 
-    /// @notice enforces that a risk value is non-zero
-    /// @param risk value to check
-    function _enforceNonZeroRisk(uint32 risk) internal pure {
-        if (risk == 0) {
-            revert TokenRiskMustBeNonZero();
-        }
-    }
-
     /// @dev enforces that there are no pending mint requests for a collection
     /// @param collectionData the CollectionData struct for a given collection
     function _enforceNoPendingMints(
@@ -366,9 +358,6 @@ abstract contract PerpetualMintInternal is
         ];
 
         _enforceBasis(risk);
-
-        // ensure the new risk is non-zero
-        _enforceNonZeroRisk(risk);
 
         _enforceNoPendingMints(collectionData);
 

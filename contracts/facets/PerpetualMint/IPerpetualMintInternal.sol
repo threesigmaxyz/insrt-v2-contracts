@@ -20,9 +20,6 @@ interface IPerpetualMintInternal {
     /// there are pending mint requests in a collection
     error PendingRequests();
 
-    /// @notice thrown when an attempt is made to update a collection risk to 0
-    error TokenRiskMustBeNonZero();
-
     /// @notice emitted when the risk for a collection is set
     /// @param collection address of collection
     /// @param risk risk of collection
