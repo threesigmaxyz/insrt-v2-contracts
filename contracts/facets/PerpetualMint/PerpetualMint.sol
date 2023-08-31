@@ -96,6 +96,11 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function ethToMintRatio() external view returns (uint256 ratio) {
+        ratio = _ethToMintRatio(Storage.layout());
+    }
+
+    /// @inheritdoc IPerpetualMint
     function mintFeeBP() external view returns (uint32 mintFeeBasisPoints) {
         mintFeeBasisPoints = _mintFeeBP();
     }

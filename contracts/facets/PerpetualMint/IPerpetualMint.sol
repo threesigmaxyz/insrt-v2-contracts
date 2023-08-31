@@ -67,6 +67,10 @@ interface IPerpetualMint is IPausable {
     /// @return risk default collection risk
     function defaultCollectionRisk() external pure returns (uint32 risk);
 
+    /// @notice Returns the current ETH to $MINT ratio
+    /// @return ratio current ETH to $MINT ratio
+    function ethToMintRatio() external view returns (uint256 ratio);
+
     /// @notice Returns the mint fee in basis points
     /// @return mintFeeBasisPoints mint fee in basis points
     function mintFeeBP() external view returns (uint32 mintFeeBasisPoints);

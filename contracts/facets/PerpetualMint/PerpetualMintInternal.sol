@@ -123,11 +123,7 @@ abstract contract PerpetualMintInternal is
 
         uint256 collectionMintPrice = _collectionMintPrice(collectionData);
 
-        uint256 ethToMintRatio = l.ethToMintRatio;
-
-        ethToMintRatio = ethToMintRatio == 0
-            ? DEFAULT_ETH_TO_MINT_RATIO
-            : ethToMintRatio;
+        uint256 ethToMintRatio = _ethToMintRatio(l);
 
         uint256 requiredMintAmount = collectionMintPrice *
             ethToMintRatio *
@@ -226,6 +222,17 @@ abstract contract PerpetualMintInternal is
         if (collectionData.pendingRequests.length() != 0) {
             revert PendingRequests();
         }
+    }
+
+    /// @notice Returns the current ETH to $MINT ratio
+    /// @param l the PerpetualMint storage layout
+    /// @return ratio current ETH to $MINT ratio
+    function _ethToMintRatio(
+        Storage.Layout storage l
+    ) internal view returns (uint256 ratio) {
+        ratio = l.ethToMintRatio;
+
+        ratio = ratio == 0 ? DEFAULT_ETH_TO_MINT_RATIO : ratio;
     }
 
     /// @notice internal Chainlink VRF callback
