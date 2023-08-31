@@ -82,8 +82,17 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
-    function mintFeeBP() external view returns (uint32 mintFeeBP) {
-        mintFeeBP = _mintFeeBP();
+    function defaultCollectionMintPrice()
+        external
+        pure
+        returns (uint256 defaultCollectionMintPrice)
+    {
+        defaultCollectionMintPrice = _defaultCollectionMintPrice();
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function mintFeeBP() external view returns (uint32 mintFeeBasisPoints) {
+        mintFeeBasisPoints = _mintFeeBP();
     }
 
     /// @inheritdoc IPerpetualMint

@@ -56,6 +56,13 @@ interface IPerpetualMint is IPausable {
         address collection
     ) external view returns (uint32 risk);
 
+    /// @notice Returns the default mint price for a collection
+    /// @return defaultCollectionMintPrice default collection mint price
+    function defaultCollectionMintPrice()
+        external
+        pure
+        returns (uint256 defaultCollectionMintPrice);
+
     /// @notice Returns the mint fee in basis points
     /// @return mintFeeBP mint fee in basis points
     function mintFeeBP() external view returns (uint32 mintFeeBP);

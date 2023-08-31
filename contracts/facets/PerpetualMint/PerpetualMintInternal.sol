@@ -172,6 +172,14 @@ abstract contract PerpetualMintInternal is
         payable(recipient).sendValue(protocolFees);
     }
 
+    function _defaultCollectionMintPrice()
+        internal
+        pure
+        returns (uint256 defaultCollectionMintPrice)
+    {
+        defaultCollectionMintPrice = DEFAULT_COLLECTION_MINT_PRICE;
+    }
+
     /// @notice enforces that a risk value does not exceed the BASIS
     /// @param risk risk value to check
     function _enforceBasis(uint32 risk) internal pure {
