@@ -7,7 +7,7 @@ import { Pausable } from "@solidstate/contracts/security/pausable/Pausable.sol";
 
 import { IPerpetualMint } from "./IPerpetualMint.sol";
 import { PerpetualMintInternal } from "./PerpetualMintInternal.sol";
-import { CollectionData, PerpetualMintStorage as Storage, VRFConfig } from "./Storage.sol";
+import { PerpetualMintStorage as Storage, VRFConfig } from "./Storage.sol";
 
 /// @title PerpetualMint facet contract
 /// @dev contains all externally called functions
@@ -63,22 +63,16 @@ contract PerpetualMint is
     function collectionMintPrice(
         address collection
     ) external view returns (uint256 mintPrice) {
-        CollectionData storage collectionData = Storage.layout().collections[
-            collection
-        ];
-
-        mintPrice = _collectionMintPrice(collectionData);
+        mintPrice = _collectionMintPrice(
+            Storage.layout().collections[collection]
+        );
     }
 
     /// @inheritdoc IPerpetualMint
     function collectionRisk(
         address collection
     ) external view returns (uint32 risk) {
-        CollectionData storage collectionData = Storage.layout().collections[
-            collection
-        ];
-
-        risk = _collectionRisk(collectionData);
+        risk = _collectionRisk(Storage.layout().collections[collection]);
     }
 
     /// @inheritdoc IPerpetualMint
