@@ -85,9 +85,9 @@ contract PerpetualMint is
     function defaultCollectionMintPrice()
         external
         pure
-        returns (uint256 defaultCollectionMintPrice)
+        returns (uint256 mintPrice)
     {
-        defaultCollectionMintPrice = _defaultCollectionMintPrice();
+        mintPrice = _defaultCollectionMintPrice();
     }
 
     /// @inheritdoc IPerpetualMint

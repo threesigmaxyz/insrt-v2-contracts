@@ -172,12 +172,36 @@ abstract contract PerpetualMintInternal is
         payable(recipient).sendValue(protocolFees);
     }
 
+    /// @notice Returns the current mint price for a given collection
+    /// @param collectionData the CollectionData struct for a given collection
+    /// @return mintPrice current collection mint price
+    function _collectionMintPrice(
+        CollectionData storage collectionData
+    ) internal view returns (uint256 mintPrice) {
+        mintPrice = collectionData.mintPrice;
+
+        mintPrice = mintPrice == 0 ? DEFAULT_COLLECTION_MINT_PRICE : mintPrice;
+    }
+
+    /// @notice Returns the current collection-wide risk of a collection
+    /// @param collectionData the CollectionData struct for a given collection
+    /// @return risk value of collection-wide risk
+    function _collectionRisk(
+        CollectionData storage collectionData
+    ) internal view returns (uint32 risk) {
+        risk = collectionData.risk;
+
+        risk = risk == 0 ? DEFAULT_COLLECTION_RISK : risk;
+    }
+
+    /// @notice Returns the default mint price for a collection
+    /// @return mintPrice default collection mint price
     function _defaultCollectionMintPrice()
         internal
         pure
-        returns (uint256 defaultCollectionMintPrice)
+        returns (uint256 mintPrice)
     {
-        defaultCollectionMintPrice = DEFAULT_COLLECTION_MINT_PRICE;
+        mintPrice = DEFAULT_COLLECTION_MINT_PRICE;
     }
 
     /// @notice enforces that a risk value does not exceed the BASIS
@@ -237,32 +261,10 @@ abstract contract PerpetualMintInternal is
         delete l.requests[requestId];
     }
 
-    /// @notice Returns the current mint price for a given collection
-    /// @param collectionData the CollectionData struct for a given collection
-    /// @return mintPrice current collection mint price
-    function _collectionMintPrice(
-        CollectionData storage collectionData
-    ) internal view returns (uint256 mintPrice) {
-        mintPrice = collectionData.mintPrice;
-
-        mintPrice = mintPrice == 0 ? DEFAULT_COLLECTION_MINT_PRICE : mintPrice;
-    }
-
-    /// @notice Returns the current collection-wide risk of a collection
-    /// @param collectionData the CollectionData struct for a given collection
-    /// @return risk value of collection-wide risk
-    function _collectionRisk(
-        CollectionData storage collectionData
-    ) internal view returns (uint32 risk) {
-        risk = collectionData.risk;
-
-        risk = risk == 0 ? DEFAULT_COLLECTION_RISK : risk;
-    }
-
     /// @notice Returns the current mint fee in basis points
-    /// @return mintFeeBP mint fee in basis points
-    function _mintFeeBP() internal view returns (uint32 mintFeeBP) {
-        mintFeeBP = Storage.layout().mintFeeBP;
+    /// @return mintFeeBasisPoints mint fee in basis points
+    function _mintFeeBP() internal view returns (uint32 mintFeeBasisPoints) {
+        mintFeeBasisPoints = Storage.layout().mintFeeBP;
     }
 
     /// @notice ensures a value is within the BASIS range

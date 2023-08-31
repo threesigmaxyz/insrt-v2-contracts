@@ -57,15 +57,15 @@ interface IPerpetualMint is IPausable {
     ) external view returns (uint32 risk);
 
     /// @notice Returns the default mint price for a collection
-    /// @return defaultCollectionMintPrice default collection mint price
+    /// @return mintPrice default collection mint price
     function defaultCollectionMintPrice()
         external
         pure
-        returns (uint256 defaultCollectionMintPrice);
+        returns (uint256 mintPrice);
 
     /// @notice Returns the mint fee in basis points
-    /// @return mintFeeBP mint fee in basis points
-    function mintFeeBP() external view returns (uint32 mintFeeBP);
+    /// @return mintFeeBasisPoints mint fee in basis points
+    function mintFeeBP() external view returns (uint32 mintFeeBasisPoints);
 
     /// @notice Triggers paused state, when contract is unpaused.
     function pause() external;
