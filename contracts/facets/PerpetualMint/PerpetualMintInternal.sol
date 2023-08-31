@@ -206,6 +206,12 @@ abstract contract PerpetualMintInternal is
         risk = DEFAULT_COLLECTION_RISK;
     }
 
+    /// @notice Returns the default ETH to $MINT ratio
+    /// @return ratio default ETH to $MINT ratio
+    function _defaultEthToMintRatio() internal pure returns (uint32 ratio) {
+        ratio = DEFAULT_ETH_TO_MINT_RATIO;
+    }
+
     /// @notice enforces that a risk value does not exceed the BASIS
     /// @param risk risk value to check
     function _enforceBasis(uint32 risk) internal pure {

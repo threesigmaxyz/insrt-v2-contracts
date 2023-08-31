@@ -90,6 +90,11 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function defaultEthToMintRatio() external pure returns (uint32 ratio) {
+        ratio = _defaultEthToMintRatio();
+    }
+
+    /// @inheritdoc IPerpetualMint
     function ethToMintRatio() external view returns (uint256 ratio) {
         ratio = _ethToMintRatio(Storage.layout());
     }
