@@ -404,4 +404,10 @@ abstract contract PerpetualMintInternal is
 
         emit VRFConfigSet(config);
     }
+
+    /// @notice Returns the current Chainlink VRF config
+    /// @return config VRFConfig struct
+    function _vrfConfig() internal view returns (VRFConfig memory config) {
+        config = Storage.layout().vrfConfig;
+    }
 }

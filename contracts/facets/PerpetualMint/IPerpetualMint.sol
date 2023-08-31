@@ -106,4 +106,8 @@ interface IPerpetualMint is IPausable {
 
     ///  @notice Triggers unpaused state, when contract is paused.
     function unpause() external;
+
+    /// @notice returns the current VRF config
+    /// @return config VRFConfig struct
+    function vrfConfig() external view returns (VRFConfig memory config);
 }

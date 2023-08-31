@@ -145,6 +145,11 @@ contract PerpetualMint is
         _unpause();
     }
 
+    /// @inheritdoc IPerpetualMint
+    function vrfConfig() external view returns (VRFConfig memory config) {
+        config = _vrfConfig();
+    }
+
     /// @notice Chainlink VRF Coordinator callback
     /// @param requestId id of request for random values
     /// @param randomWords random values returned from Chainlink VRF coordination
