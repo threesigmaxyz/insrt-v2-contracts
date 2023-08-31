@@ -46,7 +46,7 @@ contract PerpetualMint is
         address collection,
         uint32 numberOfMints
     ) external whenNotPaused {
-        _attemptBatchMintWithEth(msg.sender, collection, numberOfMints);
+        _attemptBatchMintWithMint(msg.sender, collection, numberOfMints);
     }
 
     /// @inheritdoc IPerpetualMint
