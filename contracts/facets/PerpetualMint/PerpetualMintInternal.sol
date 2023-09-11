@@ -9,7 +9,7 @@ import { ERC1155BaseInternal } from "@solidstate/contracts/token/ERC1155/base/ER
 import { AddressUtils } from "@solidstate/contracts/utils/AddressUtils.sol";
 
 import { IPerpetualMintInternal } from "./IPerpetualMintInternal.sol";
-import { CollectionData, PerpetualMintStorage as Storage, RequestData, VRFConfig } from "./Storage.sol";
+import { CollectionData, PerpetualMintStorage as Storage, RequestData, TiersData, VRFConfig } from "./Storage.sol";
 
 /// @title PerpetualMintInternal facet contract
 /// @dev defines modularly all logic for the PerpetualMint mechanism in internal functions
@@ -291,6 +291,7 @@ abstract contract PerpetualMintInternal is
 
         _resolveMints(
             collectionData,
+            l.tiers,
             minter,
             collection,
             randomWords,
@@ -355,24 +356,50 @@ abstract contract PerpetualMintInternal is
 
     /// @notice resolves the outcomes of attempted mints for a given collection
     /// @param collectionData the CollectionData struct for a given collection
+    /// @param tiersData the TiersData struct for mint consolations
     /// @param minter address of minter
     /// @param collection address of collection for mint attempts
     /// @param randomWords array of random values relating to number of attempts
     /// @param paidInEth boolean indicating whether the mint attempt was paid in ETH or $MINT
     function _resolveMints(
         CollectionData storage collectionData,
+        TiersData memory tiersData,
         address minter,
         address collection,
         uint256[] memory randomWords,
         bool paidInEth
     ) internal {
+        uint32 basis = BASIS;
+
         for (uint256 i = 0; i < randomWords.length; ++i) {
-            bool result = _collectionRisk(collectionData) >
-                _normalizeValue(randomWords[i], BASIS);
+            uint256 normalizedValue = _normalizeValue(randomWords[i], basis);
+
+            bool result = _collectionRisk(collectionData) > normalizedValue;
 
             if (!result) {
-                // TODO: integrate $MINT token
-                if (paidInEth) {} else {}
+                uint256 tierMintAmount;
+                uint256 cumulativeRisk;
+
+                // iterate through tiers to find the tier that the random value falls into
+                for (uint256 j = 0; j < tiersData.tierRisks.length; ++j) {
+                    cumulativeRisk += tiersData.tierRisks[j];
+
+                    bool tierFound = cumulativeRisk > normalizedValue;
+
+                    if (tierFound) {
+                        tierMintAmount = tiersData.tierMintAmounts[j];
+                        break;
+                    }
+                }
+
+                if (paidInEth) {
+                    // TODO: integrate $MINT token
+                    // MintToken.mint(minter, tierMintAmount);
+                } else {
+                    // TODO: integrate $MINT token
+                    // apply $MINT discount since paid in $MINT
+                    // MintToken.mint(minter, tierMintAmount);
+                }
             } else {
                 _safeMint(
                     minter,
@@ -433,12 +460,22 @@ abstract contract PerpetualMintInternal is
         Storage.layout().mintFeeBP = mintFeeBP;
     }
 
+    /// @notice sets the $MINT consolation tiers data
+    /// @param tiersData TiersData struct holding all related data to $MINT consolations
+    function _setTiers(TiersData calldata tiersData) internal {
+        Storage.layout().tiers = tiersData;
+    }
+
     /// @notice sets the Chainlink VRF config
     /// @param config VRFConfig struct holding all related data to ChainlinkVRF
     function _setVRFConfig(VRFConfig calldata config) internal {
         Storage.layout().vrfConfig = config;
 
         emit VRFConfigSet(config);
+    }
+
+    function _tiers() internal view returns (TiersData memory tiersData) {
+        tiersData = Storage.layout().tiers;
     }
 
     /// @notice Returns the current Chainlink VRF config
