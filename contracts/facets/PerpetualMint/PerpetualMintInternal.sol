@@ -10,6 +10,7 @@ import { AddressUtils } from "@solidstate/contracts/utils/AddressUtils.sol";
 
 import { IPerpetualMintInternal } from "./IPerpetualMintInternal.sol";
 import { CollectionData, PerpetualMintStorage as Storage, RequestData, TiersData, VRFConfig } from "./Storage.sol";
+import { IToken } from "../Token/IToken.sol";
 
 /// @title PerpetualMintInternal facet contract
 /// @dev defines modularly all logic for the PerpetualMint mechanism in internal functions
@@ -36,8 +37,12 @@ abstract contract PerpetualMintInternal is
     /// @dev address of Chainlink VRFCoordinatorV2 contract
     address private immutable VRF;
 
-    constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {
+    constructor(
+        address vrfCoordinator,
+        address mintToken
+    ) VRFConsumerBaseV2(vrfCoordinator) {
         VRF = vrfCoordinator;
+        Storage.layout().mintToken = mintToken;
     }
 
     /// @notice returns the current accrued consolation fees
@@ -114,14 +119,7 @@ abstract contract PerpetualMintInternal is
         // the request for random words will fail (max random words is currently 500 per request).
         uint32 numWords = numberOfMints; // 1 word per mint, current max of 500 mints per tx
 
-        _requestRandomWords(
-            l,
-            collectionData,
-            minter,
-            collection,
-            numWords,
-            true
-        );
+        _requestRandomWords(l, collectionData, minter, collection, numWords);
     }
 
     /// @notice Attempts a batch mint for the msg.sender for a single collection using $MINT tokens as payment.
@@ -142,28 +140,40 @@ abstract contract PerpetualMintInternal is
         CollectionData storage collectionData = l.collections[collection];
 
         uint256 collectionMintPrice = _collectionMintPrice(collectionData);
-
         uint256 ethToMintRatio = _ethToMintRatio(l);
 
-        uint256 requiredMintAmount = collectionMintPrice *
-            ethToMintRatio *
-            numberOfMints;
+        uint256 ethRequired = collectionMintPrice * numberOfMints;
 
-        // TODO: integrate $MINT token
-        // MintToken.burn(requiredMintAmount); ??
+        if (ethRequired > l.consolationFees) {
+            revert InsufficientConsolationFees();
+        }
+
+        // calculate amount of $MINT required
+        uint256 mintRequired = ethRequired * ethToMintRatio;
+
+        IToken(l.mintToken).burn(minter, mintRequired);
+
+        // calculate the consolation fee
+        uint256 consolationFee = (ethRequired * l.consolationFeeBP) / BASIS;
+
+        // calculate the protocol mint fee
+        uint256 mintFee = (ethRequired * l.mintFeeBP) / BASIS;
+
+        // update the accrued consolation fees
+        // ETH required for mint taken from consolationFees
+        l.consolationFees -= ethRequired - consolationFee;
+
+        // update the accrued depositor mint earnings
+        l.mintEarnings += ethRequired - consolationFee - mintFee;
+
+        // update the accrued protocol fees
+        l.protocolFees += mintFee;
 
         // if the number of words requested is greater than the max allowed by the VRF coordinator,
         // the request for random words will fail (max random words is currently 500 per request).
         uint32 numWords = numberOfMints; // 1 word per mint, current max of 500 mints per tx
 
-        _requestRandomWords(
-            l,
-            collectionData,
-            minter,
-            collection,
-            numWords,
-            false
-        );
+        _requestRandomWords(l, collectionData, minter, collection, numWords);
     }
 
     /// @notice claims all accrued mint earnings across collections
@@ -285,17 +295,16 @@ abstract contract PerpetualMintInternal is
 
         address collection = request.collection;
         address minter = request.minter;
-        bool paidInEth = request.paidInEth;
 
         CollectionData storage collectionData = l.collections[collection];
 
         _resolveMints(
+            l.mintToken,
             collectionData,
             l.tiers,
             minter,
             collection,
-            randomWords,
-            paidInEth
+            randomWords
         );
 
         collectionData.pendingRequests.remove(requestId);
@@ -309,6 +318,12 @@ abstract contract PerpetualMintInternal is
         mintFeeBasisPoints = Storage.layout().mintFeeBP;
     }
 
+    /// @notice Returns the address of the current $MINT token
+    /// @return mintToken address of the current $MINT token
+    function _mintToken() internal view returns (address mintToken) {
+        mintToken = Storage.layout().mintToken;
+    }
+
     /// @notice ensures a value is within the BASIS range
     /// @param value value to normalize
     /// @return normalizedValue value after normalization
@@ -319,20 +334,48 @@ abstract contract PerpetualMintInternal is
         normalizedValue = value % basis;
     }
 
+    /// @notice redeems an amount of $MINT tokens for ETH (native token) for an account
+    /// @dev only one-sided ($MINT => ETH (native token)) supported
+    /// @param account address of account
+    /// @param amount amount of $MINT
+    function _redeem(
+        address account,
+        uint256 amount
+    ) internal returns (uint256 ethAmount) {
+        Storage.Layout storage l = Storage.layout();
+
+        // burn amount of $MINT to be swapped
+        IToken(l.mintToken).burn(account, amount);
+
+        // calculate amount of ETH given for $MINT amount
+        ethAmount =
+            (amount * (BASIS - l.redemptionFeeBP)) /
+            (BASIS * _ethToMintRatio(l));
+
+        // decrease mintEarnings
+        l.mintEarnings -= ethAmount;
+
+        payable(account).sendValue(ethAmount);
+    }
+
+    /// @notice returns the current redemption fee in basis points
+    /// @return feeBP redemptionFee in basis points
+    function _redemptionFeeBP() internal view returns (uint32 feeBP) {
+        feeBP = Storage.layout().redemptionFeeBP;
+    }
+
     /// @notice requests random values from Chainlink VRF
     /// @param l the PerpetualMint storage layout
     /// @param collectionData the CollectionData struct for a given collection
     /// @param minter address calling this function
     /// @param collection address of collection to attempt mint for
     /// @param numWords amount of random values to request
-    /// @param paidInEth boolean indicating whether the mint attempt was paid in ETH or $MINT
     function _requestRandomWords(
         Storage.Layout storage l,
         CollectionData storage collectionData,
         address minter,
         address collection,
-        uint32 numWords,
-        bool paidInEth
+        uint32 numWords
     ) internal {
         uint256 requestId = VRFCoordinatorV2Interface(VRF).requestRandomWords(
             l.vrfConfig.keyHash,
@@ -348,31 +391,28 @@ abstract contract PerpetualMintInternal is
 
         request.collection = collection;
         request.minter = minter;
-
-        if (paidInEth) {
-            request.paidInEth = true;
-        }
     }
 
     /// @notice resolves the outcomes of attempted mints for a given collection
+    /// @param mintToken address of $MINT token
     /// @param collectionData the CollectionData struct for a given collection
     /// @param tiersData the TiersData struct for mint consolations
     /// @param minter address of minter
     /// @param collection address of collection for mint attempts
     /// @param randomWords array of random values relating to number of attempts
-    /// @param paidInEth boolean indicating whether the mint attempt was paid in ETH or $MINT
     function _resolveMints(
+        address mintToken,
         CollectionData storage collectionData,
         TiersData memory tiersData,
         address minter,
         address collection,
-        uint256[] memory randomWords,
-        bool paidInEth
+        uint256[] memory randomWords
     ) internal {
-        uint32 basis = BASIS;
+        uint256 totalMintAmount;
+        uint256 totalReceiptAmount;
 
         for (uint256 i = 0; i < randomWords.length; ++i) {
-            uint256 normalizedValue = _normalizeValue(randomWords[i], basis);
+            uint256 normalizedValue = _normalizeValue(randomWords[i], BASIS);
 
             bool result = _collectionRisk(collectionData) > normalizedValue;
 
@@ -384,32 +424,33 @@ abstract contract PerpetualMintInternal is
                 for (uint256 j = 0; j < tiersData.tierRisks.length; ++j) {
                     cumulativeRisk += tiersData.tierRisks[j];
 
-                    bool tierFound = cumulativeRisk > normalizedValue;
-
-                    if (tierFound) {
+                    // if the cumulative risk is greater than the normalized value, the tier has been found
+                    if (cumulativeRisk > normalizedValue) {
                         tierMintAmount = tiersData.tierMintAmounts[j];
                         break;
                     }
                 }
 
-                if (paidInEth) {
-                    // TODO: integrate $MINT token
-                    // MintToken.mint(minter, tierMintAmount);
-                } else {
-                    // TODO: integrate $MINT token
-                    // apply $MINT discount since paid in $MINT
-                    // MintToken.mint(minter, tierMintAmount);
-                }
+                totalMintAmount += tierMintAmount;
             } else {
-                _safeMint(
-                    minter,
-                    uint256(bytes32(abi.encode(collection))), // encode collection address as tokenId
-                    1,
-                    ""
-                );
+                ++totalReceiptAmount;
             }
 
             emit MintResolved(collection, result);
+        }
+
+        // Mint the cumulative amounts at the end
+        if (totalMintAmount > 0) {
+            IToken(mintToken).mint(minter, totalMintAmount);
+        }
+
+        if (totalReceiptAmount > 0) {
+            _safeMint(
+                minter,
+                uint256(bytes32(abi.encode(collection))), // encode collection address as tokenId
+                totalReceiptAmount,
+                ""
+            );
         }
     }
 
@@ -458,6 +499,16 @@ abstract contract PerpetualMintInternal is
     /// @param mintFeeBP mint fee in basis points
     function _setMintFeeBP(uint32 mintFeeBP) internal {
         Storage.layout().mintFeeBP = mintFeeBP;
+    }
+
+    function _setMintToken(address mintToken) internal {
+        Storage.layout().mintToken = mintToken;
+    }
+
+    /// @notice sets the redemption fee in basis points
+    /// @param redemptionFeeBP redemption fee in basis points
+    function _setRedemptionFeeBP(uint32 redemptionFeeBP) internal {
+        Storage.layout().redemptionFeeBP = redemptionFeeBP;
     }
 
     /// @notice sets the $MINT consolation tiers data

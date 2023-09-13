@@ -6,7 +6,7 @@ import { IOwnableInternal } from "@solidstate/contracts/access/ownable/IOwnableI
 
 import { TokenTest } from "../Token.t.sol";
 import { ArbForkTest } from "../../../ArbForkTest.t.sol";
-import { ITokenInternal } from "../../../../contracts/facets/token/ITokenInternal.sol";
+import { ITokenInternal } from "../../../../contracts/facets/Token/ITokenInternal.sol";
 
 /// @title Token_setDistributionFractionBP
 /// @dev Token test contract for testing expected setDistributionFractionBP behavior. Tested on an Arbitrum fork.
@@ -47,7 +47,7 @@ contract Token_setDistributionFractionBP is
     {
         vm.expectRevert(IOwnableInternal.Ownable__NotOwner.selector);
 
-        vm.prank(NON_OWNER);
+        vm.prank(TOKEN_NON_OWNER);
         token.setDistributionFractionBP(NEW_VALUE);
     }
 }

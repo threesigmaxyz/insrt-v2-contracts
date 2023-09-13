@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
 
-import { TokenProxy } from "../../contracts/diamonds/token/TokenProxy.sol";
+import { TokenProxy } from "../../contracts/diamonds/Token/TokenProxy.sol";
 
 /// @title TokenProxyTest
 /// @dev Test helper contract for setting up and testing the TokenProxy diamond and its facets.
@@ -12,7 +12,7 @@ import { TokenProxy } from "../../contracts/diamonds/token/TokenProxy.sol";
 abstract contract TokenProxyTest is Test {
     TokenProxy public tokenProxy;
 
-    receive() external payable {}
+    receive() external payable virtual {}
 
     /// @notice Setup function to initialize contract state before tests.
     /// @dev Creates a new instance of TokenProxy (diamond contract) and assigns it to tokenProxy.

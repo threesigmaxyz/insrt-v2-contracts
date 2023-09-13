@@ -49,27 +49,22 @@ interface IPerpetualMintHarness {
     function exposed_requestRandomWords(
         address minter,
         address collection,
-        uint32 numWords,
-        bool paidInEth
+        uint32 numWords
     ) external;
 
     /// @dev exposes requests
     function exposed_requests(
         uint256 requestId
-    )
-        external
-        view
-        returns (address minter, address collection, bool paidInEth);
+    ) external view returns (address minter, address collection);
 
     /// @dev exposes _resolveMints
     function exposed_resolveMints(
         address minter,
         address collection,
-        uint256[] memory randomWords,
-        bool paidInEth
+        uint256[] memory randomWords
     ) external;
 
-    /// @dev allowas setting accrued consolation fees
+    /// @dev allows setting accrued consolation fees
     function setConsolationFees(uint256 amount) external;
 
     /// @dev allows setting accrued mint earnings
@@ -82,7 +77,6 @@ interface IPerpetualMintHarness {
     function setRequests(
         uint256 requestId,
         address minter,
-        address collection,
-        bool paidInEth
+        address collection
     ) external;
 }

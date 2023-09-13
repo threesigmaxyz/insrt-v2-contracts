@@ -8,7 +8,10 @@ import { VRFCoordinatorV2 } from "@chainlink/vrf/VRFCoordinatorV2.sol";
 import { EnumerableSet } from "@solidstate/contracts/data/EnumerableSet.sol";
 
 import { PerpetualMintTest } from "../PerpetualMint.t.sol";
+import { TokenTest } from "../../Token/Token.t.sol";
 import { ArbForkTest } from "../../../ArbForkTest.t.sol";
+import { CoreTest } from "../../../diamonds/Core.t.sol";
+import { TokenProxyTest } from "../../../diamonds/TokenProxy.t.sol";
 import { VRFCoordinatorV2MockPlus } from "../../../mocks/VRFCoordinatorV2MockPlus.sol";
 import { IPerpetualMintInternal } from "../../../../contracts/facets/PerpetualMint/IPerpetualMintInternal.sol";
 import { PerpetualMintStorage, VRFConfig } from "../../../../contracts/facets/PerpetualMint/Storage.sol";
@@ -18,7 +21,8 @@ import { PerpetualMintStorage, VRFConfig } from "../../../../contracts/facets/Pe
 contract PerpetualMint_fulfillRandomWords is
     ArbForkTest,
     IPerpetualMintInternal,
-    PerpetualMintTest
+    PerpetualMintTest,
+    TokenTest
 {
     VRFConfig vrfConfig;
 
@@ -37,9 +41,17 @@ contract PerpetualMint_fulfillRandomWords is
     /// @dev collection to test
     address internal constant COLLECTION = BORED_APE_YACHT_CLUB;
 
+    /// @dev overrides the receive function to accept ETH
+    receive() external payable override(CoreTest, TokenProxyTest) {}
+
     /// @dev Sets up the test case environment.
-    function setUp() public override {
-        super.setUp();
+    function setUp() public override(PerpetualMintTest, TokenTest) {
+        PerpetualMintTest.setUp();
+        TokenTest.setUp();
+
+        perpetualMint.setMintToken(address(token));
+
+        token.addMintingContract(address(perpetualMint));
 
         vrfCoordinatorV2 = VRFCoordinatorV2(
             this.perpetualMintHelper().VRF_COORDINATOR()
@@ -92,6 +104,12 @@ contract PerpetualMint_fulfillRandomWords is
             s_consumersStorageSlot,
             bytes32(uint256(TEST_VRF_CONSUMER_NONCE)) // set nonce to 1 to activate the consumer
         );
+
+        perpetualMint.setConsolationFees(100 ether);
+
+        // mint a bunch of tokens to minter
+        vm.prank(MINTER);
+        token.mint(minter, MINT_AMOUNT * 1e10);
     }
 
     /// @dev Tests fulfillRandomWords functionality when mint is paid in ETH.
@@ -121,7 +139,7 @@ contract PerpetualMint_fulfillRandomWords is
         perpetualMint.exposed_pendingRequestsAdd(COLLECTION, mockMintRequestId);
 
         // add the mock mint request data
-        perpetualMint.setRequests(mockMintRequestId, minter, COLLECTION, true);
+        perpetualMint.setRequests(mockMintRequestId, minter, COLLECTION);
 
         // calculate and store the mint fulfillment block number using vrf config min confirmations
         uint256 mintFulfillmentBlockNumber = mintBlockNumber +
@@ -183,7 +201,7 @@ contract PerpetualMint_fulfillRandomWords is
         perpetualMint.exposed_pendingRequestsAdd(COLLECTION, mockMintRequestId);
 
         // add the mock mint request data
-        perpetualMint.setRequests(mockMintRequestId, minter, COLLECTION, false);
+        perpetualMint.setRequests(mockMintRequestId, minter, COLLECTION);
 
         // calculate and store the mint fulfillment block number using vrf config min confirmations
         uint256 mintFulfillmentBlockNumber = mintBlockNumber +
@@ -270,7 +288,7 @@ contract PerpetualMint_fulfillRandomWords is
         perpetualMint.exposed_pendingRequestsAdd(COLLECTION, mockMintRequestId);
 
         // add the mock mint request data
-        perpetualMint.setRequests(mockMintRequestId, minter, COLLECTION, true);
+        perpetualMint.setRequests(mockMintRequestId, minter, COLLECTION);
 
         // calculate and store the mint fulfillment block number using vrf config min confirmations
         uint256 mintFulfillmentBlockNumber = mintBlockNumber +
@@ -330,6 +348,8 @@ contract PerpetualMint_fulfillRandomWords is
                 MAXIMUM_MINT_ATTEMPTS
             )
         );
+
+        vm.prank(minter);
         perpetualMint.attemptBatchMintWithMint(
             COLLECTION,
             MAXIMUM_MINT_ATTEMPTS + 1
@@ -351,7 +371,7 @@ contract PerpetualMint_fulfillRandomWords is
         perpetualMint.exposed_pendingRequestsAdd(COLLECTION, mockMintRequestId);
 
         // add the mock mint request data
-        perpetualMint.setRequests(mockMintRequestId, minter, COLLECTION, false);
+        perpetualMint.setRequests(mockMintRequestId, minter, COLLECTION);
 
         // calculate and store the mint fulfillment block number using vrf config min confirmations
         uint256 mintFulfillmentBlockNumber = mintBlockNumber +
