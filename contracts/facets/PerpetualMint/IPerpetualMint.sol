@@ -43,6 +43,10 @@ interface IPerpetualMint is IPausable {
         uint32 numberOfMints
     ) external;
 
+    /// @notice returns the value of BASIS
+    /// @return value BASIS value
+    function BASIS() external pure returns (uint32 value);
+
     /// @notice claims all accrued mint earnings across collections
     function claimMintEarnings() external;
 

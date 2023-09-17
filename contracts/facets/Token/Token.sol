@@ -37,6 +37,11 @@ contract Token is TokenInternal, SolidStateERC20, IToken {
     }
 
     /// @inheritdoc IToken
+    function BASIS() external pure returns (uint32 value) {
+        value = _BASIS();
+    }
+
+    /// @inheritdoc IToken
     function burn(
         address account,
         uint256 amount
@@ -95,6 +100,11 @@ contract Token is TokenInternal, SolidStateERC20, IToken {
     /// @inheritdoc IToken
     function removeMintingContract(address account) external onlyOwner {
         _removeMintingContract(account);
+    }
+
+    /// @inheritdoc IToken
+    function SCALE() external pure returns (uint256 value) {
+        value = _SCALE();
     }
 
     /// @inheritdoc IToken

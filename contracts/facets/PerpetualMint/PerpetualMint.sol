@@ -62,6 +62,11 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function BASIS() external pure returns (uint32 value) {
+        value = _BASIS();
+    }
+
+    /// @inheritdoc IPerpetualMint
     function claimMintEarnings() external onlyOwner {
         _claimMintEarnings(msg.sender);
     }

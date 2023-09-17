@@ -23,7 +23,7 @@ abstract contract PerpetualMintInternal is
     using EnumerableSet for EnumerableSet.UintSet;
 
     /// @dev denominator used in percentage calculations
-    uint32 internal constant BASIS = 1000000000;
+    uint32 private constant BASIS = 1000000000;
 
     /// @dev default mint price for a collection
     uint64 internal constant DEFAULT_COLLECTION_MINT_PRICE = 0.01 ether;
@@ -174,6 +174,12 @@ abstract contract PerpetualMintInternal is
         uint32 numWords = numberOfMints * 2; // 2 words per mint, current max of 250 mints per tx
 
         _requestRandomWords(l, collectionData, minter, collection, numWords);
+    }
+
+    /// @notice returns the value of BASIS
+    /// @return value BASIS value
+    function _BASIS() internal pure returns (uint32 value) {
+        value = BASIS;
     }
 
     /// @notice claims all accrued mint earnings across collections
@@ -452,8 +458,6 @@ abstract contract PerpetualMintInternal is
             } else {
                 ++totalReceiptAmount;
             }
-
-            emit MintResolved(collection, result);
         }
 
         // Mint the cumulative amounts at the end
@@ -469,6 +473,14 @@ abstract contract PerpetualMintInternal is
                 ""
             );
         }
+
+        emit MintResult(
+            minter,
+            collection,
+            randomWords.length / 2,
+            totalMintAmount,
+            totalReceiptAmount
+        );
     }
 
     /// @notice set the mint price for a given collection

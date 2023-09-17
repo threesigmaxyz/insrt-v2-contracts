@@ -20,9 +20,9 @@ abstract contract TokenInternal is
     using EnumerableSet for EnumerableSet.AddressSet;
 
     // used for floating point calculations
-    uint256 internal constant SCALE = 10 ** 36;
+    uint256 private constant SCALE = 10 ** 36;
     // used for fee calculations - not sufficient for floating point calculations
-    uint32 internal constant BASIS = 1000000000;
+    uint32 private constant BASIS = 1000000000;
 
     /// @notice modifier to only allow addresses contained in mintingContracts
     /// to call modified function
@@ -69,6 +69,12 @@ abstract contract TokenInternal is
     function _addMintingContract(address account) internal {
         Storage.layout().mintingContracts.add(account);
         emit MintingContractAdded(account);
+    }
+
+    /// @notice returns the value of BASIS
+    /// @return value BASIS value
+    function _BASIS() internal pure returns (uint32 value) {
+        value = BASIS;
     }
 
     /// @notice overrides _beforeTokenTransfer hook to enforce non-transferability
@@ -248,6 +254,12 @@ abstract contract TokenInternal is
     function _removeMintingContract(address account) internal {
         Storage.layout().mintingContracts.remove(account);
         emit MintingContractRemoved(account);
+    }
+
+    /// @notice returns the value of SCALE
+    /// @return value SCALE value
+    function _SCALE() internal pure returns (uint256 value) {
+        value = SCALE;
     }
 
     /// @notice multiplies a value by the scale, to enable floating point calculations

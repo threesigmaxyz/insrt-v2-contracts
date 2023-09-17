@@ -171,10 +171,10 @@ abstract contract PerpetualMintTest is CoreTest {
             numberOfMints;
 
         uint256 mockConsolationFee = (mockMsgValue *
-            perpetualMint.consolationFeeBP()) / perpetualMint.exposed_basis();
+            perpetualMint.consolationFeeBP()) / perpetualMint.BASIS();
 
         uint256 mockMintFee = (mockMsgValue * perpetualMint.mintFeeBP()) /
-            perpetualMint.exposed_basis();
+            perpetualMint.BASIS();
 
         perpetualMint.setConsolationFees(
             perpetualMint.accruedConsolationFees() + mockConsolationFee
