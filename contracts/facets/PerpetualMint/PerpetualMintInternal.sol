@@ -11,11 +11,13 @@ import { AddressUtils } from "@solidstate/contracts/utils/AddressUtils.sol";
 import { IPerpetualMintInternal } from "./IPerpetualMintInternal.sol";
 import { CollectionData, PerpetualMintStorage as Storage, RequestData, TiersData, VRFConfig } from "./Storage.sol";
 import { IToken } from "../Token/IToken.sol";
+import { GuardsInternal } from "../../common/GuardsInternal.sol";
 
 /// @title PerpetualMintInternal facet contract
 /// @dev defines modularly all logic for the PerpetualMint mechanism in internal functions
 abstract contract PerpetualMintInternal is
     ERC1155BaseInternal,
+    GuardsInternal,
     IPerpetualMintInternal,
     VRFConsumerBaseV2
 {
@@ -288,14 +290,6 @@ abstract contract PerpetualMintInternal is
         ratio = DEFAULT_ETH_TO_MINT_RATIO;
     }
 
-    /// @notice enforces that a risk value does not exceed the BASIS
-    /// @param risk risk value to check
-    function _enforceBasis(uint32 risk) internal pure {
-        if (risk > BASIS) {
-            revert BasisExceeded();
-        }
-    }
-
     /// @dev enforces that there are no pending mint requests for a collection
     /// @param collectionData the CollectionData struct for a given collection
     function _enforceNoPendingMints(
@@ -533,7 +527,7 @@ abstract contract PerpetualMintInternal is
             collection
         ];
 
-        _enforceBasis(risk);
+        _enforceBasis(risk, BASIS);
 
         _enforceNoPendingMints(collectionData);
 
@@ -545,6 +539,8 @@ abstract contract PerpetualMintInternal is
     /// @notice sets the consolation fee in basis points
     /// @param consolationFeeBP consolation fee in basis points
     function _setConsolationFeeBP(uint32 consolationFeeBP) internal {
+        _enforceBasis(consolationFeeBP, BASIS);
+
         Storage.layout().consolationFeeBP = consolationFeeBP;
     }
 
@@ -557,6 +553,8 @@ abstract contract PerpetualMintInternal is
     /// @notice sets the mint fee in basis points
     /// @param mintFeeBP mint fee in basis points
     function _setMintFeeBP(uint32 mintFeeBP) internal {
+        _enforceBasis(mintFeeBP, BASIS);
+
         Storage.layout().mintFeeBP = mintFeeBP;
     }
 
@@ -567,6 +565,8 @@ abstract contract PerpetualMintInternal is
     /// @notice sets the redemption fee in basis points
     /// @param redemptionFeeBP redemption fee in basis points
     function _setRedemptionFeeBP(uint32 redemptionFeeBP) internal {
+        _enforceBasis(redemptionFeeBP, BASIS);
+
         Storage.layout().redemptionFeeBP = redemptionFeeBP;
     }
 
