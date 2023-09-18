@@ -67,8 +67,18 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function cancelClaim(address claimer, uint256 tokenId) external onlyOwner {
+        _cancelClaim(claimer, tokenId);
+    }
+
+    /// @inheritdoc IPerpetualMint
     function claimMintEarnings() external onlyOwner {
         _claimMintEarnings(msg.sender);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function claimPrize(address prizeRecipient, uint256 tokenId) external {
+        _claimPrize(msg.sender, prizeRecipient, tokenId);
     }
 
     /// @inheritdoc IPerpetualMint
@@ -133,6 +143,17 @@ contract PerpetualMint is
     /// @inheritdoc IPerpetualMint
     function mintToken() external view returns (address token) {
         token = _mintToken();
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure returns (bytes4) {
+        return this.onERC1155Received.selector;
     }
 
     /// @inheritdoc IPerpetualMint

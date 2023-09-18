@@ -27,6 +27,11 @@ interface IPerpetualMintInternal {
     /// @notice thrown when fulfilled random words do not match for attempted mints
     error UnmatchedRandomWords();
 
+    /// @notice emitted when a claim is cancelled
+    /// @param claimer address of rejected claimer
+    /// @param collection address of rejected claim collection
+    event ClaimCancelled(address claimer, address indexed collection);
+
     /// @notice emitted when the risk for a collection is set
     /// @param collection address of collection
     /// @param risk risk of collection
@@ -49,6 +54,16 @@ interface IPerpetualMintInternal {
         uint256 attempts,
         uint256 totalMintAmount,
         uint256 totalReceiptAmount
+    );
+
+    /// @notice emitted when a prize is claimed
+    /// @param claimer address of claimer
+    /// @param prizeRecipient address of specified prize recipient
+    /// @param collection address of collection prize
+    event PrizeClaimed(
+        address claimer,
+        address prizeRecipient,
+        address indexed collection
     );
 
     /// @notice emitted when the Chainlink VRF config is set

@@ -47,8 +47,18 @@ interface IPerpetualMint is IPausable {
     /// @return value BASIS value
     function BASIS() external pure returns (uint32 value);
 
+    /// @notice Cancels a claim for a given claimer for given token ID
+    /// @param claimer address of rejected claimer
+    /// @param tokenId token ID of rejected claim
+    function cancelClaim(address claimer, uint256 tokenId) external;
+
     /// @notice claims all accrued mint earnings across collections
     function claimMintEarnings() external;
+
+    /// @notice Initiates a claim for a prize for a given collection
+    /// @param prizeRecipient address of intended prize recipient
+    /// @param tokenId token ID of prize, which is the prize collection address encoded as uint256
+    function claimPrize(address prizeRecipient, uint256 tokenId) external;
 
     /// @notice claims all accrued protocol fees
     function claimProtocolFees() external;
@@ -100,6 +110,21 @@ interface IPerpetualMint is IPausable {
     /// @notice Returns the address of the current $MINT token
     /// @return token address of the current $MINT token
     function mintToken() external view returns (address token);
+
+    /// @notice Validates receipt of an ERC1155 transfer.
+    /// @param operator Executor of transfer.
+    /// @param from Sender of tokens.
+    /// @param id Token ID received.
+    /// @param value Quantity of tokens received.
+    /// @param data Data payload.
+    /// @return bytes4 Function's own selector if transfer is accepted.
+    function onERC1155Received(
+        address operator,
+        address from,
+        uint256 id,
+        uint256 value,
+        bytes calldata data
+    ) external pure returns (bytes4);
 
     /// @notice Triggers paused state, when contract is unpaused.
     function pause() external;
