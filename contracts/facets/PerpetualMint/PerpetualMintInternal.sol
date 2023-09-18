@@ -39,12 +39,8 @@ abstract contract PerpetualMintInternal is
     /// @dev address of Chainlink VRFCoordinatorV2 contract
     address private immutable VRF;
 
-    constructor(
-        address vrfCoordinator,
-        address mintToken
-    ) VRFConsumerBaseV2(vrfCoordinator) {
+    constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {
         VRF = vrfCoordinator;
-        Storage.layout().mintToken = mintToken;
     }
 
     /// @notice returns the current accrued consolation fees

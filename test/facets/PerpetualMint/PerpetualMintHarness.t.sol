@@ -18,15 +18,7 @@ contract PerpetualMintHarness is
 {
     using EnumerableSet for EnumerableSet.UintSet;
 
-    constructor(address vrf, address mintToken) PerpetualMint(vrf, mintToken) {}
-
-    /// @inheritdoc IPerpetualMintHarness
-    function exposed_balanceOf(
-        address account,
-        uint256 tokenId
-    ) external view returns (uint256 balance) {
-        balance = _balanceOf(account, tokenId);
-    }
+    constructor(address vrf) PerpetualMint(vrf) {}
 
     /// @inheritdoc IPerpetualMintHarness
     function exposed_enforceBasis(uint32 value) external pure {
