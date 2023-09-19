@@ -70,6 +70,11 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function burnReceipt(uint256 tokenId) external onlyOwner {
+        _burnReceipt(tokenId);
+    }
+
+    /// @inheritdoc IPerpetualMint
     function cancelClaim(address claimer, uint256 tokenId) external onlyOwner {
         _cancelClaim(claimer, tokenId);
     }
