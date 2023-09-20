@@ -249,6 +249,18 @@ abstract contract PerpetualMintInternal is
         mintPrice = mintPrice == 0 ? DEFAULT_COLLECTION_MINT_PRICE : mintPrice;
     }
 
+    /// @notice Returns the current collection price to $MINT ratio in basis points
+    /// @return collectionPriceToMintRatioBasisPoints collection price to $MINT ratio in basis points
+    function _collectionPriceToMintRatioBP()
+        internal
+        view
+        returns (uint32 collectionPriceToMintRatioBasisPoints)
+    {
+        collectionPriceToMintRatioBasisPoints = Storage
+            .layout()
+            .collectionPriceToMintRatioBP;
+    }
+
     /// @notice Returns the current collection-wide risk of a collection
     /// @param collectionData the CollectionData struct for a given collection
     /// @return risk value of collection-wide risk
@@ -336,7 +348,8 @@ abstract contract PerpetualMintInternal is
             l.tiers,
             minter,
             collection,
-            randomWords
+            randomWords,
+            l.collectionPriceToMintRatioBP
         );
 
         collectionData.pendingRequests.remove(requestId);
@@ -432,13 +445,15 @@ abstract contract PerpetualMintInternal is
     /// @param minter address of minter
     /// @param collection address of collection for mint attempts
     /// @param randomWords array of random values relating to number of attempts
+    /// @param collectionPriceToMintRatioBP collection price to $MINT ratio in basis points
     function _resolveMints(
         address mintToken,
         CollectionData storage collectionData,
         TiersData memory tiersData,
         address minter,
         address collection,
-        uint256[] memory randomWords
+        uint256[] memory randomWords,
+        uint32 collectionPriceToMintRatioBP
     ) internal {
         // ensure the number of random words is even
         // each valid mint attempt requires two random words
@@ -462,10 +477,9 @@ abstract contract PerpetualMintInternal is
                 BASIS
             );
 
-            bool result = _collectionRisk(collectionData) >
-                firstNormalizedValue;
-
-            if (!result) {
+            // if the first normalized value is less than the collection risk, the mint attempt is unsuccessful
+            // and the second normalized value is used to determine the consolation tier
+            if (!(_collectionRisk(collectionData) > firstNormalizedValue)) {
                 uint256 tierMintAmount;
                 uint256 cumulativeRisk;
 
@@ -475,13 +489,18 @@ abstract contract PerpetualMintInternal is
 
                     // if the cumulative risk is greater than the second normalized value, the tier has been found
                     if (cumulativeRisk > secondNormalizedValue) {
-                        tierMintAmount = tiersData.tierMintAmounts[j];
+                        tierMintAmount =
+                            (tiersData.tierMultipliers[j] *
+                                collectionPriceToMintRatioBP *
+                                collectionData.mintPrice) /
+                            BASIS;
                         break;
                     }
                 }
 
                 totalMintAmount += tierMintAmount;
             } else {
+                // mint attempt is successful, so the total receipt amount is incremented
                 ++totalReceiptAmount;
             }
         }
@@ -519,6 +538,18 @@ abstract contract PerpetualMintInternal is
         Storage.layout().collections[collection].mintPrice = price;
 
         emit MintPriceSet(collection, price);
+    }
+
+    /// @notice sets the ratio of collection price to $MINT in basis points for mint consolations
+    /// @param collectionPriceToMintRatioBP new ratio of collection price to $MINT in basis points
+    function _setCollectionPriceToMintRatioBP(
+        uint32 collectionPriceToMintRatioBP
+    ) internal {
+        Storage
+            .layout()
+            .collectionPriceToMintRatioBP = collectionPriceToMintRatioBP;
+
+        emit CollectionPriceToMintRatioSet(collectionPriceToMintRatioBP);
     }
 
     /// @notice sets the risk for a given collection
