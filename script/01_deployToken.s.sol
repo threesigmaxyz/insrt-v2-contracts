@@ -15,11 +15,15 @@ import { IToken } from "../contracts/facets/Token/IToken.sol";
 import { Token } from "../contracts/facets/Token/Token.sol";
 
 /// @title DeployToken
-/// @dev deplots the TokenProxy diamond contract and the Token facet, and performs
+/// @dev deploys the TokenProxy diamond contract and the Token facet, and performs
 /// a diamondCut of the Token facet onto the TokenProxy diamond
 contract DeployToken is Script {
     /// @dev runs the script logic
     function run() external {
+        //NOTE: CHANGE AS NEEDED FOR PRODUCTION
+        string memory name = "MINT";
+        string memory symbol = "$MINT";
+
         // read deployer private key
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
 
@@ -29,7 +33,10 @@ contract DeployToken is Script {
         Token tokenFacet = new Token();
 
         // deploy TokenProxy
-        TokenProxy proxy = new TokenProxy("MINT", "$MINT"); //NOTE: CHANGE AS NEEDED FOR PRODUCTION
+        TokenProxy proxy = new TokenProxy(name, symbol);
+
+        console.log("Token Facet Address: ", address(tokenFacet));
+        console.log("Token Proxy Address: ", address(proxy));
 
         // get Token facet cuts
         ISolidStateDiamond.FacetCut[] memory facetCuts = getTokenFacetCuts(
@@ -37,12 +44,12 @@ contract DeployToken is Script {
         );
 
         // cut Token into TokenProxy
-        ISolidStateDiamond(proxy).diamondCut(facetCuts, address(0), "0x");
+        ISolidStateDiamond(proxy).diamondCut(facetCuts, address(0), "");
 
         vm.stopBroadcast();
     }
 
-    /// @dev provides the facet cuts for setting cutting Token facet into TokenProxy
+    /// @dev provides the facet cuts for cutting Token facet into TokenProxy
     /// @param facetAddress address of Token facet
     function getTokenFacetCuts(
         address facetAddress
@@ -104,7 +111,7 @@ contract DeployToken is Script {
             });
 
         ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](3);
+            memory facetCuts = new ISolidStateDiamond.FacetCut[](2);
 
         facetCuts[0] = erc20FacetCut;
         facetCuts[1] = tokenFacetCut;
