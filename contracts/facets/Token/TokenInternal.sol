@@ -73,6 +73,12 @@ abstract contract TokenInternal is
         emit MintingContractAdded(account);
     }
 
+    /// @notice returns value of airdropSupply
+    /// @return supply value of airdropSupply
+    function _airdropSupply() internal view returns (uint256 supply) {
+        supply = Storage.layout().airdropSupply;
+    }
+
     /// @notice returns the value of BASIS
     /// @return value BASIS value
     function _BASIS() internal pure returns (uint32 value) {
@@ -150,9 +156,28 @@ abstract contract TokenInternal is
         address[] calldata recipients,
         uint256[] calldata amounts
     ) internal {
+        Storage.Layout storage l = Storage.layout();
+        uint256 totalAmount;
+
         for (uint256 i = 0; i < recipients.length; ++i) {
+            AccrualData storage accountData = l.accrualData[recipients[i]];
+
+            uint256 accruedTokens = _scaleDown(
+                (l.globalRatio - accountData.offset) * _balanceOf(recipients[i])
+            );
+
+            // update claimable tokens
+            accountData.accruedTokens += accruedTokens;
+
+            // update account offset
+            accountData.offset = l.globalRatio;
+
             require(_transfer(address(this), recipients[i], amounts[i]));
+
+            totalAmount += amounts[i];
         }
+
+        l.airdropSupply -= totalAmount;
     }
 
     /// @notice returns the distributionFractionBP value
@@ -192,10 +217,10 @@ abstract contract TokenInternal is
         amount -= distributionAmount;
 
         uint256 accountBalance = _balanceOf(account);
-        uint256 totalSupply = _totalSupply();
-        uint256 supplyDelta = totalSupply -
+        uint256 supplyDelta = _totalSupply() -
             accountBalance -
-            l.distributionSupply;
+            l.distributionSupply -
+            l.airdropSupply;
         uint256 accruedTokens;
 
         AccrualData storage accountData = l.accrualData[account];
@@ -251,6 +276,23 @@ abstract contract TokenInternal is
         // mint tokens to contract and account
         _mint(address(this), distributionAmount);
         _mint(account, amount);
+    }
+
+    /// @notice mints an amount of tokens intended for airdrop
+    /// @param amount airdrop token amount
+    function _mintAirdrop(uint256 amount) internal {
+        Storage.Layout storage l = Storage.layout();
+
+        uint256 oldGlobalRatio = l.globalRatio;
+
+        _mint(amount, address(this));
+
+        // set new global ratio to be the same as prior to airdrop mint
+        l.globalRatio = oldGlobalRatio;
+        // decrease distribution supply by the amount minted for airdrop
+        l.distributionSupply -= (amount * l.distributionFractionBP) / BASIS;
+        // increase supply by the amount minted for airdrop
+        l.airdropSupply += amount;
     }
 
     /// @notice returns all addresses of contracts which are allowed to call mint/burn

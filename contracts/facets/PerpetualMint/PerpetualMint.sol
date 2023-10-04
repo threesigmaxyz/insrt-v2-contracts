@@ -154,6 +154,12 @@ contract PerpetualMint is
         ratio = _ethToMintRatio(Storage.layout());
     }
 
+    /// @notice mints an amount of mintToken tokens to the mintToken contract in exchange for ETH
+    /// @param amount amount of mintToken tokens to mint
+    function mintAirdrop(uint256 amount) external payable onlyOwner {
+        _mintAirdrop(amount);
+    }
+
     /// @inheritdoc IPerpetualMint
     function mintFeeBP() external view returns (uint32 mintFeeBasisPoints) {
         mintFeeBasisPoints = _mintFeeBP();

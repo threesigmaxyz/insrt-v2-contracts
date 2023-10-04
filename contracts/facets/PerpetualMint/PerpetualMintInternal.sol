@@ -359,6 +359,20 @@ abstract contract PerpetualMintInternal is
         delete l.requests[requestId];
     }
 
+    /// @notice mints an amount of mintToken tokens to the mintToken contract in exchange for ETH
+    /// @param amount amount of mintToken tokens to mint
+    function _mintAirdrop(uint256 amount) internal {
+        Storage.Layout storage l = Storage.layout();
+
+        if (amount / _ethToMintRatio(l) != msg.value) {
+            revert IncorrectETHReceived();
+        }
+
+        l.consolationFees += msg.value;
+
+        IToken(l.mintToken).mintAirdrop(amount);
+    }
+
     /// @notice Returns the current mint fee in basis points
     /// @return mintFeeBasisPoints mint fee in basis points
     function _mintFeeBP() internal view returns (uint32 mintFeeBasisPoints) {

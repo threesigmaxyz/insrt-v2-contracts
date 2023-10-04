@@ -128,6 +128,10 @@ interface IPerpetualMint is
     /// @return ratio current ETH to $MINT ratio
     function ethToMintRatio() external view returns (uint256 ratio);
 
+    /// @notice mints an amount of mintToken tokens to the mintToken contract in exchange for ETH
+    /// @param amount amount of mintToken tokens to mint
+    function mintAirdrop(uint256 amount) external payable;
+
     /// @notice Returns the mint fee in basis points
     /// @return mintFeeBasisPoints mint fee in basis points
     function mintFeeBP() external view returns (uint32 mintFeeBasisPoints);
