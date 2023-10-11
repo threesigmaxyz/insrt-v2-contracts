@@ -144,6 +144,11 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function setRedeemPaused(bool status) external onlyOwner {
+        _setRedeemPaused(status);
+    }
+
+    /// @inheritdoc IPerpetualMint
     function setRedemptionFeeBP(uint32 _redemptionFeeBP) external onlyOwner {
         _setRedemptionFeeBP(_redemptionFeeBP);
     }

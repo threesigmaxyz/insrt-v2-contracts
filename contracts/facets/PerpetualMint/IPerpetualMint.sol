@@ -78,7 +78,7 @@ interface IPerpetualMint is
         bytes calldata data
     ) external pure returns (bytes4);
 
-    /// @notice Triggers paused state, when contract is unpaused.
+    /// @notice Triggers paused state, _ONLY FOR attemptBatchMint FUNCTIONS_ when contract is unpaused.
     function pause() external;
 
     /// @notice redeems an amount of $MINT tokens for ETH (native token) for the msg.sender
@@ -123,6 +123,10 @@ interface IPerpetualMint is
         string calldata tokenURI
     ) external;
 
+    /// @notice sets the status of the redeemPaused state
+    /// @param status boolean indicating whether redeeming is paused
+    function setRedeemPaused(bool status) external;
+
     /// @notice sets the redemption fee in basis points
     /// @param _redemptionFeeBP redemption fee in basis points
     function setRedemptionFeeBP(uint32 _redemptionFeeBP) external;
@@ -141,6 +145,6 @@ interface IPerpetualMint is
         uint96 vrfSubscriptionBalanceThreshold
     ) external;
 
-    ///  @notice Triggers unpaused state, when contract is paused.
+    /// @notice Triggers unpaused state, _ONLY FOR attemptBatchMint FUNCTIONS_ when contract is unpaused.
     function unpause() external;
 }

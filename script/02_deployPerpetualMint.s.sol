@@ -78,8 +78,8 @@ contract DeployPerpetualMint is Script {
         facetCuts[2] = perpetualMintFacetCuts[2];
         facetCuts[3] = perpetualMintFacetCuts[3];
         facetCuts[4] = perpetualMintFacetCuts[4];
-        facetCuts[5] = perpetualMintFacetCuts[5];
-        facetCuts[6] = perpetualMintViewFacetCuts[0];
+        facetCuts[5] = perpetualMintViewFacetCuts[0];
+        facetCuts[6] = perpetualMintViewFacetCuts[1];
 
         // cut PerpetualMint into Core
         ISolidStateDiamond(core).diamondCut(facetCuts, address(0), "");
@@ -140,21 +140,9 @@ contract DeployPerpetualMint is Script {
                     selectors: erc1155MetadataExtensionFunctionSelectors
                 });
 
-        // map the Pausable function selectors to their respective interfaces
-        bytes4[] memory pausableFunctionSelectors = new bytes4[](1);
-
-        pausableFunctionSelectors[0] = IPausable.paused.selector;
-
-        ISolidStateDiamond.FacetCut
-            memory pausableFacetCut = IDiamondWritableInternal.FacetCut({
-                target: facetAddress,
-                action: IDiamondWritableInternal.FacetCutAction.ADD,
-                selectors: pausableFunctionSelectors
-            });
-
         //41 in total
         // map the PerpetualMint test related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](24);
+        bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](25);
 
         perpetualMintFunctionSelectors[0] = IPerpetualMint
             .attemptBatchMintWithEth
@@ -224,17 +212,21 @@ contract DeployPerpetualMint is Script {
             .setRedemptionFeeBP
             .selector;
 
-        perpetualMintFunctionSelectors[20] = IPerpetualMint.setTiers.selector;
+        perpetualMintFunctionSelectors[20] = IPerpetualMint
+            .setRedeemPaused
+            .selector;
 
-        perpetualMintFunctionSelectors[21] = IPerpetualMint
+        perpetualMintFunctionSelectors[21] = IPerpetualMint.setTiers.selector;
+
+        perpetualMintFunctionSelectors[22] = IPerpetualMint
             .setVRFConfig
             .selector;
 
-        perpetualMintFunctionSelectors[22] = IPerpetualMint
+        perpetualMintFunctionSelectors[23] = IPerpetualMint
             .setVRFSubscriptionBalanceThreshold
             .selector;
 
-        perpetualMintFunctionSelectors[23] = IPerpetualMint.unpause.selector;
+        perpetualMintFunctionSelectors[24] = IPerpetualMint.unpause.selector;
 
         ISolidStateDiamond.FacetCut
             memory perpetualMintFacetCut = IDiamondWritableInternal.FacetCut({
@@ -259,15 +251,14 @@ contract DeployPerpetualMint is Script {
                 });
 
         ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](6);
+            memory facetCuts = new ISolidStateDiamond.FacetCut[](5);
 
         // omit Ownable and ERC165 since SolidStateDiamond includes those
         facetCuts[0] = erc1155FacetCut;
         facetCuts[1] = erc1155MetadataFacetCut;
         facetCuts[2] = erc1155MetadataExtensionFacetCut;
-        facetCuts[3] = pausableFacetCut;
-        facetCuts[4] = perpetualMintFacetCut;
-        facetCuts[5] = vrfConsumerBaseV2FacetCut;
+        facetCuts[3] = perpetualMintFacetCut;
+        facetCuts[4] = vrfConsumerBaseV2FacetCut;
 
         return facetCuts;
     }
@@ -278,7 +269,7 @@ contract DeployPerpetualMint is Script {
         address viewFacetAddress
     ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
         // map the PerpetualMint test related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](17);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](18);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -337,14 +328,18 @@ contract DeployPerpetualMint is Script {
             .selector;
 
         perpetualMintViewFunctionSelectors[14] = IPerpetualMintView
-            .tiers
+            .redeemPaused
             .selector;
 
         perpetualMintViewFunctionSelectors[15] = IPerpetualMintView
-            .vrfConfig
+            .tiers
             .selector;
 
         perpetualMintViewFunctionSelectors[16] = IPerpetualMintView
+            .vrfConfig
+            .selector;
+
+        perpetualMintViewFunctionSelectors[17] = IPerpetualMintView
             .vrfSubscriptionBalanceThreshold
             .selector;
 
@@ -356,10 +351,23 @@ contract DeployPerpetualMint is Script {
                     selectors: perpetualMintViewFunctionSelectors
                 });
 
+        // map the Pausable function selectors to their respective interfaces
+        bytes4[] memory pausableFunctionSelectors = new bytes4[](1);
+
+        pausableFunctionSelectors[0] = IPausable.paused.selector;
+
+        ISolidStateDiamond.FacetCut
+            memory pausableFacetCut = IDiamondWritableInternal.FacetCut({
+                target: viewFacetAddress,
+                action: IDiamondWritableInternal.FacetCutAction.ADD,
+                selectors: pausableFunctionSelectors
+            });
+
         ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](1);
+            memory facetCuts = new ISolidStateDiamond.FacetCut[](2);
 
         facetCuts[0] = perpetualMintViewFacetCut;
+        facetCuts[1] = pausableFacetCut;
 
         return facetCuts;
     }

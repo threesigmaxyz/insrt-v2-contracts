@@ -390,6 +390,10 @@ abstract contract PerpetualMintInternal is
     function _redeem(address account, uint256 amount) internal {
         Storage.Layout storage l = Storage.layout();
 
+        if (l.redeemPaused) {
+            revert RedeemPaused();
+        }
+
         // burn amount of $MINT to be swapped
         IToken(l.mintToken).burn(account, amount);
 
@@ -405,6 +409,12 @@ abstract contract PerpetualMintInternal is
         l.consolationFees -= ethAmount;
 
         payable(account).sendValue(ethAmount);
+    }
+
+    /// @notice returns value of redeemPaused
+    /// @return status boolean indicating whether redeeming is paused
+    function _redeemPaused() internal view returns (bool status) {
+        status = Storage.layout().redeemPaused;
     }
 
     /// @notice returns the current redemption fee in basis points
@@ -607,6 +617,14 @@ abstract contract PerpetualMintInternal is
         Storage.layout().mintToken = mintToken;
 
         emit MintTokenSet(mintToken);
+    }
+
+    /// @notice sets the status of the redeemPaused state
+    /// @param status boolean indicating whether redeeming is paused
+    function _setRedeemPaused(bool status) internal {
+        Storage.layout().redeemPaused = status;
+
+        emit RedeemPausedSet(status);
     }
 
     /// @notice sets the redemption fee in basis points

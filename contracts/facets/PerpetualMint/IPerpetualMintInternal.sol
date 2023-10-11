@@ -21,6 +21,9 @@ interface IPerpetualMintInternal {
     /// there are pending mint requests in a collection
     error PendingRequests();
 
+    /// @dev thrown when attempting to redeem when redeeming is paused
+    error RedeemPaused();
+
     /// @notice thrown when fulfilled random words do not match for attempted mints
     error UnmatchedRandomWords();
 
@@ -81,6 +84,10 @@ interface IPerpetualMintInternal {
         address prizeRecipient,
         address indexed collection
     );
+
+    /// @notice emitted when redeemPaused is set
+    /// @param status boolean value indicating whether redeeming is paused
+    event RedeemPausedSet(bool status);
 
     /// @notice emitted when the redemption fee is set
     /// @param redemptionFeeBP redemption fee in basis points
