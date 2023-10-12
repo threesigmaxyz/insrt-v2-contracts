@@ -28,8 +28,8 @@ contract DeployPerpetualMint is Script {
         // Chainlink VRF Coordinator address
         address VRF_COORDINATOR = vm.envAddress("VRF_COORDINATOR");
 
-        string memory receiptName = "I-O-U";
-        string memory receiptSymbol = "IOU";
+        string memory receiptName = "Ticket";
+        string memory receiptSymbol = "TICKET";
 
         // read deployer private key
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
