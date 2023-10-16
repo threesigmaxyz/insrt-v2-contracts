@@ -140,7 +140,7 @@ contract DeployPerpetualMint is Script {
                     selectors: erc1155MetadataExtensionFunctionSelectors
                 });
 
-        // map the PerpetualMint test related function selectors to their respective interfaces
+        // map the PerpetualMint related function selectors to their respective interfaces
         bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](26);
 
         perpetualMintFunctionSelectors[0] = IPerpetualMint
@@ -271,7 +271,7 @@ contract DeployPerpetualMint is Script {
     function getPerpetualMintViewFacetCuts(
         address viewFacetAddress
     ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
-        // map the PerpetualMint test related function selectors to their respective interfaces
+        // map the PerpetualMint related function selectors to their respective interfaces
         bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](18);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
