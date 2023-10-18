@@ -10,7 +10,7 @@ import { AddressUtils } from "@solidstate/contracts/utils/AddressUtils.sol";
 
 import { ERC1155MetadataExtensionInternal } from "./ERC1155MetadataExtensionInternal.sol";
 import { IPerpetualMintInternal } from "./IPerpetualMintInternal.sol";
-import { CollectionData, PerpetualMintStorage as Storage, RequestData, TiersData, VRFConfig } from "./Storage.sol";
+import { CollectionData, MintOutcome, MintResultData, PerpetualMintStorage as Storage, RequestData, TiersData, VRFConfig } from "./Storage.sol";
 import { IToken } from "../Token/IToken.sol";
 import { GuardsInternal } from "../../common/GuardsInternal.sol";
 
@@ -188,6 +188,81 @@ abstract contract PerpetualMintInternal is
         _burn(address(this), tokenId, 1);
     }
 
+    /// @notice calculates the mint result of a given number of mint attempts for a given collection using given randomness
+    /// @param collection address of collection for mint attempts
+    /// @param numberOfMints number of mints to attempt
+    /// @param randomness random value to use in calculation
+    function _calculateMintResult(
+        address collection,
+        uint32 numberOfMints,
+        uint256 randomness
+    ) internal view returns (MintResultData memory result) {
+        Storage.Layout storage l = Storage.layout();
+
+        CollectionData storage collectionData = l.collections[collection];
+        TiersData storage tiers = l.tiers;
+
+        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
+        uint32 collectionRisk = _collectionRisk(collectionData);
+        uint256 ethToMintRatio = _ethToMintRatio(l);
+
+        result.mintOutcomes = new MintOutcome[](numberOfMints);
+
+        uint32 numberOfWords = numberOfMints * 2;
+
+        uint256[] memory randomWords = new uint256[](numberOfWords);
+
+        for (uint256 i = 0; i < numberOfWords; ++i) {
+            randomWords[i] = uint256(keccak256(abi.encode(randomness, i)));
+        }
+
+        for (uint256 i = 0; i < randomWords.length; i += 2) {
+            MintOutcome memory outcome;
+
+            uint256 firstNormalizedValue = _normalizeValue(
+                randomWords[i],
+                BASIS
+            );
+
+            uint256 secondNormalizedValue = _normalizeValue(
+                randomWords[i + 1],
+                BASIS
+            );
+
+            if (!(collectionRisk > firstNormalizedValue)) {
+                uint256 mintAmount;
+                uint256 cumulativeRisk;
+
+                for (uint256 j = 0; j < tiers.tierRisks.length; ++j) {
+                    cumulativeRisk += tiers.tierRisks[j];
+
+                    if (cumulativeRisk > secondNormalizedValue) {
+                        mintAmount =
+                            (tiers.tierMultipliers[j] *
+                                ethToMintRatio *
+                                collectionMintPrice) /
+                            BASIS;
+
+                        outcome.tierIndex = j;
+                        outcome.tierMultiplier = tiers.tierMultipliers[j];
+                        outcome.tierRisk = tiers.tierRisks[j];
+                        outcome.mintAmount = mintAmount;
+
+                        break;
+                    }
+                }
+
+                result.totalMintAmount += mintAmount;
+            } else {
+                ++result.totalSuccessfulMints;
+            }
+
+            result.mintOutcomes[i / 2] = outcome;
+        }
+
+        return result;
+    }
+
     /// @notice Cancels a claim for a given claimer for given token ID
     /// @param claimer address of rejected claimer
     /// @param tokenId token ID of rejected claim
@@ -334,7 +409,8 @@ abstract contract PerpetualMintInternal is
 
         _resolveMints(
             l.mintToken,
-            collectionData,
+            _collectionMintPrice(collectionData),
+            _collectionRisk(collectionData),
             l.tiers,
             minter,
             collection,
@@ -473,7 +549,8 @@ abstract contract PerpetualMintInternal is
 
     /// @notice resolves the outcomes of attempted mints for a given collection
     /// @param mintToken address of $MINT token
-    /// @param collectionData the CollectionData struct for a given collection
+    /// @param collectionMintPrice mint price of given collection
+    /// @param collectionRisk risk of given collection
     /// @param tiersData the TiersData struct for mint consolations
     /// @param minter address of minter
     /// @param collection address of collection for mint attempts
@@ -481,7 +558,8 @@ abstract contract PerpetualMintInternal is
     /// @param ethToMintRatio ratio of ETH to $MINT
     function _resolveMints(
         address mintToken,
-        CollectionData storage collectionData,
+        uint256 collectionMintPrice,
+        uint32 collectionRisk,
         TiersData memory tiersData,
         address minter,
         address collection,
@@ -512,7 +590,7 @@ abstract contract PerpetualMintInternal is
 
             // if the first normalized value is less than the collection risk, the mint attempt is unsuccessful
             // and the second normalized value is used to determine the consolation tier
-            if (!(_collectionRisk(collectionData) > firstNormalizedValue)) {
+            if (!(collectionRisk > firstNormalizedValue)) {
                 uint256 tierMintAmount;
                 uint256 cumulativeRisk;
 
@@ -525,7 +603,7 @@ abstract contract PerpetualMintInternal is
                         tierMintAmount =
                             (tiersData.tierMultipliers[j] *
                                 ethToMintRatio *
-                                _collectionMintPrice(collectionData)) /
+                                collectionMintPrice) /
                             BASIS;
                         break;
                     }
