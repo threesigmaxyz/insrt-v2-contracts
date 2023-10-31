@@ -318,7 +318,6 @@ abstract contract PerpetualMintInternal is
         CollectionData storage collectionData = l.collections[collection];
         TiersData storage tiers = l.tiers;
 
-        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
         uint32 collectionRisk = _collectionRisk(collectionData);
         uint256 ethToMintRatio = _ethToMintRatio(l);
 
@@ -356,8 +355,9 @@ abstract contract PerpetualMintInternal is
                         mintAmount =
                             (tiers.tierMultipliers[j] *
                                 ethToMintRatio *
-                                collectionMintPrice) /
-                            BASIS;
+                                _collectionMintPrice(collectionData) *
+                                _collectionMintMultiplier(collectionData)) /
+                            (uint256(BASIS) * BASIS);
 
                         outcome.tierIndex = j;
                         outcome.tierMultiplier = tiers.tierMultipliers[j];
@@ -429,6 +429,17 @@ abstract contract PerpetualMintInternal is
         l.protocolFees = 0;
 
         payable(recipient).sendValue(protocolFees);
+    }
+
+    /// @notice Returns the current collection multiplier for a given collection
+    /// @param collectionData the CollectionData struct for a given collection
+    /// @return multiplier current collection multiplier
+    function _collectionMintMultiplier(
+        CollectionData storage collectionData
+    ) internal view returns (uint256 multiplier) {
+        multiplier = collectionData.mintMultiplier;
+
+        multiplier = multiplier == 0 ? BASIS : multiplier; // default multiplier is 1x
     }
 
     /// @notice Returns the current mint price for a given collection
@@ -525,6 +536,7 @@ abstract contract PerpetualMintInternal is
 
         _resolveMints(
             l.mintToken,
+            _collectionMintMultiplier(collectionData),
             _collectionMintPrice(collectionData),
             _collectionRisk(collectionData),
             l.tiers,
@@ -695,6 +707,7 @@ abstract contract PerpetualMintInternal is
 
     /// @notice resolves the outcomes of attempted mints for a given collection
     /// @param mintToken address of $MINT token
+    /// @param collectionMintMultiplier mint multiplier of given collection
     /// @param collectionMintPrice mint price of given collection
     /// @param collectionRisk risk of given collection
     /// @param tiersData the TiersData struct for mint consolations
@@ -704,6 +717,7 @@ abstract contract PerpetualMintInternal is
     /// @param ethToMintRatio ratio of ETH to $MINT
     function _resolveMints(
         address mintToken,
+        uint256 collectionMintMultiplier,
         uint256 collectionMintPrice,
         uint32 collectionRisk,
         TiersData memory tiersData,
@@ -734,7 +748,7 @@ abstract contract PerpetualMintInternal is
                 BASIS
             );
 
-            // if the first normalized value is less than the collection risk, the mint attempt is unsuccessful
+            // if the collection risk is less than the first normalized value, the mint attempt is unsuccessful
             // and the second normalized value is used to determine the consolation tier
             if (!(collectionRisk > firstNormalizedValue)) {
                 uint256 tierMintAmount;
@@ -751,6 +765,7 @@ abstract contract PerpetualMintInternal is
                                 ethToMintRatio *
                                 collectionMintPrice) /
                             BASIS;
+
                         break;
                     }
                 }
@@ -764,6 +779,11 @@ abstract contract PerpetualMintInternal is
 
         // Mint the cumulative amounts at the end
         if (totalMintAmount > 0) {
+            // Apply collection-specific multiplier
+            totalMintAmount =
+                (totalMintAmount * collectionMintMultiplier) /
+                BASIS;
+
             IToken(mintToken).mint(minter, totalMintAmount);
         }
 
@@ -783,6 +803,24 @@ abstract contract PerpetualMintInternal is
             totalMintAmount,
             totalReceiptAmount
         );
+    }
+
+    /// @notice sets the mint multiplier for a given collection
+    /// @param collection address of collection
+    /// @param multiplier mint multiplier of the collection
+    function _setCollectionMintMultiplier(
+        address collection,
+        uint256 multiplier
+    ) internal {
+        CollectionData storage collectionData = Storage.layout().collections[
+            collection
+        ];
+
+        _enforceNoPendingMints(collectionData);
+
+        collectionData.mintMultiplier = multiplier;
+
+        emit CollectionMultiplierSet(collection, multiplier);
     }
 
     /// @notice set the mint price for a given collection
