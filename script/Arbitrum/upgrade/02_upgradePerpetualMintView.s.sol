@@ -41,7 +41,7 @@ contract UpgradePerpetualMintViewArb is BatchScript {
         vm.stopBroadcast();
 
         console2.log(
-            "New PerpetualMint Facet Address: ",
+            "New PerpetualMintView Facet Address: ",
             address(perpetualMintView)
         );
         console2.log("Core Address: ", core);
