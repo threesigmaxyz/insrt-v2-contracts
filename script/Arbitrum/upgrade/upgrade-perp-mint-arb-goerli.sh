@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
 set -e
 
-CHAIN_ID=42161
-RPC_URL=$ARBITRUM_RPC_URL
-UPGRADE_SCRIPT="01_upgradePerpetualMint.s.sol"
-VERIFIER_URL="https://api.arbiscan.io/api"
-export CHAIN="arbitrum_one"
-export CORE_ADDRESS="0x791b648aa3bd21964417690c635040f40ce974a5"
-export GNOSIS_SAFE="0x536935E002b88412aC4e05Eb23a07272e7BdB033"
-export PRIVATE_KEY=$DEPLOYER_KEY
-export WALLET_TYPE="local"
-export VRF_COORDINATOR="0x41034678D6C633D8a95c75e1138A360a28bA15d1"
+CHAIN_ID=421613
+RPC_URL=$ARBITRUM_GOERLI_RPC_URL
+UPGRADE_SCRIPT="01_upgradePerpetualMintEOA.s.sol"
+VERIFIER_URL="https://api-goerli.arbiscan.io/api"
+export CORE_ADDRESS="0x1e364C5345b2e2Ca4306d1632b330ebC17578D55"
+export VRF_COORDINATOR="0x6D80646bEAdd07cE68cab36c27c626790bBcf17f"
 
 # Check if ARBISCAN_API_KEY is set
 if [[ -z $ARBISCAN_API_KEY ]]; then
@@ -18,9 +14,9 @@ if [[ -z $ARBISCAN_API_KEY ]]; then
   exit 1
 fi
 
-# Check if ARBITRUM_RPC_URL is set
-if [[ -z $ARBITRUM_RPC_URL ]]; then
-  echo -e "Error: ARBITRUM_RPC_URL is not set in .env.\n"
+# Check if ARBITRUM_GOERLI_RPC_URL is set
+if [[ -z $ARBITRUM_GOERLI_RPC_URL ]]; then
+  echo -e "Error: ARBITRUM_GOERLI_RPC_URL is not set in .env.\n"
   exit 1
 fi
 
@@ -42,6 +38,6 @@ DEPLOYER_BALANCE_ETH=$(cast from-wei $DEPLOYER_BALANCE_DEC)
 echo -e "Deployer address balance is $DEPLOYER_BALANCE_ETH ETH.\n"
 
 # Run forge scripts
-forge script script/Arbitrum/upgrade/${UPGRADE_SCRIPT} --rpc-url $RPC_URL --verify --broadcast --verifier-url $VERIFIER_URL --ffi --sender $DEPLOYER_ADDRESS --legacy
+forge script script/Arbitrum/upgrade/${UPGRADE_SCRIPT} --rpc-url $RPC_URL --verify --broadcast --verifier-url $VERIFIER_URL
 
 echo -e "\nDeployer Address: $DEPLOYER_ADDRESS\n"

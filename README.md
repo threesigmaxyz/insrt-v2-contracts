@@ -385,6 +385,25 @@ make upgrade-perp-mint-arb
 make upgrade-perp-mint-view-arb
 ```
 
+#### Arbitrum Goerli
+
+Requires the following additional environment variables set:
+
+- `ARBITRUM_GOERLI_RPC_URL`: Arbitrum Goerli RPC URL
+- `ARBISCAN_API_KEY`: Arbiscan API key for contract verification
+
+##### Upgrade PerpetualMint facet
+
+```
+make upgrade-perp-mint-arb-goerli
+```
+
+##### Upgrade PerpetualMintView facet
+
+```
+make upgrade-perp-mint-view-arb-goerli
+```
+
 ## On-chain calculations
 
 ### Arbitrum

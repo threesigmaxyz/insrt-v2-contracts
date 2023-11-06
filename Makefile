@@ -146,6 +146,16 @@ upgrade-perp-mint-arb:
 upgrade-perp-mint-view-arb:
 	@./script/Arbitrum/upgrade/upgrade-perp-mint-view-arb.sh
 
+##### Arbitrum Goerli
+
+##### Upgrade PerpetualMint facet
+upgrade-perp-mint-arb-goerli:
+	@./script/Arbitrum/upgrade/upgrade-perp-mint-arb-goerli.sh
+
+##### Upgrade PerpetualMintView facet
+upgrade-perp-mint-view-arb-goerli:
+	@./script/Arbitrum/upgrade/upgrade-perp-mint-view-arb-goerli.sh
+
 
 ### Calculations
 
