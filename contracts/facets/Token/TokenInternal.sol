@@ -216,64 +216,58 @@ abstract contract TokenInternal is
         // decrease amount to mint to account
         amount -= distributionAmount;
 
-        // patch fix for airdrop minting
-        // if this mint is not an airdrop mint, accrue tokens for account
-        // otherwise, skip straight to updating supply and minting tokens
-        if (account != address(this)) {
-            uint256 accountBalance = _balanceOf(account);
-            uint256 supplyDelta = _totalSupply() -
-                accountBalance -
-                l.distributionSupply -
-                l.airdropSupply;
-            uint256 accruedTokens;
+        uint256 accountBalance = _balanceOf(account);
+        uint256 supplyDelta = _totalSupply() -
+            accountBalance -
+            l.distributionSupply -
+            l.airdropSupply;
+        uint256 accruedTokens;
 
-            AccrualData storage accountData = l.accrualData[account];
+        AccrualData storage accountData = l.accrualData[account];
 
-            // if the supplyDelta is zero, it means there are no tokens in circulation
-            // so the receiving account is the first/only receiver therefore is owed the full
-            // distribution amount.
-            // to ensure the full distribution amount is given to an account in this instance,
-            // the account offset for said account should not be updated
-            if (supplyDelta > 0) {
-                // tokens are accrued for account prior to global ratio or offset being updated
-                accruedTokens = _scaleDown(
+        // if the supplyDelta is zero, it means there are no tokens in circulation
+        // so the receiving account is the first/only receiver therefore is owed the full
+        // distribution amount.
+        // to ensure the full distribution amount is given to an account in this instance,
+        // the account offset for said account should not be updated
+        if (supplyDelta > 0) {
+            // tokens are accrued for account prior to global ratio or offset being updated
+            accruedTokens = _scaleDown(
+                (l.globalRatio - accountData.offset) * accountBalance
+            );
+
+            // update global ratio
+            l.globalRatio += _scaleUp(distributionAmount) / supplyDelta;
+
+            // update account offset
+            accountData.offset = l.globalRatio;
+
+            // update claimable tokens
+            accountData.accruedTokens += accruedTokens;
+        } else {
+            // calculation ratio of distributionAmount to remaining amount
+            uint256 distributionRatio = _scaleUp(distributionAmount) / amount;
+
+            // check whether the sole holder is the first minter because if so
+            // the globalRatio will be a multiple of distributionRatio
+            if (l.globalRatio % distributionRatio == 0) {
+                // update globalRatio
+                l.globalRatio += distributionRatio;
+                // update account offset
+                accountData.offset = l.globalRatio - distributionRatio;
+            } else {
+                // sole holder due to all other minters burning tokens
+                // calculate and accrue previous token accrual
+                uint256 previousAccruals = _scaleDown(
                     (l.globalRatio - accountData.offset) * accountBalance
                 );
-
-                // update global ratio
-                l.globalRatio += _scaleUp(distributionAmount) / supplyDelta;
-
+                accountData.accruedTokens +=
+                    distributionAmount +
+                    previousAccruals;
+                // update globalRatio
+                l.globalRatio += distributionRatio;
                 // update account offset
                 accountData.offset = l.globalRatio;
-
-                // update claimable tokens
-                accountData.accruedTokens += accruedTokens;
-            } else {
-                // calculation ratio of distributionAmount to remaining amount
-                uint256 distributionRatio = _scaleUp(distributionAmount) /
-                    amount;
-
-                // check whether the sole holder is the first minter because if so
-                // the globalRatio will be a multiple of distributionRatio
-                if (l.globalRatio % distributionRatio == 0) {
-                    // update globalRatio
-                    l.globalRatio += distributionRatio;
-                    // update account offset
-                    accountData.offset = l.globalRatio - distributionRatio;
-                } else {
-                    // sole holder due to all other minters burning tokens
-                    // calculate and accrue previous token accrual
-                    uint256 previousAccruals = _scaleDown(
-                        (l.globalRatio - accountData.offset) * accountBalance
-                    );
-                    accountData.accruedTokens +=
-                        distributionAmount +
-                        previousAccruals;
-                    // update globalRatio
-                    l.globalRatio += distributionRatio;
-                    // update account offset
-                    accountData.offset = l.globalRatio;
-                }
             }
         }
 
@@ -287,18 +281,10 @@ abstract contract TokenInternal is
     /// @notice mints an amount of tokens intended for airdrop
     /// @param amount airdrop token amount
     function _mintAirdrop(uint256 amount) internal {
-        Storage.Layout storage l = Storage.layout();
+        _mint(address(this), amount);
 
-        uint256 oldGlobalRatio = l.globalRatio;
-
-        _mint(amount, address(this));
-
-        // set new global ratio to be the same as prior to airdrop mint
-        l.globalRatio = oldGlobalRatio;
-        // decrease distribution supply by the amount minted for airdrop
-        l.distributionSupply -= (amount * l.distributionFractionBP) / BASIS;
         // increase supply by the amount minted for airdrop
-        l.airdropSupply += amount;
+        Storage.layout().airdropSupply += amount;
     }
 
     /// @notice returns all addresses of contracts which are allowed to call mint/burn
