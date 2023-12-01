@@ -152,6 +152,10 @@ upgrade-token-arb:
 
 ##### Arbitrum Goerli
 
+##### Upgrade & Split PerpetualMint facet
+upgrade-split-perp-mint-arb-goerli:
+	@./script/Arbitrum/upgrade/upgrade-split-perp-mint-arb-goerli.sh
+
 ##### Upgrade PerpetualMint facet
 upgrade-perp-mint-arb-goerli:
 	@./script/Arbitrum/upgrade/upgrade-perp-mint-arb-goerli.sh
