@@ -373,6 +373,12 @@ Requires the following additional environment variables set:
 - `ARBITRUM_RPC_URL`: Arbitrum RPC URL
 - `ARBISCAN_API_KEY`: Arbiscan API key for contract verification
 
+##### Upgrade & Split PerpetualMint facet
+
+```
+make upgrade-split-perp-mint-arb
+```
+
 #### Upgrade PerpetualMint facet
 
 ```

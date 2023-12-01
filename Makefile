@@ -138,6 +138,10 @@ configure-perp-mint-local-base:
 
 #### Arbitrum
 
+##### Upgrade & Split PerpetualMint facet
+upgrade-split-perp-mint-arb:
+	@./script/Arbitrum/upgrade/upgrade-split-perp-mint-arb.sh
+
 ##### Upgrade PerpetualMint facet
 upgrade-perp-mint-arb:
 	@./script/Arbitrum/upgrade/upgrade-perp-mint-arb.sh
