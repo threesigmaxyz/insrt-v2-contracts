@@ -160,6 +160,10 @@ upgrade-perp-mint-arb-goerli:
 upgrade-perp-mint-view-arb-goerli:
 	@./script/Arbitrum/upgrade/upgrade-perp-mint-view-arb-goerli.sh
 
+##### Upgrade Token facet
+upgrade-token-arb-goerli:
+	@./script/Arbitrum/upgrade/upgrade-token-arb-goerli.sh
+
 
 ### Calculations
 

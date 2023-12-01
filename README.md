@@ -410,6 +410,12 @@ make upgrade-perp-mint-arb-goerli
 make upgrade-perp-mint-view-arb-goerli
 ```
 
+#### Upgrade Token facet
+
+```
+make upgrade-token-arb-goerli
+```
+
 ## On-chain calculations
 
 ### Arbitrum
