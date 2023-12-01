@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.19;
 
-import { VRFCoordinatorV2Interface } from "@chainlink/interfaces/VRFCoordinatorV2Interface.sol";
+import { VRFCoordinatorV2Interface } from "@chainlink/vrf/interfaces/VRFCoordinatorV2Interface.sol";
 import { VRFConsumerBaseV2 } from "@chainlink/vrf/VRFConsumerBaseV2.sol";
 import { OwnableInternal } from "@solidstate/contracts/access/ownable/OwnableInternal.sol";
 import { EnumerableSet } from "@solidstate/contracts/data/EnumerableSet.sol";
@@ -16,7 +16,7 @@ import { CollectionData, MintOutcome, MintResultData, PerpetualMintStorage as St
 import { IToken } from "../Token/IToken.sol";
 import { GuardsInternal } from "../../common/GuardsInternal.sol";
 
-/// @title PerpetualMintInternal facet contract
+/// @title PerpetualMintInternal
 /// @dev defines modularly all logic for the PerpetualMint mechanism in internal functions
 abstract contract PerpetualMintInternal is
     ERC1155BaseInternal,
