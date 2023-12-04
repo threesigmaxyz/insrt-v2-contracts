@@ -138,6 +138,14 @@ configure-perp-mint-local-base:
 
 #### Arbitrum
 
+##### Upgrade & Remove PerpetualMint facet
+upgrade-remove-perp-mint-arb:
+	@./script/Arbitrum/upgrade/upgrade-remove-perp-mint-arb.sh
+
+##### Upgrade & Remove PerpetualMintView facet
+upgrade-remove-perp-mint-view-arb:
+	@./script/Arbitrum/upgrade/upgrade-remove-perp-mint-view-arb.sh
+
 ##### Upgrade & Split PerpetualMint facet
 upgrade-split-perp-mint-arb:
 	@./script/Arbitrum/upgrade/upgrade-split-perp-mint-arb.sh
@@ -155,6 +163,14 @@ upgrade-token-arb:
 	@./script/Arbitrum/upgrade/upgrade-token-arb.sh
 
 ##### Arbitrum Goerli
+
+##### Upgrade & Remove PerpetualMint facet
+upgrade-remove-perp-mint-arb-goerli:
+	@./script/Arbitrum/upgrade/upgrade-remove-perp-mint-arb-goerli.sh
+
+##### Upgrade & Remove PerpetualMintView facet
+upgrade-remove-perp-mint-view-arb-goerli:
+	@./script/Arbitrum/upgrade/upgrade-remove-perp-mint-view-arb-goerli.sh
 
 ##### Upgrade & Split PerpetualMint facet
 upgrade-split-perp-mint-arb-goerli:

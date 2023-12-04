@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import "forge-std/Script.sol";
+import "forge-safe/BatchScript.sol";
 
 import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidStateDiamond.sol";
 import { IDiamondWritable } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritable.sol";
@@ -10,10 +10,10 @@ import { IDiamondWritableInternal } from "@solidstate/contracts/proxy/diamond/wr
 import { IPerpetualMintView } from "../../../contracts/facets/PerpetualMint/IPerpetualMintView.sol";
 import { PerpetualMintView } from "../../../contracts/facets/PerpetualMint/PerpetualMintView.sol";
 
-/// @title UpgradePerpetualMintViewArbEOA
-/// @dev Deploys a new PerpetualMintView facet and signs and submits a diamondCut of the PerpetualMintView facet to the Core diamond
-/// using an externally owned account
-contract UpgradePerpetualMintViewArbEOA is Script {
+/// @title UpgradeAndRemovePerpetualMintViewArb
+/// @dev Upgrades and removes certain functions from the PerpetualMintView facet by deploying a new PerpetualMintView facet and signing and submitting
+/// a diamondCut of the upgrade & removal PerpetualMintView facets to the Core diamond via the Gnosis Safe Transaction Service API
+contract UpgradeAndRemovePerpetualMintViewArb is BatchScript {
     /// @dev runs the script logic
     function run() external {
         // read deployer private key
@@ -22,27 +22,41 @@ contract UpgradePerpetualMintViewArbEOA is Script {
         // get Core PerpetualMint diamond address
         address core = vm.envAddress("CORE_ADDRESS");
 
+        // get Gnosis Safe (protocol owner) address
+        address gnosisSafeAddress = vm.envAddress("GNOSIS_SAFE");
+
         // get VRF Coordinator address
         address VRF_COORDINATOR = vm.envAddress("VRF_COORDINATOR");
 
+        // we only explicitly broadcast facet deployments
+        // broadcasting of batch execution gnosis multi-sig transactions is done
+        // separately using the Gnosis Safe Transaction Service API
         vm.startBroadcast(deployerPrivateKey);
 
-        // deploy PerpetualMintView facet
+        // deploy new PerpetualMintView facet
         PerpetualMintView perpetualMintView = new PerpetualMintView(
             VRF_COORDINATOR
         );
 
-        console.log(
+        vm.stopBroadcast();
+
+        console2.log(
             "New PerpetualMintView Facet Address: ",
             address(perpetualMintView)
         );
-        console.log("Core Address: ", core);
-        console.log("VRF Coordinator Address: ", VRF_COORDINATOR);
+        console2.log("Core Address: ", core);
+        console2.log("VRF Coordinator Address: ", VRF_COORDINATOR);
 
         // get new PerpetualMintView facet cuts
         ISolidStateDiamond.FacetCut[]
             memory newPerpetualMintViewFacetCuts = getNewPerpetualMintViewFacetCuts(
                 address(perpetualMintView)
+            );
+
+        // get removal PerpetualMintView facet cuts
+        ISolidStateDiamond.FacetCut[]
+            memory removalPerpetualMintViewFacetCuts = getRemovalPerpetualMintViewFacetCuts(
+                address(0) // removal target addresses are expected to be zero address
             );
 
         // get replacement PerpetualMintView facet cuts
@@ -52,15 +66,22 @@ contract UpgradePerpetualMintViewArbEOA is Script {
             );
 
         ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](2);
+            memory facetCuts = new ISolidStateDiamond.FacetCut[](3);
 
         facetCuts[0] = newPerpetualMintViewFacetCuts[0];
-        facetCuts[1] = replacementPerpetualMintViewFacetCuts[0];
+        facetCuts[1] = removalPerpetualMintViewFacetCuts[0];
+        facetCuts[2] = replacementPerpetualMintViewFacetCuts[0];
 
-        // cut PerpetualMintView into Core
-        ISolidStateDiamond(payable(core)).diamondCut(facetCuts, address(0), "");
+        bytes memory diamondCutTx = abi.encodeWithSelector(
+            IDiamondWritable.diamondCut.selector,
+            facetCuts,
+            address(0),
+            ""
+        );
 
-        vm.stopBroadcast();
+        addToBatch(core, diamondCutTx);
+
+        executeBatch(gnosisSafeAddress, true);
     }
 
     /// @dev provides the new facet cuts for cutting PerpetualMintView facet into Core
@@ -69,14 +90,10 @@ contract UpgradePerpetualMintViewArbEOA is Script {
         address viewFacetAddress
     ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](2);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](1);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
-            .collectionMintFeeDistributionRatioBP
-            .selector;
-
-        perpetualMintViewFunctionSelectors[1] = IPerpetualMintView
-            .collectionMintMultiplier
+            .collectionConsolationFeeBP
             .selector;
 
         ISolidStateDiamond.FacetCut
@@ -95,13 +112,41 @@ contract UpgradePerpetualMintViewArbEOA is Script {
         return facetCuts;
     }
 
+    /// @dev provides the removal facet cuts for removing PerpetualMintView facet functions from Core
+    /// @param facetAddress target address to remove
+    function getRemovalPerpetualMintViewFacetCuts(
+        address facetAddress
+    ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
+        // map the PerpetualMintView related function selectors to their respective interfaces
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](1);
+
+        perpetualMintViewFunctionSelectors[0] = bytes4(
+            keccak256("consolationFeeBP()")
+        );
+
+        ISolidStateDiamond.FacetCut
+            memory perpetualMintViewFacetCut = IDiamondWritableInternal
+                .FacetCut({
+                    target: facetAddress,
+                    action: IDiamondWritableInternal.FacetCutAction.REMOVE,
+                    selectors: perpetualMintViewFunctionSelectors
+                });
+
+        ISolidStateDiamond.FacetCut[]
+            memory facetCuts = new ISolidStateDiamond.FacetCut[](1);
+
+        facetCuts[0] = perpetualMintViewFacetCut;
+
+        return facetCuts;
+    }
+
     /// @dev provides the replacement facet cuts for cutting PerpetualMintView facet into Core
     /// @param viewFacetAddress address of PerpetualMintView facet
     function getReplacementPerpetualMintViewFacetCuts(
         address viewFacetAddress
     ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](19);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](20);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -124,58 +169,62 @@ contract UpgradePerpetualMintViewArbEOA is Script {
             .selector;
 
         perpetualMintViewFunctionSelectors[5] = IPerpetualMintView
-            .collectionConsolationFeeBP
+            .collectionMintFeeDistributionRatioBP
             .selector;
 
         perpetualMintViewFunctionSelectors[6] = IPerpetualMintView
-            .collectionMintPrice
+            .collectionMintMultiplier
             .selector;
 
         perpetualMintViewFunctionSelectors[7] = IPerpetualMintView
-            .collectionRisk
+            .collectionMintPrice
             .selector;
 
         perpetualMintViewFunctionSelectors[8] = IPerpetualMintView
-            .defaultCollectionMintPrice
+            .collectionRisk
             .selector;
 
         perpetualMintViewFunctionSelectors[9] = IPerpetualMintView
-            .defaultCollectionRisk
+            .defaultCollectionMintPrice
             .selector;
 
         perpetualMintViewFunctionSelectors[10] = IPerpetualMintView
-            .defaultEthToMintRatio
+            .defaultCollectionRisk
             .selector;
 
         perpetualMintViewFunctionSelectors[11] = IPerpetualMintView
-            .ethToMintRatio
+            .defaultEthToMintRatio
             .selector;
 
         perpetualMintViewFunctionSelectors[12] = IPerpetualMintView
-            .mintFeeBP
+            .ethToMintRatio
             .selector;
 
         perpetualMintViewFunctionSelectors[13] = IPerpetualMintView
-            .mintToken
+            .mintFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[14] = IPerpetualMintView
-            .redemptionFeeBP
+            .mintToken
             .selector;
 
         perpetualMintViewFunctionSelectors[15] = IPerpetualMintView
-            .redeemPaused
+            .redemptionFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[16] = IPerpetualMintView
-            .tiers
+            .redeemPaused
             .selector;
 
         perpetualMintViewFunctionSelectors[17] = IPerpetualMintView
-            .vrfConfig
+            .tiers
             .selector;
 
         perpetualMintViewFunctionSelectors[18] = IPerpetualMintView
+            .vrfConfig
+            .selector;
+
+        perpetualMintViewFunctionSelectors[19] = IPerpetualMintView
             .vrfSubscriptionBalanceThreshold
             .selector;
 

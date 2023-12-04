@@ -150,7 +150,7 @@ make configure-vrf-arb
 
 Note: The following environment variables are modifiable in `./script/Arbitrum/post-deployment/configure-perp-mint-arb.sh`:
 
-- `CONSOLATION_FEE_BP`
+- `COLLECTION_CONSOLATION_FEE_BP`
 - `MINT_FEE_BP`
 - `NEW_PERP_MINT_OWNER`
 - `REDEMPTION_FEE_BP`
@@ -192,7 +192,7 @@ make configure-vrf-arb-goerli
 
 Note: The following environment variables are modifiable in `./script/Arbitrum/post-deployment/configure-perp-mint-arb-goerli.sh`:
 
-- `CONSOLATION_FEE_BP`
+- `COLLECTION_CONSOLATION_FEE_BP`
 - `MINT_FEE_BP`
 - `NEW_PERP_MINT_OWNER`
 - `REDEMPTION_FEE_BP`
@@ -234,7 +234,7 @@ make configure-vrf-local-arb
 
 Note: The following environment variables are modifiable in `./script/Arbitrum/post-deployment/configure-perp-mint-local.sh`:
 
-- `CONSOLATION_FEE_BP`
+- `COLLECTION_CONSOLATION_FEE_BP`
 - `MINT_FEE_BP`
 - `NEW_PERP_MINT_OWNER`
 - `REDEMPTION_FEE_BP`
@@ -273,7 +273,7 @@ make configure-vrf-base
 
 Note: The following environment variables are modifiable in `./script/Base/post-deployment/configure-perp-mint-base.sh`:
 
-- `CONSOLATION_FEE_BP`
+- `COLLECTION_CONSOLATION_FEE_BP`
 - `MINT_FEE_BP`
 - `NEW_PERP_MINT_OWNER`
 - `REDEMPTION_FEE_BP`
@@ -311,7 +311,7 @@ make configure-vrf-base-goerli
 
 Note: The following environment variables are modifiable in `./script/Base/post-deployment/configure-perp-mint-base-goerli.sh`:
 
-- `CONSOLATION_FEE_BP`
+- `COLLECTION_CONSOLATION_FEE_BP`
 - `MINT_FEE_BP`
 - `NEW_PERP_MINT_OWNER`
 - `REDEMPTION_FEE_BP`
@@ -349,7 +349,7 @@ make configure-vrf-local-base
 
 Note: The following environment variables are modifiable in `./script/Base/post-deployment/configure-perp-mint-local.sh`:
 
-- `CONSOLATION_FEE_BP`
+- `COLLECTION_CONSOLATION_FEE_BP`
 - `MINT_FEE_BP`
 - `NEW_PERP_MINT_OWNER`
 - `REDEMPTION_FEE_BP`
@@ -372,6 +372,18 @@ Requires the following additional environment variables set:
 
 - `ARBITRUM_RPC_URL`: Arbitrum RPC URL
 - `ARBISCAN_API_KEY`: Arbiscan API key for contract verification
+
+##### Upgrade & Remove PerpetualMint facet
+
+```
+make upgrade-remove-perp-mint-arb
+```
+
+##### Upgrade & Remove PerpetualMintView facet
+
+```
+make upgrade-remove-perp-mint-view-arb
+```
 
 ##### Upgrade & Split PerpetualMint facet
 
@@ -403,6 +415,18 @@ Requires the following additional environment variables set:
 
 - `ARBITRUM_GOERLI_RPC_URL`: Arbitrum Goerli RPC URL
 - `ARBISCAN_API_KEY`: Arbiscan API key for contract verification
+
+##### Upgrade & Remove PerpetualMint facet
+
+```
+make upgrade-remove-perp-mint-arb-goerli
+```
+
+##### Upgrade & Remove PerpetualMintView facet
+
+```
+make upgrade-remove-perp-mint-view-arb-goerli
+```
 
 ##### Upgrade & Split PerpetualMint facet
 
