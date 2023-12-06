@@ -9,6 +9,18 @@ import { PerpetualMintHarness } from "../PerpetualMintHarness.t.sol";
 contract PerpetualMintHarness_Base is PerpetualMintHarness {
     constructor(address vrf) PerpetualMintHarness(vrf) {}
 
+    function attemptBatchMintForMintWithEth(
+        uint32 numberOfMints
+    ) external payable override whenNotPaused {
+        _attemptBatchMintForMintWithEthBase(msg.sender, uint8(numberOfMints));
+    }
+
+    function attemptBatchMintForMintWithMint(
+        uint32 numberOfMints
+    ) external override whenNotPaused {
+        _attemptBatchMintForMintWithMintBase(msg.sender, uint8(numberOfMints));
+    }
+
     function attemptBatchMintWithEth(
         address collection,
         uint32 numberOfMints

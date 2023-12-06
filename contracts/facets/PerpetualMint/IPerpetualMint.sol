@@ -17,6 +17,16 @@ interface IPerpetualMint is
     IPerpetualMintInternal,
     IPausable
 {
+    /// @notice Attempts a batch mint for the msg.sender for $MINT using ETH as payment.
+    /// @param numberOfMints number of mints to attempt
+    function attemptBatchMintForMintWithEth(
+        uint32 numberOfMints
+    ) external payable;
+
+    /// @notice Attempts a batch mint for the msg.sender for $MINT using $MINT tokens as payment.
+    /// @param numberOfMints number of mints to attempt
+    function attemptBatchMintForMintWithMint(uint32 numberOfMints) external;
+
     /// @notice Attempts a batch mint for the msg.sender for a single collection using ETH as payment.
     /// @param collection address of collection for mint attempts
     /// @param numberOfMints number of mints to attempt
@@ -110,6 +120,12 @@ interface IPerpetualMint is
     /// @notice sets the address of the mint consolation token
     /// @param mintToken address of the mint consolation token
     function setMintToken(address mintToken) external;
+
+    /// @notice sets the minting for $MINT consolation fee in basis points
+    /// @param mintTokenConsolationFeeBP minting for $MINT consolation fee in basis points
+    function setMintTokenConsolationFeeBP(
+        uint32 mintTokenConsolationFeeBP
+    ) external;
 
     /// @notice sets the baseURI for the ERC1155 token receipts
     /// @param baseURI URI string

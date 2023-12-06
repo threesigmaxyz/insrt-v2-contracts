@@ -80,10 +80,18 @@ contract UpgradeAndRemovePerpetualMintArbEOA is Script {
         address facetAddress
     ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
         // map the PerpetualMint related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](1);
+        bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](3);
 
         perpetualMintFunctionSelectors[0] = IPerpetualMint
-            .setCollectionConsolationFeeBP
+            .attemptBatchMintForMintWithEth
+            .selector;
+
+        perpetualMintFunctionSelectors[1] = IPerpetualMint
+            .attemptBatchMintForMintWithMint
+            .selector;
+
+        perpetualMintFunctionSelectors[2] = IPerpetualMint
+            .setMintTokenConsolationFeeBP
             .selector;
 
         ISolidStateDiamond.FacetCut

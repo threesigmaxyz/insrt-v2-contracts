@@ -22,6 +22,20 @@ contract PerpetualMint is
     constructor(address vrf) PerpetualMintInternal(vrf) {}
 
     /// @inheritdoc IPerpetualMint
+    function attemptBatchMintForMintWithEth(
+        uint32 numberOfMints
+    ) external payable virtual whenNotPaused {
+        _attemptBatchMintForMintWithEth(msg.sender, numberOfMints);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function attemptBatchMintForMintWithMint(
+        uint32 numberOfMints
+    ) external virtual whenNotPaused {
+        _attemptBatchMintForMintWithMint(msg.sender, numberOfMints);
+    }
+
+    /// @inheritdoc IPerpetualMint
     function attemptBatchMintWithEth(
         address collection,
         uint32 numberOfMints
@@ -134,6 +148,13 @@ contract PerpetualMint is
     /// @inheritdoc IPerpetualMint
     function setMintToken(address _mintToken) external onlyOwner {
         _setMintToken(_mintToken);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function setMintTokenConsolationFeeBP(
+        uint32 _mintTokenConsolationFeeBP
+    ) external onlyOwner {
+        _setMintTokenConsolationFeeBP(_mintTokenConsolationFeeBP);
     }
 
     /// @inheritdoc IPerpetualMint
