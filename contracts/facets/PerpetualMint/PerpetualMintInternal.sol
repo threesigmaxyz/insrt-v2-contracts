@@ -12,7 +12,7 @@ import { AddressUtils } from "@solidstate/contracts/utils/AddressUtils.sol";
 import { ISupraRouterContract } from "./Base/ISupraRouterContract.sol";
 import { ERC1155MetadataExtensionInternal } from "./ERC1155MetadataExtensionInternal.sol";
 import { IPerpetualMintInternal } from "./IPerpetualMintInternal.sol";
-import { CollectionData, MintOutcome, MintResultData, PerpetualMintStorage as Storage, RequestData, TiersData, VRFConfig } from "./Storage.sol";
+import { CollectionData, MintOutcome, MintResultData, MintTokenTiersData, PerpetualMintStorage as Storage, RequestData, TiersData, VRFConfig } from "./Storage.sol";
 import { IToken } from "../Token/IToken.sol";
 import { GuardsInternal } from "../../common/GuardsInternal.sol";
 
@@ -290,10 +290,10 @@ abstract contract PerpetualMintInternal is
 
         _attemptBatchMintWithEth_sharedLogic(
             l,
+            collectionData,
             msg.value,
-            _collectionMintPrice(collectionData),
-            numberOfMints,
-            collectionData.mintFeeDistributionRatioBP
+            collection,
+            numberOfMints
         );
 
         // if the number of words requested is greater than the max allowed by the VRF coordinator,
@@ -318,10 +318,10 @@ abstract contract PerpetualMintInternal is
 
         _attemptBatchMintWithEth_sharedLogic(
             l,
+            collectionData,
             msg.value,
-            _collectionMintPrice(collectionData),
-            numberOfMints,
-            collectionData.mintFeeDistributionRatioBP
+            collection,
+            numberOfMints
         );
 
         // if the number of words requested is greater than uint8, the function call will revert.
@@ -339,14 +339,21 @@ abstract contract PerpetualMintInternal is
 
     function _attemptBatchMintWithEth_sharedLogic(
         Storage.Layout storage l,
+        CollectionData storage collectionData,
         uint256 msgValue,
-        uint256 collectionMintPrice,
-        uint32 numberOfMints,
-        uint32 mintFeeDistributionRatioBP
+        address collection,
+        uint32 numberOfMints
     ) private {
+        if (collection == address(0)) {
+            // throw if collection is $MINT
+            revert InvalidCollectionAddress();
+        }
+
         if (numberOfMints == 0) {
             revert InvalidNumberOfMints();
         }
+
+        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
 
         if (msgValue != collectionMintPrice * numberOfMints) {
             revert IncorrectETHReceived();
@@ -358,7 +365,7 @@ abstract contract PerpetualMintInternal is
 
         // apply the collection-specific mint fee ratio
         uint256 additionalDepositorFee = (collectionConsolationFee *
-            mintFeeDistributionRatioBP) / BASIS;
+            collectionData.mintFeeDistributionRatioBP) / BASIS;
 
         // calculate the protocol mint fee
         uint256 mintFee = (msgValue * l.mintFeeBP) / BASIS;
@@ -390,19 +397,12 @@ abstract contract PerpetualMintInternal is
 
         CollectionData storage collectionData = l.collections[collection];
 
-        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
-
-        uint256 ethRequired = collectionMintPrice * numberOfMints;
-
-        uint256 ethToMintRatio = _ethToMintRatio(l);
-
         _attemptBatchMintWithMint_sharedLogic(
             l,
-            ethRequired,
-            numberOfMints,
-            collectionData.mintFeeDistributionRatioBP,
-            ethToMintRatio,
-            minter
+            collectionData,
+            minter,
+            collection,
+            numberOfMints
         );
 
         // if the number of words requested is greater than the max allowed by the VRF coordinator,
@@ -425,19 +425,12 @@ abstract contract PerpetualMintInternal is
 
         CollectionData storage collectionData = l.collections[collection];
 
-        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
-
-        uint256 ethRequired = collectionMintPrice * numberOfMints;
-
-        uint256 ethToMintRatio = _ethToMintRatio(l);
-
         _attemptBatchMintWithMint_sharedLogic(
             l,
-            ethRequired,
-            numberOfMints,
-            collectionData.mintFeeDistributionRatioBP,
-            ethToMintRatio,
-            minter
+            collectionData,
+            minter,
+            collection,
+            numberOfMints
         );
 
         // if the number of words requested is greater than uint8, the function call will revert.
@@ -455,19 +448,28 @@ abstract contract PerpetualMintInternal is
 
     function _attemptBatchMintWithMint_sharedLogic(
         Storage.Layout storage l,
-        uint256 ethRequired,
-        uint32 numberOfMints,
-        uint32 mintFeeDistributionRatioBP,
-        uint256 ethToMintRatio,
-        address minter
+        CollectionData storage collectionData,
+        address minter,
+        address collection,
+        uint32 numberOfMints
     ) private {
+        if (collection == address(0)) {
+            revert InvalidCollectionAddress();
+        }
+
         if (numberOfMints == 0) {
             revert InvalidNumberOfMints();
         }
 
+        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
+
+        uint256 ethRequired = collectionMintPrice * numberOfMints;
+
         if (ethRequired > l.consolationFees) {
             revert InsufficientConsolationFees();
         }
+
+        uint256 ethToMintRatio = _ethToMintRatio(l);
 
         // calculate amount of $MINT required
         uint256 mintRequired = ethRequired * ethToMintRatio;
@@ -480,7 +482,7 @@ abstract contract PerpetualMintInternal is
 
         // apply the collection-specific mint fee ratio
         uint256 additionalDepositorFee = (collectionConsolationFee *
-            mintFeeDistributionRatioBP) / BASIS;
+            collectionData.mintFeeDistributionRatioBP) / BASIS;
 
         // calculate the protocol mint fee
         uint256 mintFee = (ethRequired * l.mintFeeBP) / BASIS;
@@ -801,17 +803,32 @@ abstract contract PerpetualMintInternal is
 
         CollectionData storage collectionData = l.collections[collection];
 
-        _resolveMints(
-            l.mintToken,
-            _collectionMintMultiplier(collectionData),
-            _collectionMintPrice(collectionData),
-            _collectionRisk(collectionData),
-            l.tiers,
-            minter,
-            collection,
-            randomWords,
-            _ethToMintRatio(l)
-        );
+        // if the collection is address(0), the mint is for $MINT
+        if (collection == address(0)) {
+            _resolveMintsForMint(
+                l.mintToken,
+                _collectionMintMultiplier(collectionData),
+                _collectionMintPrice(collectionData),
+                l.mintTokenTiers,
+                minter,
+                randomWords,
+                _ethToMintRatio(l)
+            );
+        } else {
+            // if the collection is not address(0), the mint is for a collection
+
+            _resolveMints(
+                l.mintToken,
+                _collectionMintMultiplier(collectionData),
+                _collectionMintPrice(collectionData),
+                _collectionRisk(collectionData),
+                l.tiers,
+                minter,
+                collection,
+                randomWords,
+                _ethToMintRatio(l)
+            );
+        }
 
         collectionData.pendingRequests.remove(requestId);
 
@@ -861,6 +878,15 @@ abstract contract PerpetualMintInternal is
         mintTokenConsolationFeeBasisPoints = Storage
             .layout()
             .mintTokenConsolationFeeBP;
+    }
+
+    /// @notice Returns the current tier risks and multipliers for minting for $MINT
+    function _mintTokenTiers()
+        internal
+        view
+        returns (MintTokenTiersData memory mintTokenTiersData)
+    {
+        mintTokenTiersData = Storage.layout().mintTokenTiers;
     }
 
     /// @notice ensures a value is within the BASIS range
@@ -1084,6 +1110,66 @@ abstract contract PerpetualMintInternal is
         );
     }
 
+    /// @notice resolves the outcomes of attempted mints for $MINT
+    /// @param mintToken address of $MINT token
+    /// @param mintForMintMultiplier minting for $MINT multiplier
+    /// @param mintForMintPrice mint for $MINT mint price
+    /// @param mintTokenTiersData the MintTokenTiersData struct for mint for $MINT consolations
+    /// @param minter address of minter
+    /// @param randomWords array of random values relating to number of attempts
+    /// @param ethToMintRatio ratio of ETH to $MINT
+    function _resolveMintsForMint(
+        address mintToken,
+        uint256 mintForMintMultiplier,
+        uint256 mintForMintPrice,
+        MintTokenTiersData memory mintTokenTiersData,
+        address minter,
+        uint256[] memory randomWords,
+        uint256 ethToMintRatio
+    ) internal {
+        uint256 totalMintAmount;
+
+        for (uint256 i = 0; i < randomWords.length; ++i) {
+            // random word is used to determine the consolation tier
+            uint256 normalizedValue = _normalizeValue(randomWords[i], BASIS);
+
+            uint256 tierMintAmount;
+            uint256 cumulativeRisk;
+
+            // iterate through tiers to find the tier that the random value falls into
+            for (uint256 j = 0; j < mintTokenTiersData.tierRisks.length; ++j) {
+                cumulativeRisk += mintTokenTiersData.tierRisks[j];
+
+                // if the cumulative risk is greater than the normalized value, the tier has been found
+                if (cumulativeRisk > normalizedValue) {
+                    tierMintAmount =
+                        (mintTokenTiersData.tierMultipliers[j] *
+                            ethToMintRatio *
+                            mintForMintPrice) /
+                        BASIS;
+
+                    break;
+                }
+            }
+
+            totalMintAmount += tierMintAmount;
+        }
+
+        // Mint the cumulative amounts at the end
+        // Apply $MINT-specific multiplier
+        totalMintAmount = (totalMintAmount * mintForMintMultiplier) / BASIS;
+
+        IToken(mintToken).mint(minter, totalMintAmount);
+
+        emit MintResult(
+            minter,
+            address(0),
+            randomWords.length,
+            totalMintAmount,
+            0
+        );
+    }
+
     /// @notice sets the collection mint fee distribution ratio in basis points
     /// @param collection address of collection
     /// @param ratioBP collection mint fee distribution ratio in basis points
@@ -1201,6 +1287,16 @@ abstract contract PerpetualMintInternal is
         emit MintTokenConsolationFeeSet(mintTokenConsolationFeeBP);
     }
 
+    /// @notice sets the mint for $MINT tiers data
+    /// @param mintTokenTiersData MintTokenTiersData struct holding all related data to mint for $MINT consolations
+    function _setMintTokenTiers(
+        MintTokenTiersData calldata mintTokenTiersData
+    ) internal {
+        Storage.layout().mintTokenTiers = mintTokenTiersData;
+
+        emit MintTokenTiersSet(mintTokenTiersData);
+    }
+
     /// @notice sets the status of the redeemPaused state
     /// @param status boolean indicating whether redeeming is paused
     function _setRedeemPaused(bool status) internal {
@@ -1219,8 +1315,8 @@ abstract contract PerpetualMintInternal is
         emit RedemptionFeeSet(redemptionFeeBP);
     }
 
-    /// @notice sets the $MINT consolation tiers data
-    /// @param tiersData TiersData struct holding all related data to $MINT consolations
+    /// @notice sets the mint for collection $MINT consolation tiers data
+    /// @param tiersData TiersData struct holding all related data to mint for collection $MINT consolations
     function _setTiers(TiersData calldata tiersData) internal {
         Storage.layout().tiers = tiersData;
 
@@ -1249,6 +1345,7 @@ abstract contract PerpetualMintInternal is
         );
     }
 
+    /// @notice Returns the current tier risks and multipliers for minting for collection $MINT consolations
     function _tiers() internal view returns (TiersData memory tiersData) {
         tiersData = Storage.layout().tiers;
     }

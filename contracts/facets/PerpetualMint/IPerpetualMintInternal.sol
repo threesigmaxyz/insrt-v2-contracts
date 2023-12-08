@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.19;
 
-import { PerpetualMintStorage as Storage, TiersData, VRFConfig } from "./Storage.sol";
+import { MintTokenTiersData, PerpetualMintStorage as Storage, TiersData, VRFConfig } from "./Storage.sol";
 
 /// @title IPerpetualMintInternal
 /// @dev Interface containing all errors and events used in the PerpetualMint facet contract
@@ -13,6 +13,10 @@ interface IPerpetualMintInternal {
     /// @notice thrown when there are not enough consolation fees accrued to faciliate
     /// minting with $MINT
     error InsufficientConsolationFees();
+
+    /// @notice thrown when an invalid collection address is provided when minting for a collection
+    /// for now, this is only thrown when attempting to address(0) when minting for a collection
+    error InvalidCollectionAddress();
 
     /// @notice thrown when attempting to mint 0 tokens
     error InvalidNumberOfMints();
@@ -93,6 +97,10 @@ interface IPerpetualMintInternal {
         uint256 totalMintAmount,
         uint256 totalReceiptAmount
     );
+
+    /// @notice emitted when the mint token tiers are set
+    /// @param mintTokenTiersData new tiers
+    event MintTokenTiersSet(MintTokenTiersData mintTokenTiersData);
 
     /// @notice emitted when a prize is claimed
     /// @param claimer address of claimer

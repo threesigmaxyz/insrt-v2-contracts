@@ -144,9 +144,8 @@ contract DeployPerpetualMint_Base is Script {
             });
 
         // map the PerpetualMint related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](30);
+        bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](31);
 
-        // map the PerpetualMint related function selectors to their respective interfaces
         perpetualMintFunctionSelectors[0] = IPerpetualMint
             .attemptBatchMintForMintWithEth
             .selector;
@@ -226,32 +225,36 @@ contract DeployPerpetualMint_Base is Script {
             .selector;
 
         perpetualMintFunctionSelectors[22] = IPerpetualMint
-            .setReceiptBaseURI
+            .setMintTokenTiers
             .selector;
 
         perpetualMintFunctionSelectors[23] = IPerpetualMint
-            .setReceiptTokenURI
+            .setReceiptBaseURI
             .selector;
 
         perpetualMintFunctionSelectors[24] = IPerpetualMint
-            .setRedemptionFeeBP
+            .setReceiptTokenURI
             .selector;
 
         perpetualMintFunctionSelectors[25] = IPerpetualMint
+            .setRedemptionFeeBP
+            .selector;
+
+        perpetualMintFunctionSelectors[26] = IPerpetualMint
             .setRedeemPaused
             .selector;
 
-        perpetualMintFunctionSelectors[26] = IPerpetualMint.setTiers.selector;
+        perpetualMintFunctionSelectors[27] = IPerpetualMint.setTiers.selector;
 
-        perpetualMintFunctionSelectors[27] = IPerpetualMint
+        perpetualMintFunctionSelectors[28] = IPerpetualMint
             .setVRFConfig
             .selector;
 
-        perpetualMintFunctionSelectors[28] = IPerpetualMint
+        perpetualMintFunctionSelectors[29] = IPerpetualMint
             .setVRFSubscriptionBalanceThreshold
             .selector;
 
-        perpetualMintFunctionSelectors[29] = IPerpetualMint.unpause.selector;
+        perpetualMintFunctionSelectors[30] = IPerpetualMint.unpause.selector;
 
         ISolidStateDiamond.FacetCut
             memory perpetualMintFacetCut = IDiamondWritableInternal.FacetCut({
@@ -360,7 +363,7 @@ contract DeployPerpetualMint_Base is Script {
         address viewFacetAddress
     ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](22);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](23);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -431,22 +434,26 @@ contract DeployPerpetualMint_Base is Script {
             .selector;
 
         perpetualMintViewFunctionSelectors[17] = IPerpetualMintView
-            .redemptionFeeBP
+            .mintTokenTiers
             .selector;
 
         perpetualMintViewFunctionSelectors[18] = IPerpetualMintView
-            .redeemPaused
+            .redemptionFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[19] = IPerpetualMintView
-            .tiers
+            .redeemPaused
             .selector;
 
         perpetualMintViewFunctionSelectors[20] = IPerpetualMintView
-            .vrfConfig
+            .tiers
             .selector;
 
         perpetualMintViewFunctionSelectors[21] = IPerpetualMintView
+            .vrfConfig
+            .selector;
+
+        perpetualMintViewFunctionSelectors[22] = IPerpetualMintView
             .vrfSubscriptionBalanceThreshold
             .selector;
 
