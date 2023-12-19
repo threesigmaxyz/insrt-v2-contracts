@@ -49,6 +49,11 @@ interface IPerpetualMintInternal {
     /// @param multiplier multiplier of collection
     event CollectionMultiplierSet(address collection, uint256 multiplier);
 
+    /// @notice emitted when the mint referral fee in basis points for a collection is set
+    /// @param collection address of collection
+    /// @param referralFeeBP mint referral fee of collection in basis points
+    event CollectionReferralFeeBPSet(address collection, uint32 referralFeeBP);
+
     /// @notice emitted when the risk for a collection is set
     /// @param collection address of collection
     /// @param risk risk of collection
@@ -62,6 +67,10 @@ interface IPerpetualMintInternal {
     /// @param funder address of funder
     /// @param amount amount of ETH funded
     event ConsolationFeesFunded(address indexed funder, uint256 amount);
+
+    /// @notice emitted when the default mint referral fee for collections is set
+    /// @param referralFeeBP new default mint referral fee for collections in basis points
+    event DefaultCollectionReferralFeeBPSet(uint32 referralFeeBP);
 
     /// @notice emitted when the ETH:MINT ratio is set
     /// @param ratio value of ETH:MINT ratio

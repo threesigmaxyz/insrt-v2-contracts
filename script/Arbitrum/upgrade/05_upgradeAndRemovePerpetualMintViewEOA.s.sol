@@ -79,11 +79,11 @@ contract UpgradeAndRemovePerpetualMintViewArbEOA is Script {
         bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](2);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
-            .mintTokenConsolationFeeBP
+            .collectionReferralFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[1] = IPerpetualMintView
-            .mintTokenTiers
+            .defaultCollectionReferralFeeBP
             .selector;
 
         ISolidStateDiamond.FacetCut
@@ -136,7 +136,7 @@ contract UpgradeAndRemovePerpetualMintViewArbEOA is Script {
         address viewFacetAddress
     ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](21);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](23);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -203,22 +203,30 @@ contract UpgradeAndRemovePerpetualMintViewArbEOA is Script {
             .selector;
 
         perpetualMintViewFunctionSelectors[16] = IPerpetualMintView
-            .redemptionFeeBP
+            .mintTokenConsolationFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[17] = IPerpetualMintView
-            .redeemPaused
+            .mintTokenTiers
             .selector;
 
         perpetualMintViewFunctionSelectors[18] = IPerpetualMintView
-            .tiers
+            .redemptionFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[19] = IPerpetualMintView
-            .vrfConfig
+            .redeemPaused
             .selector;
 
         perpetualMintViewFunctionSelectors[20] = IPerpetualMintView
+            .tiers
+            .selector;
+
+        perpetualMintViewFunctionSelectors[21] = IPerpetualMintView
+            .vrfConfig
+            .selector;
+
+        perpetualMintViewFunctionSelectors[22] = IPerpetualMintView
             .vrfSubscriptionBalanceThreshold
             .selector;
 

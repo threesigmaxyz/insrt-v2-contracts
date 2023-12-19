@@ -74,6 +74,15 @@ contract PerpetualMintView is PerpetualMintInternal, IPerpetualMintView {
     }
 
     /// @inheritdoc IPerpetualMintView
+    function collectionReferralFeeBP(
+        address collection
+    ) external view returns (uint32 referralFeeBP) {
+        referralFeeBP = _collectionReferralFeeBP(
+            Storage.layout().collections[collection]
+        );
+    }
+
+    /// @inheritdoc IPerpetualMintView
     function collectionRisk(
         address collection
     ) external view returns (uint32 risk) {
@@ -96,6 +105,15 @@ contract PerpetualMintView is PerpetualMintInternal, IPerpetualMintView {
         returns (uint256 mintPrice)
     {
         mintPrice = _defaultCollectionMintPrice();
+    }
+
+    /// @inheritdoc IPerpetualMintView
+    function defaultCollectionReferralFeeBP()
+        external
+        view
+        returns (uint32 referralFeeBP)
+    {
+        referralFeeBP = _defaultCollectionReferralFeeBP();
     }
 
     /// @inheritdoc IPerpetualMintView

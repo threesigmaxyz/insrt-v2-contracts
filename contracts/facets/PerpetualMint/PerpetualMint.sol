@@ -23,32 +23,46 @@ contract PerpetualMint is
 
     /// @inheritdoc IPerpetualMint
     function attemptBatchMintForMintWithEth(
+        address referrer,
         uint32 numberOfMints
     ) external payable virtual whenNotPaused {
-        _attemptBatchMintForMintWithEth(msg.sender, numberOfMints);
+        _attemptBatchMintForMintWithEth(msg.sender, referrer, numberOfMints);
     }
 
     /// @inheritdoc IPerpetualMint
     function attemptBatchMintForMintWithMint(
+        address referrer,
         uint32 numberOfMints
     ) external virtual whenNotPaused {
-        _attemptBatchMintForMintWithMint(msg.sender, numberOfMints);
+        _attemptBatchMintForMintWithMint(msg.sender, referrer, numberOfMints);
     }
 
     /// @inheritdoc IPerpetualMint
     function attemptBatchMintWithEth(
         address collection,
+        address referrer,
         uint32 numberOfMints
     ) external payable virtual whenNotPaused {
-        _attemptBatchMintWithEth(msg.sender, collection, numberOfMints);
+        _attemptBatchMintWithEth(
+            msg.sender,
+            collection,
+            referrer,
+            numberOfMints
+        );
     }
 
     /// @inheritdoc IPerpetualMint
     function attemptBatchMintWithMint(
         address collection,
+        address referrer,
         uint32 numberOfMints
     ) external virtual whenNotPaused {
-        _attemptBatchMintWithMint(msg.sender, collection, numberOfMints);
+        _attemptBatchMintWithMint(
+            msg.sender,
+            collection,
+            referrer,
+            numberOfMints
+        );
     }
 
     /// @inheritdoc IPerpetualMint
@@ -121,6 +135,14 @@ contract PerpetualMint is
     }
 
     /// @inheritdoc IPerpetualMint
+    function setCollectionReferralFeeBP(
+        address collection,
+        uint32 referralFeeBP
+    ) external onlyOwner {
+        _setCollectionReferralFeeBP(collection, referralFeeBP);
+    }
+
+    /// @inheritdoc IPerpetualMint
     function setCollectionRisk(
         address collection,
         uint32 risk
@@ -133,6 +155,13 @@ contract PerpetualMint is
         uint32 _collectionConsolationFeeBP
     ) external onlyOwner {
         _setCollectionConsolationFeeBP(_collectionConsolationFeeBP);
+    }
+
+    /// @inheritdoc IPerpetualMint
+    function setDefaultCollectionReferralFeeBP(
+        uint32 referralFeeBP
+    ) external onlyOwner {
+        _setDefaultCollectionReferralFeeBP(referralFeeBP);
     }
 
     /// @inheritdoc IPerpetualMint

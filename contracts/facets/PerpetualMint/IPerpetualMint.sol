@@ -18,28 +18,38 @@ interface IPerpetualMint is
     IPausable
 {
     /// @notice Attempts a batch mint for the msg.sender for $MINT using ETH as payment.
+    /// @param referrer referrer address for mint attempts
     /// @param numberOfMints number of mints to attempt
     function attemptBatchMintForMintWithEth(
+        address referrer,
         uint32 numberOfMints
     ) external payable;
 
     /// @notice Attempts a batch mint for the msg.sender for $MINT using $MINT tokens as payment.
+    /// @param referrer referrer address for mint attempts
     /// @param numberOfMints number of mints to attempt
-    function attemptBatchMintForMintWithMint(uint32 numberOfMints) external;
+    function attemptBatchMintForMintWithMint(
+        address referrer,
+        uint32 numberOfMints
+    ) external;
 
     /// @notice Attempts a batch mint for the msg.sender for a single collection using ETH as payment.
     /// @param collection address of collection for mint attempts
+    /// @param referrer referrer address for mint attempts
     /// @param numberOfMints number of mints to attempt
     function attemptBatchMintWithEth(
         address collection,
+        address referrer,
         uint32 numberOfMints
     ) external payable;
 
     /// @notice Attempts a batch mint for the msg.sender for a single collection using $MINT tokens as payment.
     /// @param collection address of collection for mint attempts
+    /// @param referrer referrer address for mint attempts
     /// @param numberOfMints number of mints to attempt
     function attemptBatchMintWithMint(
         address collection,
+        address referrer,
         uint32 numberOfMints
     ) external;
 
@@ -98,6 +108,14 @@ interface IPerpetualMint is
     /// @param price mint price of the collection
     function setCollectionMintPrice(address collection, uint256 price) external;
 
+    /// @notice sets the mint referral fee for a given collection in basis points
+    /// @param collection address of collection
+    /// @param referralFeeBP new mint referral fee for collection in basis points
+    function setCollectionReferralFeeBP(
+        address collection,
+        uint32 referralFeeBP
+    ) external;
+
     /// @notice sets the risk of a given collection
     /// @param collection address of collection
     /// @param risk new risk value for collection
@@ -108,6 +126,10 @@ interface IPerpetualMint is
     function setCollectionConsolationFeeBP(
         uint32 collectionConsolationFeeBP
     ) external;
+
+    /// @notice sets the default mint referral fee for collections in basis points
+    /// @param referralFeeBP new default mint referral fee for collections in basis points
+    function setDefaultCollectionReferralFeeBP(uint32 referralFeeBP) external;
 
     /// @notice sets the ratio of ETH (native token) to $MINT for mint attempts using $MINT as payment
     /// @param ratio ratio of ETH to $MINT

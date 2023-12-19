@@ -37,6 +37,8 @@ abstract contract PerpetualMintTest_Base is CoreTest {
     /// @dev mint for collection consolation fee basis points to test
     uint32 internal constant TEST_COLLECTION_CONSOLATION_FEE_BP = 5000000; // 0.5% fee
 
+    uint32 internal constant TEST_DEFAULT_COLLECTION_REFERRAL_FEE_BP = 25e7; // 25%
+
     uint32 internal constant TEST_MINT_FEE_BP = 5000000; // 0.5% fee
 
     /// @dev mint for $MINT consolation fee basis points to test
@@ -67,7 +69,16 @@ abstract contract PerpetualMintTest_Base is CoreTest {
     // minter
     address payable internal minter = payable(address(3));
 
+    /// @dev the no referrer address used during test mint attempts
+    address internal constant NO_REFERRER = address(0);
+
     address internal PERPETUAL_MINT_NON_OWNER = address(100);
+
+    /// @dev the referrer address used during test mint attempts
+    address payable internal constant REFERRER = payable(address(4567));
+
+    // collection mint referral fee in basis points
+    uint32 internal constant baycCollectionReferralFeeBP = 1000000; // 0.10%
 
     // collection risk values
     uint32 internal constant baycCollectionRisk = 100000; // 0.01%
@@ -84,6 +95,11 @@ abstract contract PerpetualMintTest_Base is CoreTest {
 
         // mints 100 ETH to minter
         vm.deal(minter, 100 ether);
+
+        perpetualMint.setCollectionReferralFeeBP(
+            BORED_APE_YACHT_CLUB,
+            baycCollectionReferralFeeBP
+        );
 
         perpetualMint.setCollectionRisk(
             BORED_APE_YACHT_CLUB,
@@ -102,6 +118,11 @@ abstract contract PerpetualMintTest_Base is CoreTest {
         // sets the mint for collection consolation fee
         perpetualMint.setCollectionConsolationFeeBP(
             TEST_COLLECTION_CONSOLATION_FEE_BP
+        );
+
+        // sets the default mint referral fee for collections
+        perpetualMint.setDefaultCollectionReferralFeeBP(
+            TEST_DEFAULT_COLLECTION_REFERRAL_FEE_BP
         );
 
         // sets the mint fee

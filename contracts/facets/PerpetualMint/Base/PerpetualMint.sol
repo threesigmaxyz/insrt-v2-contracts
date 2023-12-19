@@ -12,26 +12,38 @@ contract PerpetualMint_Base is PerpetualMint {
 
     /// @inheritdoc IPerpetualMint
     function attemptBatchMintForMintWithEth(
+        address referrer,
         uint32 numberOfMints
     ) external payable override whenNotPaused {
-        _attemptBatchMintForMintWithEthBase(msg.sender, uint8(numberOfMints));
+        _attemptBatchMintForMintWithEthBase(
+            msg.sender,
+            referrer,
+            uint8(numberOfMints)
+        );
     }
 
     /// @inheritdoc IPerpetualMint
     function attemptBatchMintForMintWithMint(
+        address referrer,
         uint32 numberOfMints
     ) external override whenNotPaused {
-        _attemptBatchMintForMintWithMintBase(msg.sender, uint8(numberOfMints));
+        _attemptBatchMintForMintWithMintBase(
+            msg.sender,
+            referrer,
+            uint8(numberOfMints)
+        );
     }
 
     /// @inheritdoc IPerpetualMint
     function attemptBatchMintWithEth(
         address collection,
+        address referrer,
         uint32 numberOfMints
     ) external payable override whenNotPaused {
         _attemptBatchMintWithEthBase(
             msg.sender,
             collection,
+            referrer,
             uint8(numberOfMints)
         );
     }
@@ -39,11 +51,13 @@ contract PerpetualMint_Base is PerpetualMint {
     /// @inheritdoc IPerpetualMint
     function attemptBatchMintWithMint(
         address collection,
+        address referrer,
         uint32 numberOfMints
     ) external override whenNotPaused {
         _attemptBatchMintWithMintBase(
             msg.sender,
             collection,
+            referrer,
             uint8(numberOfMints)
         );
     }
