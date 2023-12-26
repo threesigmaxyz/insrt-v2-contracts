@@ -56,10 +56,11 @@ contract UpgradeTokenArb is BatchScript {
             );
 
         ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](2);
+            memory facetCuts = new ISolidStateDiamond.FacetCut[](3);
 
         facetCuts[0] = newTokenFacetCuts[0];
         facetCuts[1] = replacementTokenFacetCuts[0];
+        facetCuts[2] = replacementTokenFacetCuts[1];
 
         bytes memory diamondCutTx = abi.encodeWithSelector(
             IDiamondWritable.diamondCut.selector,
