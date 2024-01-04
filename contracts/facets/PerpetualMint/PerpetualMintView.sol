@@ -43,9 +43,15 @@ contract PerpetualMintView is PerpetualMintInternal, IPerpetualMintView {
     function calculateMintResult(
         address collection,
         uint32 numberOfMints,
-        uint256 randomness
+        uint256 randomness,
+        uint256 pricePerMint
     ) external view returns (MintResultData memory result) {
-        result = _calculateMintResult(collection, numberOfMints, randomness);
+        result = _calculateMintResult(
+            collection,
+            numberOfMints,
+            randomness,
+            pricePerMint
+        );
     }
 
     /// @inheritdoc IPerpetualMintView
@@ -167,6 +173,11 @@ contract PerpetualMintView is PerpetualMintInternal, IPerpetualMintView {
     /// @inheritdoc IPerpetualMintView
     function redeemPaused() external view returns (bool status) {
         status = _redeemPaused();
+    }
+
+    /// @inheritdoc IPerpetualMintView
+    function SCALE() external pure returns (uint256 value) {
+        value = _SCALE();
     }
 
     /// @inheritdoc IPerpetualMintView

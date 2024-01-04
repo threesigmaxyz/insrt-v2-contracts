@@ -46,6 +46,7 @@ contract PerpetualMint_requestRandomWordsBase is
         perpetualMint.exposed_requestRandomWordsBase(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             TEST_NUM_WORDS
         );
     }
@@ -58,6 +59,7 @@ contract PerpetualMint_requestRandomWordsBase is
         perpetualMint.exposed_requestRandomWordsBase(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             TEST_NUM_WORDS
         );
 
@@ -67,12 +69,17 @@ contract PerpetualMint_requestRandomWordsBase is
             0
         );
 
-        (address requestMinter, address requestCollection) = perpetualMint
-            .exposed_requests(requestId);
+        (
+            address requestMinter,
+            address requestCollection,
+            uint256 mintPriceAdjustmentFactor
+        ) = perpetualMint.exposed_requests(requestId);
 
         assert(requestCollection == COLLECTION);
 
         assert(requestMinter == minter);
+
+        assert(mintPriceAdjustmentFactor == TEST_ADJUSTMENT_FACTOR);
     }
 
     /// @dev Tests that _requestRandomWordsBase functionality reverts when more than the current max number of words (255) is requested.
@@ -87,6 +94,7 @@ contract PerpetualMint_requestRandomWordsBase is
         perpetualMint.exposed_requestRandomWordsBase(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             ++currentMaxNumWords
         );
     }
@@ -103,6 +111,7 @@ contract PerpetualMint_requestRandomWordsBase is
         perpetualMint.exposed_requestRandomWordsBase(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             TEST_NUM_WORDS
         );
     }
@@ -120,6 +129,7 @@ contract PerpetualMint_requestRandomWordsBase is
         perpetualMint.exposed_requestRandomWordsBase(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             TEST_NUM_WORDS
         );
     }
@@ -137,6 +147,7 @@ contract PerpetualMint_requestRandomWordsBase is
         perpetualMint.exposed_requestRandomWordsBase(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             TEST_NUM_WORDS
         );
     }

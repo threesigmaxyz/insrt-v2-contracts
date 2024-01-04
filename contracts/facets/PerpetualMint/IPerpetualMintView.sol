@@ -33,10 +33,12 @@ interface IPerpetualMintView {
     /// @param collection address of collection for mint attempts
     /// @param numberOfMints number of mints to attempt
     /// @param randomness random value to use in calculation
+    /// @param pricePerMint price paid per mint for collection (denominated in units of wei)
     function calculateMintResult(
         address collection,
         uint32 numberOfMints,
-        uint256 randomness
+        uint256 randomness,
+        uint256 pricePerMint
     ) external view returns (MintResultData memory result);
 
     /// @notice Returns the current mint fee distribution ratio in basis points for a collection
@@ -135,6 +137,10 @@ interface IPerpetualMintView {
     /// @notice returns value of redeemPaused
     /// @return status boolean indicating whether redeeming is paused
     function redeemPaused() external view returns (bool status);
+
+    /// @notice returns the value of SCALE
+    /// @return value SCALE value
+    function SCALE() external pure returns (uint256 value);
 
     /// @notice Returns the current mint for collection $MINT consolation tiers
     function tiers() external view returns (TiersData memory tiersData);

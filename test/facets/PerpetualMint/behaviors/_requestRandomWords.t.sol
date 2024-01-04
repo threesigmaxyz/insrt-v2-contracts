@@ -66,6 +66,7 @@ contract PerpetualMint_requestRandomWords is
         perpetualMint.exposed_requestRandomWords(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             TEST_NUM_WORDS
         );
     }
@@ -80,6 +81,7 @@ contract PerpetualMint_requestRandomWords is
         perpetualMint.exposed_requestRandomWords(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             TEST_NUM_WORDS
         );
 
@@ -89,12 +91,17 @@ contract PerpetualMint_requestRandomWords is
             0
         );
 
-        (address requestMinter, address requestCollection) = perpetualMint
-            .exposed_requests(requestId);
+        (
+            address requestMinter,
+            address requestCollection,
+            uint256 mintPriceAdjustmentFactor
+        ) = perpetualMint.exposed_requests(requestId);
 
         assert(requestCollection == COLLECTION);
 
         assert(requestMinter == minter);
+
+        assert(mintPriceAdjustmentFactor == TEST_ADJUSTMENT_FACTOR);
     }
 
     /// @dev Tests that _requestRandomWords functionality reverts when more than the current max number of words (500) is requested.
@@ -122,6 +129,7 @@ contract PerpetualMint_requestRandomWords is
         perpetualMint.exposed_requestRandomWords(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             ++currentMaxNumWords
         );
     }
@@ -139,6 +147,7 @@ contract PerpetualMint_requestRandomWords is
         perpetualMint.exposed_requestRandomWords(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             TEST_NUM_WORDS
         );
     }
@@ -160,6 +169,7 @@ contract PerpetualMint_requestRandomWords is
         perpetualMint.exposed_requestRandomWords(
             minter,
             COLLECTION,
+            TEST_ADJUSTMENT_FACTOR,
             TEST_NUM_WORDS
         );
     }

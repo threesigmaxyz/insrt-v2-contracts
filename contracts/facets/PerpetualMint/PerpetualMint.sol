@@ -32,9 +32,15 @@ contract PerpetualMint is
     /// @inheritdoc IPerpetualMint
     function attemptBatchMintForMintWithMint(
         address referrer,
+        uint256 pricePerMint,
         uint32 numberOfMints
     ) external virtual whenNotPaused {
-        _attemptBatchMintForMintWithMint(msg.sender, referrer, numberOfMints);
+        _attemptBatchMintForMintWithMint(
+            msg.sender,
+            referrer,
+            pricePerMint,
+            numberOfMints
+        );
     }
 
     /// @inheritdoc IPerpetualMint
@@ -55,12 +61,14 @@ contract PerpetualMint is
     function attemptBatchMintWithMint(
         address collection,
         address referrer,
+        uint256 pricePerMint,
         uint32 numberOfMints
     ) external virtual whenNotPaused {
         _attemptBatchMintWithMint(
             msg.sender,
             collection,
             referrer,
+            pricePerMint,
             numberOfMints
         );
     }

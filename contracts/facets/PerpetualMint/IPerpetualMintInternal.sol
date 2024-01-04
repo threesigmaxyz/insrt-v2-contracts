@@ -21,9 +21,15 @@ interface IPerpetualMintInternal {
     /// @notice thrown when attempting to mint 0 tokens
     error InvalidNumberOfMints();
 
+    /// @notice thrown when the specified price per mint in $MINT is not a whole number
+    error InvalidPricePerMint();
+
     /// @dev thrown when attempting to update a collection risk and
     /// there are pending mint requests in a collection
     error PendingRequests();
+
+    /// @dev thrown when the mint price per spin is less than MINIMUM_PRICE_PER_SPIN
+    error PricePerSpinTooLow();
 
     /// @dev thrown when attempting to redeem when redeeming is paused
     error RedeemPaused();

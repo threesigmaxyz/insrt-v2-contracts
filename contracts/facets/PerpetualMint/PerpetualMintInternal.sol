@@ -29,17 +29,23 @@ abstract contract PerpetualMintInternal is
     using AddressUtils for address payable;
     using EnumerableSet for EnumerableSet.UintSet;
 
+    /// @dev used for floating point calculations
+    uint256 private constant SCALE = 1e36;
+
     /// @dev denominator used in percentage calculations
-    uint32 private constant BASIS = 1000000000;
+    uint32 private constant BASIS = 1e9;
 
     /// @dev default mint price for a collection
     uint64 internal constant DEFAULT_COLLECTION_MINT_PRICE = 0.01 ether;
 
     /// @dev default risk for a collection
-    uint32 internal constant DEFAULT_COLLECTION_RISK = 1000000; // 0.1%
+    uint32 internal constant DEFAULT_COLLECTION_RISK = 1e6; // 0.1%
 
-    // Starting default conversion ratio: 1 ETH = 1,000,000 $MINT
-    uint32 internal constant DEFAULT_ETH_TO_MINT_RATIO = 1000000;
+    /// @dev Starting default conversion ratio: 1 ETH = 1,000,000 $MINT
+    uint32 internal constant DEFAULT_ETH_TO_MINT_RATIO = 1e6;
+
+    /// @dev minimum price per spin, 1000 gwei = 0.000001 ETH / 1 $MINT
+    uint256 internal constant MINIMUM_PRICE_PER_SPIN = 1000 gwei;
 
     /// @dev address of the configured VRF
     address private immutable VRF;
@@ -78,6 +84,61 @@ abstract contract PerpetualMintInternal is
         accruedFees = Storage.layout().protocolFees;
     }
 
+    function _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+        CollectionData storage collectionData,
+        uint256 pricePerSpin
+    ) private view returns (uint256 mintPriceAdjustmentFactor) {
+        // upscale pricePerSpin before division to maintain precision
+        uint256 scaledPricePerSpin = pricePerSpin * SCALE;
+
+        // calculate the mint price adjustment factor & scale back down
+        mintPriceAdjustmentFactor =
+            ((scaledPricePerSpin / _collectionMintPrice(collectionData)) *
+                BASIS) /
+            SCALE;
+    }
+
+    function _attemptBatchMint_paidInEth_validateMintParameters(
+        uint256 msgValue,
+        uint256 pricePerSpin
+    ) private pure {
+        // throw if the price per spin is less than the minimum price per spin
+        if (pricePerSpin < MINIMUM_PRICE_PER_SPIN) {
+            revert PricePerSpinTooLow();
+        }
+
+        // throw if the price per spin is not evenly divisible by the ETH sent, i.e. the ETH sent is not a multiple of the price per spin
+        if (msgValue % pricePerSpin != 0) {
+            revert IncorrectETHReceived();
+        }
+    }
+
+    function _attemptBatchMint_paidInMint_validateMintParameters(
+        uint32 numberOfMints,
+        uint256 consolationFees,
+        uint256 ethRequired,
+        uint256 pricePerSpinInWei,
+        uint256 pricePerMint
+    ) private pure {
+        if (numberOfMints == 0) {
+            revert InvalidNumberOfMints();
+        }
+
+        // throw if the price per spin is less than the minimum price per spin
+        if (pricePerSpinInWei < MINIMUM_PRICE_PER_SPIN) {
+            revert PricePerSpinTooLow();
+        }
+
+        // throw if the price per mint specified is a fraction and not evenly divisible by the price per spin in wei
+        if (pricePerMint % pricePerSpinInWei != 0) {
+            revert InvalidPricePerMint();
+        }
+
+        if (ethRequired > consolationFees) {
+            revert InsufficientConsolationFees();
+        }
+    }
+
     /// @notice Attempts a batch mint for the msg.sender for $MINT using ETH as payment.
     /// @param minter address of minter
     /// @param referrer address of referrer
@@ -87,6 +148,15 @@ abstract contract PerpetualMintInternal is
         address referrer,
         uint32 numberOfMints
     ) internal {
+        uint256 msgValue = msg.value;
+
+        uint256 pricePerSpin = msgValue / numberOfMints;
+
+        _attemptBatchMint_paidInEth_validateMintParameters(
+            msgValue,
+            pricePerSpin
+        );
+
         Storage.Layout storage l = Storage.layout();
 
         // for now, mints for $MINT are treated as address(0) collections
@@ -94,19 +164,29 @@ abstract contract PerpetualMintInternal is
 
         CollectionData storage collectionData = l.collections[collection];
 
-        _attemptBatchMintForMintWithEth_sharedLogic(
+        _attemptBatchMintForMintWithEth_calculateAndDistributeFees(
             l,
-            msg.value,
-            _collectionMintPrice(collectionData),
-            referrer,
-            numberOfMints
+            msgValue,
+            referrer
         );
 
         // if the number of words requested is greater than the max allowed by the VRF coordinator,
         // the request for random words will fail (max random words is currently 500 per request).
         uint32 numWords = numberOfMints * 1; // 1 words per mint for $MINT, current max of 500 mints per tx
 
-        _requestRandomWords(l, collectionData, minter, collection, numWords);
+        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+                collectionData,
+                pricePerSpin
+            );
+
+        _requestRandomWords(
+            l,
+            collectionData,
+            minter,
+            collection,
+            mintPriceAdjustmentFactor,
+            numWords
+        );
     }
 
     /// @notice Attempts a Base-specific batch mint for the msg.sender for $MINT using ETH as payment.
@@ -118,6 +198,15 @@ abstract contract PerpetualMintInternal is
         address referrer,
         uint8 numberOfMints
     ) internal {
+        uint256 msgValue = msg.value;
+
+        uint256 pricePerSpin = msgValue / numberOfMints;
+
+        _attemptBatchMint_paidInEth_validateMintParameters(
+            msgValue,
+            pricePerSpin
+        );
+
         Storage.Layout storage l = Storage.layout();
 
         // for now, mints for $MINT are treated as address(0) collections
@@ -125,42 +214,36 @@ abstract contract PerpetualMintInternal is
 
         CollectionData storage collectionData = l.collections[collection];
 
-        _attemptBatchMintForMintWithEth_sharedLogic(
+        _attemptBatchMintForMintWithEth_calculateAndDistributeFees(
             l,
-            msg.value,
-            _collectionMintPrice(collectionData),
-            referrer,
-            numberOfMints
+            msgValue,
+            referrer
         );
 
         // if the number of words requested is greater than uint8, the function call will revert.
         // the current max allowed by Supra VRF is 255 per request.
         uint8 numWords = numberOfMints * 1; // 1 words per mint for $MINT, current max of 255 mints per tx
 
+        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+                collectionData,
+                pricePerSpin
+            );
+
         _requestRandomWordsBase(
             l,
             collectionData,
             minter,
             collection,
+            mintPriceAdjustmentFactor,
             numWords
         );
     }
 
-    function _attemptBatchMintForMintWithEth_sharedLogic(
+    function _attemptBatchMintForMintWithEth_calculateAndDistributeFees(
         Storage.Layout storage l,
         uint256 msgValue,
-        uint256 mintForMintPrice,
-        address referrer,
-        uint32 numberOfMints
+        address referrer
     ) private {
-        if (numberOfMints == 0) {
-            revert InvalidNumberOfMints();
-        }
-
-        if (msgValue != mintForMintPrice * numberOfMints) {
-            revert IncorrectETHReceived();
-        }
-
         // calculate the mint for $MINT consolation fee
         uint256 mintTokenConsolationFee = (msgValue *
             l.mintTokenConsolationFeeBP) / BASIS;
@@ -197,29 +280,38 @@ abstract contract PerpetualMintInternal is
     /// @notice Attempts a batch mint for the msg.sender for $MINT using $MINT tokens as payment.
     /// @param minter address of minter
     /// @param referrer address of referrer
+    /// @param pricePerMint price per mint for collection ($MINT denominated in units of wei)
     /// @param numberOfMints number of mints to attempt
     function _attemptBatchMintForMintWithMint(
         address minter,
         address referrer,
+        uint256 pricePerMint,
         uint32 numberOfMints
     ) internal {
         Storage.Layout storage l = Storage.layout();
+
+        uint256 ethToMintRatio = _ethToMintRatio(l);
+
+        uint256 pricePerSpinInWei = pricePerMint / ethToMintRatio;
+
+        uint256 ethRequired = pricePerSpinInWei * numberOfMints;
+
+        _attemptBatchMint_paidInMint_validateMintParameters(
+            numberOfMints,
+            l.consolationFees,
+            ethRequired,
+            pricePerSpinInWei,
+            pricePerMint
+        );
 
         // for now, mints for $MINT are treated as address(0) collections
         address collection = address(0);
 
         CollectionData storage collectionData = l.collections[collection];
 
-        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
-
-        uint256 ethRequired = collectionMintPrice * numberOfMints;
-
-        uint256 ethToMintRatio = _ethToMintRatio(l);
-
-        _attemptBatchMintForMintWithMint_sharedLogic(
+        _attemptBatchMintForMintWithMint_calculateAndDistributeFees(
             l,
             ethRequired,
-            numberOfMints,
             ethToMintRatio,
             minter,
             referrer
@@ -229,35 +321,56 @@ abstract contract PerpetualMintInternal is
         // the request for random words will fail (max random words is currently 500 per request).
         uint32 numWords = numberOfMints * 1; // 1 words per mint for $MINT, current max of 500 mints per tx
 
-        _requestRandomWords(l, collectionData, minter, collection, numWords);
+        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+                collectionData,
+                pricePerSpinInWei
+            );
+
+        _requestRandomWords(
+            l,
+            collectionData,
+            minter,
+            collection,
+            mintPriceAdjustmentFactor,
+            numWords
+        );
     }
 
     /// @notice Attempts a Base-specific batch mint for the msg.sender for $MINT using $MINT tokens as payment.
     /// @param minter address of minter
     /// @param referrer address of referrer
+    /// @param pricePerMint price per mint for collection ($MINT denominated in units of wei)
     /// @param numberOfMints number of mints to attempt
     function _attemptBatchMintForMintWithMintBase(
         address minter,
         address referrer,
+        uint256 pricePerMint,
         uint8 numberOfMints
     ) internal {
         Storage.Layout storage l = Storage.layout();
+
+        uint256 ethToMintRatio = _ethToMintRatio(l);
+
+        uint256 pricePerSpinInWei = pricePerMint / ethToMintRatio;
+
+        uint256 ethRequired = pricePerSpinInWei * numberOfMints;
+
+        _attemptBatchMint_paidInMint_validateMintParameters(
+            numberOfMints,
+            l.consolationFees,
+            ethRequired,
+            pricePerSpinInWei,
+            pricePerMint
+        );
 
         // for now, mints for $MINT are treated as address(0) collections
         address collection = address(0);
 
         CollectionData storage collectionData = l.collections[collection];
 
-        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
-
-        uint256 ethRequired = collectionMintPrice * numberOfMints;
-
-        uint256 ethToMintRatio = _ethToMintRatio(l);
-
-        _attemptBatchMintForMintWithMint_sharedLogic(
+        _attemptBatchMintForMintWithMint_calculateAndDistributeFees(
             l,
             ethRequired,
-            numberOfMints,
             ethToMintRatio,
             minter,
             referrer
@@ -267,31 +380,28 @@ abstract contract PerpetualMintInternal is
         // the current max allowed by Supra VRF is 255 per request.
         uint8 numWords = numberOfMints * 1; // 1 words per mint for $MINT, current max of 255 mints per tx
 
+        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+                collectionData,
+                pricePerSpinInWei
+            );
+
         _requestRandomWordsBase(
             l,
             collectionData,
             minter,
             collection,
+            mintPriceAdjustmentFactor,
             numWords
         );
     }
 
-    function _attemptBatchMintForMintWithMint_sharedLogic(
+    function _attemptBatchMintForMintWithMint_calculateAndDistributeFees(
         Storage.Layout storage l,
         uint256 ethRequired,
-        uint32 numberOfMints,
         uint256 ethToMintRatio,
         address minter,
         address referrer
     ) private {
-        if (numberOfMints == 0) {
-            revert InvalidNumberOfMints();
-        }
-
-        if (ethRequired > l.consolationFees) {
-            revert InsufficientConsolationFees();
-        }
-
         // calculate amount of $MINT required
         uint256 mintRequired = ethRequired * ethToMintRatio;
 
@@ -344,24 +454,48 @@ abstract contract PerpetualMintInternal is
         address referrer,
         uint32 numberOfMints
     ) internal {
+        if (collection == address(0)) {
+            // throw if collection is $MINT
+            revert InvalidCollectionAddress();
+        }
+
+        uint256 msgValue = msg.value;
+
+        uint256 pricePerSpin = msgValue / numberOfMints;
+
+        _attemptBatchMint_paidInEth_validateMintParameters(
+            msgValue,
+            pricePerSpin
+        );
+
         Storage.Layout storage l = Storage.layout();
 
         CollectionData storage collectionData = l.collections[collection];
 
-        _attemptBatchMintWithEth_sharedLogic(
+        _attemptBatchMintWithEth_calculateAndDistributeFees(
             l,
             collectionData,
-            msg.value,
-            collection,
-            referrer,
-            numberOfMints
+            msgValue,
+            referrer
         );
 
         // if the number of words requested is greater than the max allowed by the VRF coordinator,
         // the request for random words will fail (max random words is currently 500 per request).
         uint32 numWords = numberOfMints * 2; // 2 words per mint, current max of 250 mints per tx
 
-        _requestRandomWords(l, collectionData, minter, collection, numWords);
+        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+                collectionData,
+                pricePerSpin
+            );
+
+        _requestRandomWords(
+            l,
+            collectionData,
+            minter,
+            collection,
+            mintPriceAdjustmentFactor,
+            numWords
+        );
     }
 
     /// @notice Attempts a Base-specific batch mint for the msg.sender for a single collection using ETH as payment.
@@ -375,55 +509,56 @@ abstract contract PerpetualMintInternal is
         address referrer,
         uint8 numberOfMints
     ) internal {
+        if (collection == address(0)) {
+            // throw if collection is $MINT
+            revert InvalidCollectionAddress();
+        }
+
+        uint256 msgValue = msg.value;
+
+        uint256 pricePerSpin = msgValue / numberOfMints;
+
+        _attemptBatchMint_paidInEth_validateMintParameters(
+            msgValue,
+            pricePerSpin
+        );
+
         Storage.Layout storage l = Storage.layout();
 
         CollectionData storage collectionData = l.collections[collection];
 
-        _attemptBatchMintWithEth_sharedLogic(
+        _attemptBatchMintWithEth_calculateAndDistributeFees(
             l,
             collectionData,
-            msg.value,
-            collection,
-            referrer,
-            numberOfMints
+            msgValue,
+            referrer
         );
 
         // if the number of words requested is greater than uint8, the function call will revert.
         // the current max allowed by Supra VRF is 255 per request.
         uint8 numWords = numberOfMints * 2; // 2 words per mint, current max of 127 mints per tx
 
+        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+                collectionData,
+                pricePerSpin
+            );
+
         _requestRandomWordsBase(
             l,
             collectionData,
             minter,
             collection,
+            mintPriceAdjustmentFactor,
             numWords
         );
     }
 
-    function _attemptBatchMintWithEth_sharedLogic(
+    function _attemptBatchMintWithEth_calculateAndDistributeFees(
         Storage.Layout storage l,
         CollectionData storage collectionData,
         uint256 msgValue,
-        address collection,
-        address referrer,
-        uint32 numberOfMints
+        address referrer
     ) private {
-        if (collection == address(0)) {
-            // throw if collection is $MINT
-            revert InvalidCollectionAddress();
-        }
-
-        if (numberOfMints == 0) {
-            revert InvalidNumberOfMints();
-        }
-
-        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
-
-        if (msgValue != collectionMintPrice * numberOfMints) {
-            revert IncorrectETHReceived();
-        }
-
         // calculate the mint for collection consolation fee
         uint256 collectionConsolationFee = (msgValue *
             l.collectionConsolationFeeBP) / BASIS;
@@ -475,91 +610,132 @@ abstract contract PerpetualMintInternal is
         address minter,
         address collection,
         address referrer,
+        uint256 pricePerMint,
         uint32 numberOfMints
     ) internal {
+        if (collection == address(0)) {
+            // throw if collection is $MINT
+            revert InvalidCollectionAddress();
+        }
+
         Storage.Layout storage l = Storage.layout();
+
+        uint256 ethToMintRatio = _ethToMintRatio(l);
+
+        uint256 pricePerSpinInWei = pricePerMint / ethToMintRatio;
+
+        uint256 ethRequired = pricePerSpinInWei * numberOfMints;
+
+        _attemptBatchMint_paidInMint_validateMintParameters(
+            numberOfMints,
+            l.consolationFees,
+            ethRequired,
+            pricePerSpinInWei,
+            pricePerMint
+        );
 
         CollectionData storage collectionData = l.collections[collection];
 
-        _attemptBatchMintWithMint_sharedLogic(
+        _attemptBatchMintWithMint_calculateAndDistributeFees(
             l,
             collectionData,
             minter,
-            collection,
             referrer,
-            numberOfMints
+            ethRequired,
+            ethToMintRatio
         );
 
         // if the number of words requested is greater than the max allowed by the VRF coordinator,
         // the request for random words will fail (max random words is currently 500 per request).
         uint32 numWords = numberOfMints * 2; // 2 words per mint, current max of 250 mints per tx
 
-        _requestRandomWords(l, collectionData, minter, collection, numWords);
+        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+                collectionData,
+                pricePerSpinInWei
+            );
+
+        _requestRandomWords(
+            l,
+            collectionData,
+            minter,
+            collection,
+            mintPriceAdjustmentFactor,
+            numWords
+        );
     }
 
     /// @notice Attempts a Base-specific batch mint for the msg.sender for a single collection using $MINT tokens as payment.
     /// @param minter address of minter
     /// @param collection address of collection for mint attempts
     /// @param referrer address of referrer
+    /// @param pricePerMint price per mint for collection ($MINT denominated in units of wei)
     /// @param numberOfMints number of mints to attempt
     function _attemptBatchMintWithMintBase(
         address minter,
         address collection,
         address referrer,
+        uint256 pricePerMint,
         uint8 numberOfMints
     ) internal {
+        if (collection == address(0)) {
+            // throw if collection is $MINT
+            revert InvalidCollectionAddress();
+        }
+
         Storage.Layout storage l = Storage.layout();
+
+        uint256 ethToMintRatio = _ethToMintRatio(l);
+
+        uint256 pricePerSpinInWei = pricePerMint / ethToMintRatio;
+
+        uint256 ethRequired = pricePerSpinInWei * numberOfMints;
+
+        _attemptBatchMint_paidInMint_validateMintParameters(
+            numberOfMints,
+            l.consolationFees,
+            ethRequired,
+            pricePerSpinInWei,
+            pricePerMint
+        );
 
         CollectionData storage collectionData = l.collections[collection];
 
-        _attemptBatchMintWithMint_sharedLogic(
+        _attemptBatchMintWithMint_calculateAndDistributeFees(
             l,
             collectionData,
             minter,
-            collection,
             referrer,
-            numberOfMints
+            ethRequired,
+            ethToMintRatio
         );
 
         // if the number of words requested is greater than uint8, the function call will revert.
         // the current max allowed by Supra VRF is 255 per request.
         uint8 numWords = numberOfMints * 2; // 2 words per mint, current max of 127 mints per tx
 
+        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+                collectionData,
+                pricePerSpinInWei
+            );
+
         _requestRandomWordsBase(
             l,
             collectionData,
             minter,
             collection,
+            mintPriceAdjustmentFactor,
             numWords
         );
     }
 
-    function _attemptBatchMintWithMint_sharedLogic(
+    function _attemptBatchMintWithMint_calculateAndDistributeFees(
         Storage.Layout storage l,
         CollectionData storage collectionData,
         address minter,
-        address collection,
         address referrer,
-        uint32 numberOfMints
+        uint256 ethRequired,
+        uint256 ethToMintRatio
     ) private {
-        if (collection == address(0)) {
-            revert InvalidCollectionAddress();
-        }
-
-        if (numberOfMints == 0) {
-            revert InvalidNumberOfMints();
-        }
-
-        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
-
-        uint256 ethRequired = collectionMintPrice * numberOfMints;
-
-        if (ethRequired > l.consolationFees) {
-            revert InsufficientConsolationFees();
-        }
-
-        uint256 ethToMintRatio = _ethToMintRatio(l);
-
         // calculate amount of $MINT required
         uint256 mintRequired = ethRequired * ethToMintRatio;
 
@@ -628,10 +804,12 @@ abstract contract PerpetualMintInternal is
     /// @param collection address of collection for mint attempts
     /// @param numberOfMints number of mints to attempt
     /// @param randomness random value to use in calculation
+    /// @param pricePerMint price paid per mint for collection (denominated in units of wei)
     function _calculateMintResult(
         address collection,
         uint32 numberOfMints,
-        uint256 randomness
+        uint256 randomness,
+        uint256 pricePerMint
     ) internal view returns (MintResultData memory result) {
         Storage.Layout storage l = Storage.layout();
 
@@ -640,6 +818,17 @@ abstract contract PerpetualMintInternal is
         bool mintForMint = collection == address(0);
 
         uint32 numberOfWords = numberOfMints * (mintForMint ? 1 : 2);
+
+        uint256 collectionMintMultiplier = _collectionMintMultiplier(
+            collectionData
+        );
+
+        uint256 ethToMintRatio = _ethToMintRatio(l);
+
+        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+                collectionData,
+                pricePerMint
+            );
 
         uint256[] memory randomWords = new uint256[](numberOfWords);
 
@@ -652,13 +841,20 @@ abstract contract PerpetualMintInternal is
                 l,
                 numberOfMints,
                 randomWords,
+                collectionMintMultiplier,
+                ethToMintRatio,
+                mintPriceAdjustmentFactor,
                 collectionData
             );
         } else {
             result = _calculateMintForCollectionResult_sharedLogic(
                 l,
+                _collectionRisk(collectionData),
                 numberOfMints,
                 randomWords,
+                collectionMintMultiplier,
+                ethToMintRatio,
+                mintPriceAdjustmentFactor,
                 collectionData
             );
         }
@@ -668,10 +864,12 @@ abstract contract PerpetualMintInternal is
     /// @param collection address of collection for mint attempts
     /// @param numberOfMints number of mints to attempt
     /// @param signature signature value to use as randomness in calculation
+    /// @param pricePerMint price paid per mint for collection (denominated in units of wei)
     function _calculateMintResultBase(
         address collection,
         uint8 numberOfMints,
-        uint256[2] calldata signature
+        uint256[2] calldata signature,
+        uint256 pricePerMint
     ) internal view returns (MintResultData memory result) {
         Storage.Layout storage l = Storage.layout();
 
@@ -680,6 +878,17 @@ abstract contract PerpetualMintInternal is
         bool mintForMint = collection == address(0);
 
         uint8 numberOfWords = numberOfMints * (mintForMint ? 1 : 2);
+
+        uint256 collectionMintMultiplier = _collectionMintMultiplier(
+            collectionData
+        );
+
+        uint256 ethToMintRatio = _ethToMintRatio(l);
+
+        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+                collectionData,
+                pricePerMint
+            );
 
         uint256[] memory randomWords = new uint256[](numberOfWords);
 
@@ -694,13 +903,20 @@ abstract contract PerpetualMintInternal is
                 l,
                 numberOfMints,
                 randomWords,
+                collectionMintMultiplier,
+                ethToMintRatio,
+                mintPriceAdjustmentFactor,
                 collectionData
             );
         } else {
             result = _calculateMintForCollectionResult_sharedLogic(
                 l,
+                _collectionRisk(collectionData),
                 numberOfMints,
                 randomWords,
+                collectionMintMultiplier,
+                ethToMintRatio,
+                mintPriceAdjustmentFactor,
                 collectionData
             );
         }
@@ -708,14 +924,17 @@ abstract contract PerpetualMintInternal is
 
     function _calculateMintForCollectionResult_sharedLogic(
         Storage.Layout storage l,
+        uint32 collectionRisk,
         uint32 numberOfMints,
         uint256[] memory randomWords,
+        uint256 collectionMintMultiplier,
+        uint256 ethToMintRatio,
+        uint256 mintAdjustmentFactor,
         CollectionData storage collectionData
     ) private view returns (MintResultData memory result) {
         TiersData storage tiers = l.tiers;
 
-        uint32 collectionRisk = _collectionRisk(collectionData);
-        uint256 ethToMintRatio = _ethToMintRatio(l);
+        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
 
         result.mintOutcomes = new MintOutcome[](numberOfMints);
 
@@ -742,10 +961,11 @@ abstract contract PerpetualMintInternal is
                     if (cumulativeRisk > secondNormalizedValue) {
                         mintAmount =
                             (tiers.tierMultipliers[j] *
+                                mintAdjustmentFactor *
                                 ethToMintRatio *
-                                _collectionMintPrice(collectionData) *
-                                _collectionMintMultiplier(collectionData)) /
-                            (uint256(BASIS) * BASIS);
+                                collectionMintPrice *
+                                collectionMintMultiplier) /
+                            (uint256(BASIS) * BASIS * BASIS);
 
                         outcome.tierIndex = j;
                         outcome.tierMultiplier = tiers.tierMultipliers[j];
@@ -769,11 +989,14 @@ abstract contract PerpetualMintInternal is
         Storage.Layout storage l,
         uint32 numberOfMints,
         uint256[] memory randomWords,
+        uint256 collectionMintMultiplier,
+        uint256 ethToMintRatio,
+        uint256 mintAdjustmentFactor,
         CollectionData storage collectionData
     ) private view returns (MintResultData memory result) {
         MintTokenTiersData storage mintTokenTiers = l.mintTokenTiers;
 
-        uint256 ethToMintRatio = _ethToMintRatio(l);
+        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
 
         result.mintOutcomes = new MintOutcome[](numberOfMints);
 
@@ -791,10 +1014,11 @@ abstract contract PerpetualMintInternal is
                 if (cumulativeRisk > normalizedValue) {
                     mintAmount =
                         (mintTokenTiers.tierMultipliers[j] *
+                            mintAdjustmentFactor *
                             ethToMintRatio *
-                            _collectionMintPrice(collectionData) *
-                            _collectionMintMultiplier(collectionData)) /
-                        (uint256(BASIS) * BASIS);
+                            collectionMintPrice *
+                            collectionMintMultiplier) /
+                        (uint256(BASIS) * BASIS * BASIS);
 
                     outcome.tierIndex = j;
                     outcome.tierMultiplier = mintTokenTiers.tierMultipliers[j];
@@ -996,6 +1220,7 @@ abstract contract PerpetualMintInternal is
 
         address collection = request.collection;
         address minter = request.minter;
+        uint256 mintPriceAdjustmentFactor = request.mintPriceAdjustmentFactor;
 
         CollectionData storage collectionData = l.collections[collection];
 
@@ -1005,6 +1230,7 @@ abstract contract PerpetualMintInternal is
                 l.mintToken,
                 _collectionMintMultiplier(collectionData),
                 _collectionMintPrice(collectionData),
+                mintPriceAdjustmentFactor,
                 l.mintTokenTiers,
                 minter,
                 randomWords,
@@ -1012,12 +1238,10 @@ abstract contract PerpetualMintInternal is
             );
         } else {
             // if the collection is not address(0), the mint is for a collection
-
             _resolveMints(
                 l.mintToken,
-                _collectionMintMultiplier(collectionData),
-                _collectionMintPrice(collectionData),
-                _collectionRisk(collectionData),
+                collectionData,
+                mintPriceAdjustmentFactor,
                 l.tiers,
                 minter,
                 collection,
@@ -1140,12 +1364,14 @@ abstract contract PerpetualMintInternal is
     /// @param collectionData the CollectionData struct for a given collection
     /// @param minter address calling this function
     /// @param collection address of collection to attempt mint for
+    /// @param mintPriceAdjustmentFactor adjustment factor for mint price
     /// @param numWords amount of random values to request
     function _requestRandomWords(
         Storage.Layout storage l,
         CollectionData storage collectionData,
         address minter,
         address collection,
+        uint256 mintPriceAdjustmentFactor,
         uint32 numWords
     ) internal {
         VRFCoordinatorV2Interface vrfCoordinator = VRFCoordinatorV2Interface(
@@ -1174,6 +1400,7 @@ abstract contract PerpetualMintInternal is
 
         request.collection = collection;
         request.minter = minter;
+        request.mintPriceAdjustmentFactor = mintPriceAdjustmentFactor;
     }
 
     /// @notice requests random values from Supra VRF, Base-specific
@@ -1181,12 +1408,14 @@ abstract contract PerpetualMintInternal is
     /// @param collectionData the CollectionData struct for a given collection
     /// @param minter address calling this function
     /// @param collection address of collection to attempt mint for
+    /// @param mintPriceAdjustmentFactor adjustment factor for mint price
     /// @param numWords amount of random values to request
     function _requestRandomWordsBase(
         Storage.Layout storage l,
         CollectionData storage collectionData,
         address minter,
         address collection,
+        uint256 mintPriceAdjustmentFactor,
         uint8 numWords
     ) internal {
         ISupraRouterContract supraRouter = ISupraRouterContract(VRF);
@@ -1204,13 +1433,13 @@ abstract contract PerpetualMintInternal is
 
         request.collection = collection;
         request.minter = minter;
+        request.mintPriceAdjustmentFactor = mintPriceAdjustmentFactor;
     }
 
     /// @notice resolves the outcomes of attempted mints for a given collection
     /// @param mintToken address of $MINT token
-    /// @param collectionMintMultiplier mint multiplier of given collection
-    /// @param collectionMintPrice mint price of given collection
-    /// @param collectionRisk risk of given collection
+    /// @param collectionData the CollectionData struct for a given collection
+    /// @param mintPriceAdjustmentFactor adjustment factor for mint price
     /// @param tiersData the TiersData struct for mint consolations
     /// @param minter address of minter
     /// @param collection address of collection for mint attempts
@@ -1218,9 +1447,8 @@ abstract contract PerpetualMintInternal is
     /// @param ethToMintRatio ratio of ETH to $MINT
     function _resolveMints(
         address mintToken,
-        uint256 collectionMintMultiplier,
-        uint256 collectionMintPrice,
-        uint32 collectionRisk,
+        CollectionData storage collectionData,
+        uint256 mintPriceAdjustmentFactor,
         TiersData memory tiersData,
         address minter,
         address collection,
@@ -1233,7 +1461,15 @@ abstract contract PerpetualMintInternal is
             revert UnmatchedRandomWords();
         }
 
-        uint256 totalMintAmount;
+        uint256 collectionMintMultiplier = _collectionMintMultiplier(
+            collectionData
+        );
+
+        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
+
+        uint32 collectionRisk = _collectionRisk(collectionData);
+
+        uint256 cumulativeTierMultiplier;
         uint256 totalReceiptAmount;
 
         for (uint256 i = 0; i < randomWords.length; i += 2) {
@@ -1252,7 +1488,7 @@ abstract contract PerpetualMintInternal is
             // if the collection risk is less than the first normalized value, the mint attempt is unsuccessful
             // and the second normalized value is used to determine the consolation tier
             if (!(collectionRisk > firstNormalizedValue)) {
-                uint256 tierMintAmount;
+                uint256 tierMultiplier;
                 uint256 cumulativeRisk;
 
                 // iterate through tiers to find the tier that the random value falls into
@@ -1261,29 +1497,31 @@ abstract contract PerpetualMintInternal is
 
                     // if the cumulative risk is greater than the second normalized value, the tier has been found
                     if (cumulativeRisk > secondNormalizedValue) {
-                        tierMintAmount =
-                            (tiersData.tierMultipliers[j] *
-                                ethToMintRatio *
-                                collectionMintPrice) /
-                            BASIS;
+                        tierMultiplier = tiersData.tierMultipliers[j];
 
                         break;
                     }
                 }
 
-                totalMintAmount += tierMintAmount;
+                cumulativeTierMultiplier += tierMultiplier;
             } else {
                 // mint attempt is successful, so the total receipt amount is incremented
                 ++totalReceiptAmount;
             }
         }
 
+        uint256 totalMintAmount;
+
         // Mint the cumulative amounts at the end
-        if (totalMintAmount > 0) {
-            // Apply collection-specific multiplier
+        if (cumulativeTierMultiplier > 0) {
+            // Adjust for the cumulative tier multiplier, ETH to $MINT ratio, collection mint price, and apply collection-specific multiplier & mint price adjustment factor
             totalMintAmount =
-                (totalMintAmount * collectionMintMultiplier) /
-                BASIS;
+                (cumulativeTierMultiplier *
+                    ethToMintRatio *
+                    collectionMintPrice *
+                    collectionMintMultiplier *
+                    mintPriceAdjustmentFactor) /
+                (uint256(BASIS) * BASIS * BASIS);
 
             IToken(mintToken).mint(minter, totalMintAmount);
         }
@@ -1310,6 +1548,7 @@ abstract contract PerpetualMintInternal is
     /// @param mintToken address of $MINT token
     /// @param mintForMintMultiplier minting for $MINT multiplier
     /// @param mintForMintPrice mint for $MINT mint price
+    /// @param mintPriceAdjustmentFactor adjustment factor for mint price
     /// @param mintTokenTiersData the MintTokenTiersData struct for mint for $MINT consolations
     /// @param minter address of minter
     /// @param randomWords array of random values relating to number of attempts
@@ -1318,18 +1557,19 @@ abstract contract PerpetualMintInternal is
         address mintToken,
         uint256 mintForMintMultiplier,
         uint256 mintForMintPrice,
+        uint256 mintPriceAdjustmentFactor,
         MintTokenTiersData memory mintTokenTiersData,
         address minter,
         uint256[] memory randomWords,
         uint256 ethToMintRatio
     ) internal {
-        uint256 totalMintAmount;
+        uint256 cumulativeTierMultiplier;
 
         for (uint256 i = 0; i < randomWords.length; ++i) {
-            // random word is used to determine the consolation tier
+            // random word is used to determine the reward tier
             uint256 normalizedValue = _normalizeValue(randomWords[i], BASIS);
 
-            uint256 tierMintAmount;
+            uint256 tierMultiplier;
             uint256 cumulativeRisk;
 
             // iterate through tiers to find the tier that the random value falls into
@@ -1338,22 +1578,22 @@ abstract contract PerpetualMintInternal is
 
                 // if the cumulative risk is greater than the normalized value, the tier has been found
                 if (cumulativeRisk > normalizedValue) {
-                    tierMintAmount =
-                        (mintTokenTiersData.tierMultipliers[j] *
-                            ethToMintRatio *
-                            mintForMintPrice) /
-                        BASIS;
+                    tierMultiplier = mintTokenTiersData.tierMultipliers[j];
 
                     break;
                 }
             }
 
-            totalMintAmount += tierMintAmount;
+            cumulativeTierMultiplier += tierMultiplier;
         }
 
         // Mint the cumulative amounts at the end
-        // Apply $MINT-specific multiplier
-        totalMintAmount = (totalMintAmount * mintForMintMultiplier) / BASIS;
+        // Adjust for the cumulative tier multiplier, ETH to $MINT ratio, mint for $MINT price, and apply $MINT-specific multiplier & mint price adjustment factor
+        uint256 totalMintAmount = (cumulativeTierMultiplier *
+            ethToMintRatio *
+            mintForMintPrice *
+            mintForMintMultiplier *
+            mintPriceAdjustmentFactor) / (uint256(BASIS) * BASIS * BASIS);
 
         IToken(mintToken).mint(minter, totalMintAmount);
 
@@ -1364,6 +1604,12 @@ abstract contract PerpetualMintInternal is
             totalMintAmount,
             0
         );
+    }
+
+    /// @notice returns the value of SCALE
+    /// @return value SCALE value
+    function _SCALE() internal pure returns (uint256 value) {
+        value = SCALE;
     }
 
     /// @notice sets the collection mint fee distribution ratio in basis points
