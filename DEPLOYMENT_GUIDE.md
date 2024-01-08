@@ -46,9 +46,9 @@ This guide outlines the steps to deploy & configure the Insrt V2 protocol.
 - `BASE_RPC_URL`: Base RPC URL
 - `BASESCAN_API_KEY`: Basescan API key for contract verification
 
-### Base Goerli Deployments
+### Base Sepolia Deployments
 
-- `BASE_GOERLI_RPC_URL`: Base Goerli RPC URL
+- `BASE_SEPOLIA_RPC_URL`: Base Sepolia RPC URL
 - `BASESCAN_API_KEY`: Basescan API key for contract verification
 
 ### Localhost Deployments (Arbitrum Fork)
@@ -90,7 +90,7 @@ We provide deployment scripts for the following networks:
 1. **Arbitrum**
 2. **Arbitrum Sepolia (Testnet)**
 3. **Base**
-4. **Base Goerli (Testnet)**
+4. **Base Sepolia (Testnet)**
 5. **Localhost (Arbitrum Fork)**
 6. **Localhost (Base Fork)**
 
@@ -155,10 +155,10 @@ make deploy-arb-sepolia
 make deploy-base
 ```
 
-### Deploying on Base Goerli (Testnet)
+### Deploying on Base Sepolia (Testnet)
 
 ```bash
-make deploy-base-goerli
+make deploy-base-sepolia
 ```
 
 ### Deploying Locally (on an Arbitrum Fork)
@@ -182,7 +182,7 @@ We provide post-deployment configuration scripts for the following networks:
 1. **Arbitrum**
 2. **Arbitrum Sepolia (Testnet)**
 3. **Base**
-4. **Base Goerli (Testnet)**
+4. **Base Sepolia (Testnet)**
 5. **Localhost (Arbitrum Fork)**
 6. **Localhost (Base Fork)**
 
@@ -316,10 +316,10 @@ make configure-token-local-arb
 make configure-token-base
 ```
 
-#### Base Goerli (Testnet)
+#### Base Sepolia (Testnet)
 
 ```bash
-make configure-token-base-goerli
+make configure-token-base-sepolia
 ```
 
 #### Locally (on a Base Fork)
@@ -354,10 +354,10 @@ make configure-vrf-local-arb
 make configure-vrf-base
 ```
 
-#### Base Goerli (Testnet)
+#### Base Sepolia (Testnet)
 
 ```bash
-make configure-vrf-base-goerli
+make configure-vrf-base-sepolia
 ```
 
 #### Locally (on a Base Fork)
@@ -394,10 +394,10 @@ make configure-perp-mint-local-arb
 make configure-perp-mint-base
 ```
 
-#### Base Goerli (Testnet)
+#### Base Sepolia (Testnet)
 
 ```bash
-make configure-perp-mint-base-goerli
+make configure-perp-mint-base-sepolia
 ```
 
 #### Locally (on a Base Fork)

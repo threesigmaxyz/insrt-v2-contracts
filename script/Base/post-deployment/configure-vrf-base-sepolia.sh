@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-CHAIN_ID=84531
+CHAIN_ID=84532
 CONFIGURATION_SCRIPT="01_configureVRFSubscription.s.sol"
-RPC_URL=$BASE_GOERLI_RPC_URL
-export ETH_FUND_AMOUNT=20 # 20 ETH
+RPC_URL=$BASE_SEPOLIA_RPC_URL
+export ETH_FUND_AMOUNT=5 # 20 ETH
 
 # Check if DEPLOYER_KEY is set
 if [[ -z $DEPLOYER_KEY ]]; then

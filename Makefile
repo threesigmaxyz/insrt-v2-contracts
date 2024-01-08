@@ -60,8 +60,8 @@ deploy-local-arb:
 deploy-base:
 	@./script/Base/deployment/deploy-base.sh
 
-deploy-base-goerli:
-	@./script/Base/deployment/deploy-base-goerli.sh
+deploy-base-sepolia:
+	@./script/Base/deployment/deploy-base-sepolia.sh
 
 deploy-local-base:
 	@./script/Base/deployment/deploy-local.sh
@@ -107,8 +107,8 @@ configure-perp-mint-local-arb:
 configure-token-base:
 	@./script/Base/post-deployment/configure-token-base.sh
 
-configure-token-base-goerli:
-	@./script/Base/post-deployment/configure-token-base-goerli.sh
+configure-token-base-sepolia:
+	@./script/Base/post-deployment/configure-token-base-sepolia.sh
 
 configure-token-local-base:
 	@./script/common/post-deployment/configure-token-local.sh
@@ -117,8 +117,8 @@ configure-token-local-base:
 configure-vrf-base:
 	@./script/Base/post-deployment/configure-vrf-base.sh
 
-configure-vrf-base-goerli:
-	@./script/Base/post-deployment/configure-vrf-base-goerli.sh
+configure-vrf-base-sepolia:
+	@./script/Base/post-deployment/configure-vrf-base-sepolia.sh
 
 configure-vrf-local-base:
 	@./script/Base/post-deployment/configure-vrf-local.sh
@@ -127,8 +127,8 @@ configure-vrf-local-base:
 configure-perp-mint-base:
 	@./script/Base/post-deployment/configure-perp-mint-base.sh
 
-configure-perp-mint-base-goerli:
-	@./script/Base/post-deployment/configure-perp-mint-base-goerli.sh
+configure-perp-mint-base-sepolia:
+	@./script/Base/post-deployment/configure-perp-mint-base-sepolia.sh
 
 configure-perp-mint-local-base:
 	@./script/Base/post-deployment/configure-perp-mint-local.sh

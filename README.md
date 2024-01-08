@@ -97,15 +97,15 @@ Requires the following additional environment variables set:
 make deploy-base
 ```
 
-#### Base Goerli
+#### Base Sepolia
 
 Requires the following additional environment variables set:
 
-- `BASE_GOERLI_RPC_URL`: Base Goerli RPC URL
+- `BASE_SEPOLIA_RPC_URL`: Base Sepolia RPC URL
 - `BASESCAN_API_KEY`: Basescan API key for contract verification
 
 ```
-make deploy-base-goerli
+make deploy-base-sepolia
 ```
 
 #### Localhost (Base Fork)
@@ -300,32 +300,32 @@ Note: The following environment variables are modifiable in `./script/Base/post-
 make configure-perp-mint-base
 ```
 
-#### Base Goerli
+#### Base Sepolia
 
 1. Token configuration
 
-Note: The following environment variables are modifiable in `./script/Base/post-deployment/configure-token-base-goerli.sh`:
+Note: The following environment variables are modifiable in `./script/Base/post-deployment/configure-token-base-sepolia.sh`:
 
 - `NEW_TOKEN_PROXY_OWNER`
 - `TOKEN_DISTRIBUTION_FRACTION_BP`
 
 ```
-make configure-token-base-goerli
+make configure-token-base-sepolia
 ```
 
 2. VRF configuration
 
-Note: The following environment variables are modifiable in `./script/Base/post-deployment/configure-vrf-base-goerli.sh`:
+Note: The following environment variables are modifiable in `./script/Base/post-deployment/configure-vrf-base-sepolia.sh`:
 
 - `ETH_FUND_AMOUNT`
 
 ```
-make configure-vrf-base-goerli
+make configure-vrf-base-sepolia
 ```
 
 3. PerpetualMint configuration
 
-Note: The following environment variables are modifiable in `./script/Base/post-deployment/configure-perp-mint-base-goerli.sh`:
+Note: The following environment variables are modifiable in `./script/Base/post-deployment/configure-perp-mint-base-sepolia.sh`:
 
 - `COLLECTION_CONSOLATION_FEE_BP`
 - `DEFAULT_COLLECTION_REFERRAL_FEE_BP`
@@ -339,7 +339,7 @@ Note: The following environment variables are modifiable in `./script/Base/post-
 - `TIER_RISKS`
 
 ```
-make configure-perp-mint-base-goerli
+make configure-perp-mint-base-sepolia
 ```
 
 #### Localhost (Base Fork)

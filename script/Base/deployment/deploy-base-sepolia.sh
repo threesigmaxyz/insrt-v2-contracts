@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-CHAIN_ID=84531
+CHAIN_ID=84532
 DEPLOYMENT_SCRIPTS=("01_deployToken.s.sol" "01_deployPerpetualMint.s.sol")
-RPC_URL=$BASE_GOERLI_RPC_URL
-VERIFIER_URL="https://api-goerli.basescan.org/api"
-export VRF_ROUTER="0xe01754DEB54c4915D65331Fa31ebf9111CacF9C2"
+RPC_URL=$BASE_SEPOLIA_RPC_URL
+VERIFIER_URL="https://api-sepolia.basescan.org/api"
+export VRF_ROUTER="0x99a021029EBC90020B193e111Ae2726264a111A2"
 
 # Check if BASESCAN_API_KEY is set
 if [[ -z $BASESCAN_API_KEY ]]; then
@@ -13,9 +13,9 @@ if [[ -z $BASESCAN_API_KEY ]]; then
   exit 1
 fi
 
-# Check if BASE_GOERLI_RPC_URL is set
-if [[ -z $BASE_GOERLI_RPC_URL ]]; then
-  echo -e "Error: BASE_GOERLI_RPC_URL is not set in .env.\n"
+# Check if BASE_SEPOLIA_RPC_URL is set
+if [[ -z $BASE_SEPOLIA_RPC_URL ]]; then
+  echo -e "Error: BASE_SEPOLIA_RPC_URL is not set in .env.\n"
   exit 1
 fi
 
