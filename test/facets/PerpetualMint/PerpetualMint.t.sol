@@ -37,7 +37,7 @@ abstract contract PerpetualMintTest is CoreTest {
     /// @dev mint for $MINT consolation fee basis points to test
     uint32 internal constant TEST_MINT_TOKEN_CONSOLATION_FEE_BP = 5000000; // 0.5% fee
 
-    uint64 internal constant TEST_VRF_SUBSCRIPTION_ID = 5;
+    uint64 internal constant TEST_VRF_SUBSCRIPTION_ID = 1;
 
     /// @dev first tier multiplier (lowest multiplier)
     uint256 internal constant firstTierMultiplier = 1e9; // 1x multiplier
