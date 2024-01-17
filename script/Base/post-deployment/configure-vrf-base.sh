@@ -24,7 +24,7 @@ echo -e "Deployer Address: $DEPLOYER_ADDRESS\n"
 ETH_FUND_AMOUNT_WEI=$(cast to-wei $ETH_FUND_AMOUNT)
 
 # Get current Gnosis Safe ETH balance in Wei
-GNOSIS_SAFE_CURRENT_BALANCE_WEI=$(cast balance $GNOSIS_SAFE)
+GNOSIS_SAFE_CURRENT_BALANCE_WEI=$(cast balance $GNOSIS_SAFE --rpc-url $RPC_URL)
 
 # Convert ETH balance from Wei to ETH base unit
 GNOSIS_SAFE_BALANCE_ETH_DEC=$(cast from-wei $GNOSIS_SAFE_CURRENT_BALANCE_WEI)
