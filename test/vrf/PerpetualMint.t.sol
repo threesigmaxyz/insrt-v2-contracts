@@ -4,16 +4,16 @@ pragma solidity 0.8.19;
 
 import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidStateDiamond.sol";
 
-import { IPerpetualMintTest } from "./IPerpetualMintTest.sol";
-import { PerpetualMintHelper } from "./PerpetualMintHelper.t.sol";
-import { CoreTest } from "../../diamonds/Core.t.sol";
-import { MintTokenTiersData, PerpetualMintStorage as Storage, TiersData, VRFConfig } from "../../../contracts/facets/PerpetualMint/Storage.sol";
-import { IInsrtVRFCoordinator } from "../../../contracts/vrf/IInsrtVRFCoordinator.sol";
+import { CoreTest } from "../diamonds/Core.t.sol";
+import { IPerpetualMintTest } from "../facets/PerpetualMint/IPerpetualMintTest.sol";
+import { PerpetualMintHelper } from "../facets/PerpetualMint/PerpetualMintHelper.t.sol";
+import { MintTokenTiersData, PerpetualMintStorage as Storage, TiersData, VRFConfig } from "../../contracts/facets/PerpetualMint/Storage.sol";
+import { IInsrtVRFCoordinator } from "../../contracts/vrf/IInsrtVRFCoordinator.sol";
 
-/// @title PerpetualMintTest
-/// @dev PerpetualMintTest helper contract. Configures PerpetualMint as facets of Core test.
-/// @dev Should function identically across all forks given appropriate Chainlink VRF details are set.
-abstract contract PerpetualMintTest is CoreTest {
+/// @title PerpetualMintTest_InsrtVRFCoordinator
+/// @dev PerpetualMintTest InsrtVRFCoordinator-specific helper contract. Configures PerpetualMint facets for Core testing using the Insrt VRF Coordinator.
+/// @dev Should function identically across all forks where the Insrt VRF Coordinator is deployed & configured.
+abstract contract PerpetualMintTest_InsrtVRFCoordinator is CoreTest {
     IPerpetualMintTest public perpetualMint;
 
     PerpetualMintHelper public perpetualMintHelper;
@@ -83,6 +83,14 @@ abstract contract PerpetualMintTest is CoreTest {
         initPerpetualMint();
 
         perpetualMint = IPerpetualMintTest(address(coreDiamond));
+
+        address vrfCoordinator = this.perpetualMintHelper().VRF_COORDINATOR();
+
+        vm.prank(address(this.perpetualMintHelper()));
+        IInsrtVRFCoordinator(vrfCoordinator).addConsumer(
+            TEST_VRF_SUBSCRIPTION_ID,
+            address(perpetualMint)
+        );
 
         perpetualMint.setVRFConfig(
             VRFConfig({
@@ -215,8 +223,7 @@ abstract contract PerpetualMintTest is CoreTest {
 
     /// @dev initializes PerpetualMint facets by executing a diamond cut on the Core Diamond.
     function initPerpetualMint() internal {
-        // use Chainlink VRF for base behavior tests targeting Arbitrum
-        perpetualMintHelper = new PerpetualMintHelper(false);
+        perpetualMintHelper = new PerpetualMintHelper(true);
 
         ISolidStateDiamond.FacetCut[]
             memory perpetualMintBaseTestFacetCuts = perpetualMintHelper
@@ -239,65 +246,5 @@ abstract contract PerpetualMintTest is CoreTest {
         facetCuts[7] = perpetualMintTestFacetCuts[5];
 
         coreDiamond.diamondCut(facetCuts, address(0), "");
-    }
-
-    /// @dev mocks unsuccessful attemptBatchMintForMintWithEth attempts to increase accrued
-    /// mint earnings, mint for $MINT consolation fees, & protocol fees by the number of unsuccessful mints
-    /// @param numberOfMints number of unsuccessful mint attempts
-    function mock_unsuccessfulMintForMintWithEthAttempts(
-        uint32 numberOfMints
-    ) internal {
-        // for now, mints for $MINT are treated as address(0) collections
-        address collection = address(0);
-
-        uint256 mockMsgValue = perpetualMint.collectionMintPrice(collection) *
-            numberOfMints;
-
-        uint256 mockMintTokenConsolationFee = (mockMsgValue *
-            perpetualMint.mintTokenConsolationFeeBP()) / perpetualMint.BASIS();
-
-        perpetualMint.setConsolationFees(
-            perpetualMint.accruedConsolationFees() + mockMintTokenConsolationFee
-        );
-
-        perpetualMint.setProtocolFees(
-            perpetualMint.accruedProtocolFees() +
-                mockMsgValue -
-                mockMintTokenConsolationFee
-        );
-    }
-
-    /// @dev mocks unsuccessful attemptBatchMintWithEth attempts to increase accrued
-    /// mint earnings, mint for collection consolation fees, & protocol fees by the number of unsuccessful mints
-    /// @param collection address of collection
-    /// @param numberOfMints number of unsuccessful mint attempts
-    function mock_unsuccessfulMintForCollectionWithEthAttempts(
-        address collection,
-        uint32 numberOfMints
-    ) internal {
-        uint256 mockMsgValue = perpetualMint.collectionMintPrice(collection) *
-            numberOfMints;
-
-        uint256 mockCollectionConsolationFee = (mockMsgValue *
-            perpetualMint.collectionConsolationFeeBP()) / perpetualMint.BASIS();
-
-        uint256 mockMintFee = (mockMsgValue * perpetualMint.mintFeeBP()) /
-            perpetualMint.BASIS();
-
-        perpetualMint.setConsolationFees(
-            perpetualMint.accruedConsolationFees() +
-                mockCollectionConsolationFee
-        );
-
-        perpetualMint.setMintEarnings(
-            perpetualMint.accruedMintEarnings() +
-                mockMsgValue -
-                mockCollectionConsolationFee -
-                mockMintFee
-        );
-
-        perpetualMint.setProtocolFees(
-            perpetualMint.accruedProtocolFees() + mockMintFee
-        );
     }
 }
