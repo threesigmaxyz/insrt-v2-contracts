@@ -142,6 +142,17 @@ Requires the following additional environment variables set:
 make deploy-blast-sepolia
 ```
 
+#### Blast Sepolia w/ the Insrt VRF Coordinator
+
+Requires the following additional environment variables set:
+
+- `BLAST_SEPOLIA_RPC_URL`: Blast Sepolia RPC URL
+- `BLASTCAN_API_KEY`: Blastscan API key for contract verification
+
+```
+make deploy-blast-sepolia-custom
+```
+
 ## Post-deployment configuration
 
 ### Arbitrum
@@ -440,6 +451,15 @@ Note: The following environment variables are modifiable in `./script/Blast/post
 
 ```
 make configure-vrf-blast-sepolia
+```
+
+Note: The following environment variables are modifiable in `./script/Blast/post-deployment/configure-vrf-blast-sepolia-custom.sh`:
+
+- `NEW_VRF_OWNER`
+- `VRF_FULFILLER`
+
+```
+make configure-vrf-blast-sepolia-custom
 ```
 
 3. PerpetualMint configuration

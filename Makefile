@@ -74,6 +74,9 @@ deploy-local-base:
 deploy-blast-sepolia:
 	@./script/Blast/deployment/deploy-blast-sepolia.sh
 
+deploy-blast-sepolia-custom:
+	@./script/Blast/deployment/deploy-blast-sepolia-custom.sh
+
 
 ### Post-deployment configuration
 
@@ -153,6 +156,9 @@ configure-token-blast-sepolia:
 ##### 2. VRF configuration
 configure-vrf-blast-sepolia:
 	@./script/Blast/post-deployment/configure-vrf-blast-sepolia.sh
+
+configure-vrf-blast-sepolia-custom:
+	@./script/Blast/post-deployment/configure-vrf-blast-sepolia-custom.sh
 
 ##### 3. PerpetualMint configuration
 configure-perp-mint-blast-sepolia:

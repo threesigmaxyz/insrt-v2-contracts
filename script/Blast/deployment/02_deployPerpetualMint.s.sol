@@ -13,7 +13,9 @@ import { IERC1155MetadataExtension } from "../../../contracts/facets/PerpetualMi
 import { IPerpetualMint } from "../../../contracts/facets/PerpetualMint/IPerpetualMint.sol";
 import { IPerpetualMintBase } from "../../../contracts/facets/PerpetualMint/IPerpetualMintBase.sol";
 import { IPerpetualMintView } from "../../../contracts/facets/PerpetualMint/IPerpetualMintView.sol";
+import { PerpetualMint } from "../../../contracts/facets/PerpetualMint/PerpetualMint.sol";
 import { PerpetualMintBase } from "../../../contracts/facets/PerpetualMint/PerpetualMintBase.sol";
+import { PerpetualMintView } from "../../../contracts/facets/PerpetualMint/PerpetualMintView.sol";
 import { IPerpetualMintViewSupra } from "../../../contracts/facets/PerpetualMint/Supra/IPerpetualMintView.sol";
 import { PerpetualMintSupra } from "../../../contracts/facets/PerpetualMint/Supra/PerpetualMint.sol";
 import { PerpetualMintViewSupra } from "../../../contracts/facets/PerpetualMint/Supra/PerpetualMintView.sol";
@@ -27,50 +29,102 @@ contract DeployPerpetualMint_Blast is Script {
         // get Core Blast diamond address
         address payable coreBlastAddress = payable(vm.envAddress("CORE_BLAST"));
 
-        // Supra VRF Router address
-        address VRF_ROUTER = vm.envAddress("VRF_ROUTER");
+        address insrtVrfCoordinator = readInsrtVRFCoordinatorAddress();
+
+        bool insrtVRF = insrtVrfCoordinator != address(0);
+
+        // if InsrtVRFCoordinator has not been deployed, use the Supra VRF Router
+        address VRF_ROUTER = insrtVRF
+            ? insrtVrfCoordinator
+            : vm.envAddress("VRF_ROUTER");
 
         // read deployer private key
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // deploy PerpetualMintSupra facet
-        PerpetualMintSupra perpetualMintSupra = new PerpetualMintSupra(
-            VRF_ROUTER
-        );
+        ICore.FacetCut[] memory perpetualMintFacetCuts;
+
+        ICore.FacetCut[] memory perpetualMintViewFacetCuts;
+
+        if (insrtVRF) {
+            // deploy PerpetualMint facet
+            PerpetualMint perpetualMint = new PerpetualMint(VRF_ROUTER);
+
+            // deploy PerpetualMintView facet
+            PerpetualMintView perpetualMintView = new PerpetualMintView(
+                VRF_ROUTER
+            );
+
+            console.log(
+                "PerpetualMint Facet Address: ",
+                address(perpetualMint)
+            );
+
+            console.log(
+                "PerpetualMintView Facet Address: ",
+                address(perpetualMintView)
+            );
+
+            console.log("Insrt VRF Coordinator Address: ", VRF_ROUTER);
+
+            // get PerpetualMint facet cuts
+            perpetualMintFacetCuts = getPerpetualMintFacetCuts(
+                address(perpetualMint)
+            );
+
+            // get PerpetualMintView  facet cuts
+            perpetualMintViewFacetCuts = getPerpetualMintViewFacetCuts(
+                address(perpetualMintView),
+                insrtVRF
+            );
+        } else {
+            // deploy PerpetualMintSupra facet
+            PerpetualMintSupra perpetualMintSupra = new PerpetualMintSupra(
+                VRF_ROUTER
+            );
+
+            // deploy PerpetualMintViewSupra facet
+            PerpetualMintViewSupra perpetualMintViewSupra = new PerpetualMintViewSupra(
+                    VRF_ROUTER
+                );
+
+            console.log(
+                "PerpetualMintSupra Facet Address: ",
+                address(perpetualMintSupra)
+            );
+
+            console.log(
+                "PerpetualMintViewSupra Facet Address: ",
+                address(perpetualMintViewSupra)
+            );
+
+            console.log("Supra VRF Router Address: ", VRF_ROUTER);
+
+            // get PerpetualMint facet cuts
+            perpetualMintFacetCuts = getPerpetualMintFacetCuts(
+                address(perpetualMintSupra)
+            );
+
+            // get PerpetualMintViewSupra facet cuts
+            perpetualMintViewFacetCuts = getPerpetualMintViewFacetCuts(
+                address(perpetualMintViewSupra),
+                insrtVRF
+            );
+        }
 
         // deploy PerpetualMintBase facet
         PerpetualMintBase perpetualMintBase = new PerpetualMintBase(VRF_ROUTER);
 
-        // deploy PerpetualMintViewSupra facet
-        PerpetualMintViewSupra perpetualMintViewSupra = new PerpetualMintViewSupra(
-                VRF_ROUTER
-            );
-
-        console.log(
-            "PerpetualMintSupra Facet Address: ",
-            address(perpetualMintSupra)
-        );
         console.log(
             "PerpetualMintBase Facet Address: ",
             address(perpetualMintBase)
         );
-        console.log(
-            "PerpetualMintViewSupra Facet Address: ",
-            address(perpetualMintViewSupra)
-        );
+
         console.log("CoreBlast Address: ", coreBlastAddress);
-        console.log("Supra VRF Router Address: ", VRF_ROUTER);
 
         writeCoreBlastAddress(coreBlastAddress);
         writeVRFRouterAddress(VRF_ROUTER);
-
-        // get PerpetualMint facet cuts
-        ICore.FacetCut[]
-            memory perpetualMintFacetCuts = getPerpetualMintFacetCuts(
-                address(perpetualMintSupra)
-            );
 
         // get PerpetualMintBase facet cuts
         ICore.FacetCut[]
@@ -78,13 +132,9 @@ contract DeployPerpetualMint_Blast is Script {
                 address(perpetualMintBase)
             );
 
-        // get PerpetualMintView & PerpetualMintViewSupra facet cuts
-        ICore.FacetCut[]
-            memory perpetualMintViewFacetCuts = getPerpetualMintViewFacetCuts(
-                address(perpetualMintViewSupra)
-            );
-
-        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](9);
+        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](
+            insrtVRF ? 8 : 9
+        );
 
         facetCuts[0] = perpetualMintFacetCuts[0];
         facetCuts[1] = perpetualMintFacetCuts[1];
@@ -94,7 +144,10 @@ contract DeployPerpetualMint_Blast is Script {
         facetCuts[5] = perpetualMintBaseFacetCuts[1];
         facetCuts[6] = perpetualMintBaseFacetCuts[2];
         facetCuts[7] = perpetualMintViewFacetCuts[0];
-        facetCuts[8] = perpetualMintViewFacetCuts[1];
+
+        if (!insrtVRF) {
+            facetCuts[8] = perpetualMintViewFacetCuts[1];
+        }
 
         ICore coreBlast = ICore(coreBlastAddress);
 
@@ -109,7 +162,7 @@ contract DeployPerpetualMint_Blast is Script {
     }
 
     /// @dev provides the facet cuts for cutting PerpetualMint facet into Core
-    /// @param facetAddress address of PerpetualMintSupra facet
+    /// @param facetAddress address of PerpetualMint facet
     function getPerpetualMintFacetCuts(
         address facetAddress
     ) internal pure returns (ICore.FacetCut[] memory) {
@@ -358,12 +411,16 @@ contract DeployPerpetualMint_Blast is Script {
     }
 
     /// @dev provides the facet cuts for cutting PerpetualMintView & PerpetualMintViewSupra facets into Core
-    /// @param viewFacetAddress address of PerpetualMintViewSupra facet
+    /// @param viewFacetAddress address of PerpetualMintView facet
+    /// @param insrtVRF boolean indicating whether Insrt VRF is being used
     function getPerpetualMintViewFacetCuts(
-        address viewFacetAddress
+        address viewFacetAddress,
+        bool insrtVRF
     ) internal pure returns (ICore.FacetCut[] memory) {
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](25);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](
+            insrtVRF ? 26 : 25
+        );
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -465,13 +522,33 @@ contract DeployPerpetualMint_Blast is Script {
             .vrfSubscriptionBalanceThreshold
             .selector;
 
-        ICore.FacetCut
-            memory perpetualMintViewFacetCut = IDiamondWritableInternal
-                .FacetCut({
-                    target: viewFacetAddress,
-                    action: IDiamondWritableInternal.FacetCutAction.ADD,
-                    selectors: perpetualMintViewFunctionSelectors
-                });
+        ICore.FacetCut memory perpetualMintViewFacetCut;
+
+        ICore.FacetCut[] memory facetCuts;
+
+        if (insrtVRF) {
+            perpetualMintViewFunctionSelectors[25] = IPerpetualMintView
+                .calculateMintResult
+                .selector;
+
+            perpetualMintViewFacetCut = IDiamondWritableInternal.FacetCut({
+                target: viewFacetAddress,
+                action: IDiamondWritableInternal.FacetCutAction.ADD,
+                selectors: perpetualMintViewFunctionSelectors
+            });
+
+            facetCuts = new ICore.FacetCut[](1);
+
+            facetCuts[0] = perpetualMintViewFacetCut;
+
+            return facetCuts;
+        }
+
+        perpetualMintViewFacetCut = IDiamondWritableInternal.FacetCut({
+            target: viewFacetAddress,
+            action: IDiamondWritableInternal.FacetCutAction.ADD,
+            selectors: perpetualMintViewFunctionSelectors
+        });
 
         // map the PerpetualMintViewSupra related function selectors to their respective interfaces
         bytes4[] memory perpetualMintViewSupraFunctionSelectors = new bytes4[](
@@ -490,12 +567,40 @@ contract DeployPerpetualMint_Blast is Script {
                     selectors: perpetualMintViewSupraFunctionSelectors
                 });
 
-        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](2);
+        facetCuts = new ICore.FacetCut[](2);
 
         facetCuts[0] = perpetualMintViewFacetCut;
         facetCuts[1] = perpetualMintViewSupraFacetCut;
 
         return facetCuts;
+    }
+
+    /// @notice attempts to read the saved address of an Insrt VRF Coordinator contract, post-deployment
+    /// @return insrtVrfCoordinatorAddress address of the deployed Insrt VRF Coordinator contract
+    function readInsrtVRFCoordinatorAddress()
+        internal
+        view
+        returns (address insrtVrfCoordinatorAddress)
+    {
+        string memory inputDir = string.concat(
+            vm.projectRoot(),
+            "/broadcast/01_deployInsrtVRFCoordinator.s.sol/"
+        );
+
+        string memory chainDir = string.concat(vm.toString(block.chainid), "/");
+
+        string memory file = string.concat(
+            "run-latest-insrt-vrf-coordinator-address",
+            ".txt"
+        );
+
+        try vm.readFile(string.concat(inputDir, chainDir, file)) returns (
+            string memory fileData
+        ) {
+            return vm.parseAddress(fileData);
+        } catch {
+            return address(0);
+        }
     }
 
     function readTokenProxyAddress()
@@ -542,8 +647,8 @@ contract DeployPerpetualMint_Blast is Script {
         );
     }
 
-    /// @notice writes the address of the Supra VRF Router set in the deployed Core diamond to a file
-    /// @param vrfRouterAddress address of the Supra VRF Router set in the deployed Core diamond
+    /// @notice writes the address of the VRF Router set in the deployed Core diamond to a file
+    /// @param vrfRouterAddress address of the VRF Router set in the deployed Core diamond
     function writeVRFRouterAddress(address vrfRouterAddress) internal {
         string memory inputDir = string.concat(
             vm.projectRoot(),

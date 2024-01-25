@@ -173,6 +173,12 @@ make deploy-base-sepolia
 make deploy-blast-sepolia
 ```
 
+### Deploying on Blast Sepolia (Testnet) w/ the Insrt VRF Coordinator
+
+```bash
+make deploy-blast-sepolia-custom
+```
+
 ### Deploying Locally (on an Arbitrum Fork)
 
 ```bash
@@ -396,6 +402,12 @@ make configure-vrf-local-base
 
 ```bash
 make configure-vrf-blast-sepolia
+```
+
+#### Blast Sepolia (Testnet) w/ the Insrt VRF Coordinator
+
+```bash
+make configure-vrf-blast-sepolia-custom
 ```
 
 ### Step 3: PerpetualMint Configuration
