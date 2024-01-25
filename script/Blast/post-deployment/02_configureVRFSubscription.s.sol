@@ -7,14 +7,14 @@ import { IPerpetualMint } from "../../../contracts/facets/PerpetualMint/IPerpetu
 import { IDepositContract } from "../../../contracts/vrf/Supra/IDepositContract.sol";
 import { ISupraRouterContract } from "../../../contracts/vrf/Supra/ISupraRouterContract.sol";
 
-/// @title ConfigureVRFSubscription_Base
+/// @title ConfigureVRFSubscription_Blast
 /// @dev Configures the Supra VRF subscription by adding the PerpetualMint contract as a consumer,
 /// and optionally funding the subscription in ETH via the Gnosis Safe Transaction Service API
-contract ConfigureVRFSubscription_Base is BatchScript {
+contract ConfigureVRFSubscription_Blast is BatchScript {
     /// @dev runs the script logic
     function run() external {
         // get PerpetualMint address
-        address perpetualMint = readCoreAddress();
+        address payable perpetualMint = readCoreBlastAddress();
 
         // get Gnosis Safe (protocol owner) address
         address gnosisSafeAddress = vm.envAddress("GNOSIS_SAFE");
@@ -61,21 +61,30 @@ contract ConfigureVRFSubscription_Base is BatchScript {
         );
     }
 
-    /// @notice attempts to read the saved address of the Core diamond contract, post-deployment
-    /// @return coreAddress address of the deployed Core diamond contract
-    function readCoreAddress() internal view returns (address coreAddress) {
+    /// @notice attempts to read the saved address of the CoreBlast diamond contract, post-deployment
+    /// @return coreBlastAddress address of the deployed CoreBlast diamond contract
+    function readCoreBlastAddress()
+        internal
+        view
+        returns (address payable coreBlastAddress)
+    {
         string memory inputDir = string.concat(
             vm.projectRoot(),
-            "/broadcast/01_deployPerpetualMint.s.sol/"
+            "/broadcast/02_deployPerpetualMint.s.sol/"
         );
 
         string memory chainDir = string.concat(vm.toString(block.chainid), "/");
 
-        string memory file = string.concat("run-latest-core-address", ".txt");
+        string memory file = string.concat(
+            "run-latest-core-blast-address",
+            ".txt"
+        );
 
         return
-            vm.parseAddress(
-                vm.readFile(string.concat(inputDir, chainDir, file))
+            payable(
+                vm.parseAddress(
+                    vm.readFile(string.concat(inputDir, chainDir, file))
+                )
             );
     }
 
@@ -88,7 +97,7 @@ contract ConfigureVRFSubscription_Base is BatchScript {
     {
         string memory inputDir = string.concat(
             vm.projectRoot(),
-            "/broadcast/01_deployPerpetualMint.s.sol/"
+            "/broadcast/02_deployPerpetualMint.s.sol/"
         );
 
         string memory chainDir = string.concat(vm.toString(block.chainid), "/");

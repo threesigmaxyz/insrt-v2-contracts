@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-CHAIN_ID=84532
-CONFIGURATION_SCRIPT="01_configureVRFSubscription.s.sol"
-RPC_URL=$BASE_SEPOLIA_RPC_URL
+CHAIN_ID=168587773
+CONFIGURATION_SCRIPT="02_configureVRFSubscription.s.sol"
+RPC_URL=$BLAST_SEPOLIA_RPC_URL
 export ETH_FUND_AMOUNT=20 # 20 ETH
 
 # Check if DEPLOYER_KEY is set
@@ -36,4 +36,4 @@ echo -e "Deployer ETH balance is $DEPLOYER_BALANCE_ETH_DEC ETH.\n"
 mkdir -p ./broadcast/${CONFIGURATION_SCRIPT}/$CHAIN_ID
 
 # Run forge scripts
-forge script script/Base/post-deployment/${CONFIGURATION_SCRIPT} --rpc-url $RPC_URL --broadcast
+forge script script/Blast/post-deployment/${CONFIGURATION_SCRIPT} --rpc-url $RPC_URL --broadcast

@@ -11,7 +11,8 @@ import { MintOutcome, MintResultData, MintTokenTiersData, TiersData } from "../.
 /// @dev Script for calculating the result of a batch mint attempt
 contract CalculateMintResultBase is Script, Test {
     // get Core PerpetualMint diamond address
-    address perpetualMintAddress = vm.envAddress("CORE_ADDRESS");
+    address payable perpetualMintAddress =
+        payable(vm.envAddress("CORE_ADDRESS"));
 
     ICore core = ICore(perpetualMintAddress);
 
@@ -84,7 +85,7 @@ contract CalculateMintResultBase is Script, Test {
             );
         }
 
-        MintResultData memory result = core.calculateMintResultBase(
+        MintResultData memory result = core.calculateMintResultSupra(
             collection,
             numberOfMints,
             randomnessFixed,
