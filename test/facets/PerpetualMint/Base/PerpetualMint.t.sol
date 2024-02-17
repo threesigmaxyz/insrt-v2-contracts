@@ -2,12 +2,11 @@
 
 pragma solidity 0.8.19;
 
-import { IOwnable } from "@solidstate/contracts/access/ownable/IOwnable.sol";
 import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidStateDiamond.sol";
 
 import { PerpetualMintHelper_Base } from "./PerpetualMintHelper.t.sol";
 import { IPerpetualMintTest } from "../IPerpetualMintTest.sol";
-import { CoreTest } from "../../../diamonds/Core.t.sol";
+import { CoreTest } from "../../../diamonds/Core/Core.t.sol";
 import { MintTokenTiersData, PerpetualMintStorage as Storage, TiersData } from "../../../../contracts/facets/PerpetualMint/Storage.sol";
 import { IDepositContract } from "../../../../contracts/vrf/Supra/IDepositContract.sol";
 import { ISupraRouterContract } from "../../../../contracts/vrf/Supra/ISupraRouterContract.sol";
@@ -210,8 +209,8 @@ abstract contract PerpetualMintTest_Base is CoreTest {
             supraRouterContract._depositContract()
         );
 
-        supraVRFDepositContractOwner = IOwnable(
-            address(supraVRFDepositContract)
+        supraVRFDepositContractOwner = ISolidStateDiamond(
+            payable(address(supraVRFDepositContract))
         ).owner();
 
         _activateVRF();

@@ -8,17 +8,24 @@ import { PerpetualMint } from "../PerpetualMint.sol";
 /// @title PerpetualMintSupra
 /// @dev Supra VRF-specific overrides for PerpetualMint
 contract PerpetualMintSupra is PerpetualMint {
+    /// @dev number of words used in mints for $MINT
+    uint8 private constant ONE_WORD = 1;
+
+    /// @dev number of words used in mints for collections
+    uint8 private constant TWO_WORDS = 2;
+
     constructor(address vrf) PerpetualMint(vrf) {}
 
     /// @inheritdoc IPerpetualMint
     function attemptBatchMintForMintWithEth(
         address referrer,
         uint32 numberOfMints
-    ) external payable override whenNotPaused {
+    ) external payable virtual override whenNotPaused {
         _attemptBatchMintForMintWithEthSupra(
             msg.sender,
             referrer,
-            uint8(numberOfMints)
+            uint8(numberOfMints),
+            ONE_WORD
         );
     }
 
@@ -27,12 +34,13 @@ contract PerpetualMintSupra is PerpetualMint {
         address referrer,
         uint256 pricePerMint,
         uint32 numberOfMints
-    ) external override whenNotPaused {
+    ) external virtual override whenNotPaused {
         _attemptBatchMintForMintWithMintSupra(
             msg.sender,
             referrer,
             pricePerMint,
-            uint8(numberOfMints)
+            uint8(numberOfMints),
+            ONE_WORD
         );
     }
 
@@ -41,12 +49,13 @@ contract PerpetualMintSupra is PerpetualMint {
         address collection,
         address referrer,
         uint32 numberOfMints
-    ) external payable override whenNotPaused {
+    ) external payable virtual override whenNotPaused {
         _attemptBatchMintWithEthSupra(
             msg.sender,
             collection,
             referrer,
-            uint8(numberOfMints)
+            uint8(numberOfMints),
+            TWO_WORDS
         );
     }
 
@@ -56,13 +65,14 @@ contract PerpetualMintSupra is PerpetualMint {
         address referrer,
         uint256 pricePerMint,
         uint32 numberOfMints
-    ) external override whenNotPaused {
+    ) external virtual override whenNotPaused {
         _attemptBatchMintWithMintSupra(
             msg.sender,
             collection,
             referrer,
             pricePerMint,
-            uint8(numberOfMints)
+            uint8(numberOfMints),
+            TWO_WORDS
         );
     }
 }
