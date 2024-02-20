@@ -60,10 +60,9 @@ contract UpgradePerpetualMintViewArb is BatchScript {
             );
 
         ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](2);
+            memory facetCuts = new ISolidStateDiamond.FacetCut[](1);
 
-        facetCuts[0] = newPerpetualMintViewFacetCuts[0];
-        facetCuts[1] = replacementPerpetualMintViewFacetCuts[0];
+        facetCuts[0] = replacementPerpetualMintViewFacetCuts[0];
 
         bytes memory diamondCutTx = abi.encodeWithSelector(
             IDiamondWritable.diamondCut.selector,
@@ -111,7 +110,7 @@ contract UpgradePerpetualMintViewArb is BatchScript {
         address viewFacetAddress
     ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](25);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](26);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -202,14 +201,18 @@ contract UpgradePerpetualMintViewArb is BatchScript {
             .selector;
 
         perpetualMintViewFunctionSelectors[22] = IPerpetualMintView
-            .tiers
+            .SCALE
             .selector;
 
         perpetualMintViewFunctionSelectors[23] = IPerpetualMintView
-            .vrfConfig
+            .tiers
             .selector;
 
         perpetualMintViewFunctionSelectors[24] = IPerpetualMintView
+            .vrfConfig
+            .selector;
+
+        perpetualMintViewFunctionSelectors[25] = IPerpetualMintView
             .vrfSubscriptionBalanceThreshold
             .selector;
 
