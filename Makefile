@@ -231,6 +231,12 @@ upgrade-perp-mint-view-arb-sepolia:
 upgrade-token-arb-sepolia:
 	@./script/Arbitrum/upgrade/upgrade-token-arb-sepolia.sh
 
+##### Blast Sepolia
+
+##### Upgrade & Split PerpetualMintBlastSupra facet
+upgrade-split-perp-mint-blast-sepolia:
+	@./script/Blast/upgrade/upgrade-split-perp-mint-blast-sepolia.sh
+
 
 ### Calculations
 
