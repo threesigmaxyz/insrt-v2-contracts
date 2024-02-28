@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-CHAIN_ID=168587773 # TODO: UPDATE WHEN BLAST MAINNET IS LIVE 
+CHAIN_ID=81457 # TODO: UPDATE WHEN BLAST MAINNET IS LIVE
 DEPLOYMENT_SCRIPTS=("01_deployToken.s.sol" "02_deployPerpetualMint.s.sol")
 RPC_URL=$BLAST_RPC_URL
 VERIFIER_URL="https://api.routescan.io/v2/network/testnet/evm/168587773/etherscan" # TODO: UPDATE WHEN BLAST MAINNET IS LIVE

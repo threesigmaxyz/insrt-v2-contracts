@@ -35,5 +35,5 @@ arbitrum = { key = "${ARBISCAN_API_KEY}" }
 arbitrum-sepolia = { key = "${ARBISCAN_API_KEY}" }
 base = { key = "${BASESCAN_API_KEY}" }
 base-sepolia = { key = "${BASESCAN_API_KEY}" }
-blast = { key = "${BLASTSCAN_API_KEY}" }
+blast = { chain = "81457", key = "${BLASTSCAN_API_KEY}", url = "${BLASTSCAN_VERIFIER_URL}" }
 blast-sepolia = { key = "${BLASTSCAN_API_KEY}" }
