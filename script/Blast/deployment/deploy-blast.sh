@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-CHAIN_ID=81457 # TODO: UPDATE WHEN BLAST MAINNET IS LIVE
+CHAIN_ID=81457
 DEPLOYMENT_SCRIPTS=("01_deployToken.s.sol" "02_deployPerpetualMint.s.sol")
 RPC_URL=$BLAST_RPC_URL
-VERIFIER_URL="https://api.routescan.io/v2/network/testnet/evm/168587773/etherscan" # TODO: UPDATE WHEN BLAST MAINNET IS LIVE
-export VRF_ROUTER="0x2c9e897Ed7d4B1a917046c0d5B0770FE6094A181" # TODO: UPDATE WHEN BLAST MAINNET IS LIVE
+VERIFIER_URL="https://api.blastscan.io/api"
+export VRF_ROUTER="0x82A515c2BEC5C4be8aBBbF0D2F59C19A4547709c"
 
 # Check if BLASTSCAN_API_KEY is set
 if [[ -z $BLASTSCAN_API_KEY ]]; then

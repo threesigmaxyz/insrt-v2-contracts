@@ -30,9 +30,9 @@ contract PerpetualMintHelper_BlastSupra {
     PerpetualMintViewBlastSupra
         public perpetualMintViewBlastSupraImplementation;
 
-    // Blast Sepolia Supra VRF Router address (as of this writing, Blast mainnet is not live)
+    // Blast mainnet Supra VRF Router address
     address public constant VRF_ROUTER =
-        0x2c9e897Ed7d4B1a917046c0d5B0770FE6094A181;
+        0x82A515c2BEC5C4be8aBBbF0D2F59C19A4547709c;
 
     /// @dev deploys PerpetualMintHarnessBlastSupra implementation along with PerpetualMintBase and PerpetualMintViewBlastSupra
     constructor() {
