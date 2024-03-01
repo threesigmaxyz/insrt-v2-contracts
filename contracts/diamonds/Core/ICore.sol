@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 
 import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidStateDiamond.sol";
 
-import { IPerpetualMintBlastSupra } from "../../facets/PerpetualMint/Blast/Supra/IPerpetualMint.sol";
+import { IPerpetualMintBlast } from "../../facets/PerpetualMint/Blast/IPerpetualMint.sol";
 import { IPerpetualMintViewBlastSupra } from "../../facets/PerpetualMint/Blast/Supra/IPerpetualMintView.sol";
 import { IPerpetualMint } from "../../facets/PerpetualMint/IPerpetualMint.sol";
 import { IPerpetualMintBase } from "../../facets/PerpetualMint/IPerpetualMintBase.sol";
@@ -17,7 +17,7 @@ import { IPerpetualMintViewSupra } from "../../facets/PerpetualMint/Supra/IPerpe
 interface ICore is
     IPerpetualMint,
     IPerpetualMintBase,
-    IPerpetualMintBlastSupra,
+    IPerpetualMintBlast,
     IPerpetualMintInternal,
     IPerpetualMintView,
     IPerpetualMintViewBlastSupra,

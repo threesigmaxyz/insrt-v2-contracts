@@ -9,7 +9,8 @@ import { IPausable } from "@solidstate/contracts/security/pausable/IPausable.sol
 import { IERC1155Metadata } from "@solidstate/contracts/token/ERC1155/metadata/IERC1155Metadata.sol";
 
 import { ICore } from "../../../contracts/diamonds/Core/ICore.sol";
-import { IPerpetualMintBlastSupra } from "../../../contracts/facets/PerpetualMint/Blast/Supra/IPerpetualMint.sol";
+import { IPerpetualMintBlast } from "../../../contracts/facets/PerpetualMint/Blast/IPerpetualMint.sol";
+import { IPerpetualMintViewBlast } from "../../../contracts/facets/PerpetualMint/Blast/IPerpetualMintView.sol";
 import { IPerpetualMintViewBlastSupra } from "../../../contracts/facets/PerpetualMint/Blast/Supra/IPerpetualMintView.sol";
 import { PerpetualMintBlastSupra } from "../../../contracts/facets/PerpetualMint/Blast/Supra/PerpetualMint.sol";
 import { PerpetualMintViewBlastSupra } from "../../../contracts/facets/PerpetualMint/Blast/Supra/PerpetualMintView.sol";
@@ -138,21 +139,22 @@ contract DeployPerpetualMint_Blast is Script {
             );
 
         ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](
-            insrtVRF ? 8 : 10
+            insrtVRF ? 10 : 11
         );
 
         facetCuts[0] = perpetualMintFacetCuts[0];
         facetCuts[1] = perpetualMintFacetCuts[1];
-        facetCuts[2] = perpetualMintBaseFacetCuts[0];
-        facetCuts[3] = perpetualMintBaseFacetCuts[1];
-        facetCuts[4] = perpetualMintBaseFacetCuts[2];
-        facetCuts[5] = perpetualMintBaseFacetCuts[3];
-        facetCuts[6] = perpetualMintViewFacetCuts[0];
-        facetCuts[7] = perpetualMintViewFacetCuts[1];
+        facetCuts[2] = perpetualMintFacetCuts[2];
+        facetCuts[3] = perpetualMintBaseFacetCuts[0];
+        facetCuts[4] = perpetualMintBaseFacetCuts[1];
+        facetCuts[5] = perpetualMintBaseFacetCuts[2];
+        facetCuts[6] = perpetualMintBaseFacetCuts[3];
+        facetCuts[7] = perpetualMintViewFacetCuts[0];
+        facetCuts[8] = perpetualMintViewFacetCuts[1];
+        facetCuts[9] = perpetualMintViewFacetCuts[2];
 
         if (!insrtVRF) {
-            facetCuts[8] = perpetualMintFacetCuts[2];
-            facetCuts[9] = perpetualMintViewFacetCuts[2];
+            facetCuts[10] = perpetualMintViewFacetCuts[3];
         }
 
         ICore coreBlast = ICore(coreBlastAddress);
@@ -319,39 +321,27 @@ contract DeployPerpetualMint_Blast is Script {
 
         ICore.FacetCut[] memory facetCuts;
 
-        if (insrtVRF) {
-            facetCuts = new ICore.FacetCut[](2);
+        // map the PerpetualMintBlast related function selectors to their respective interfaces
+        bytes4[] memory perpetualMintBlastFunctionSelectors = new bytes4[](1);
 
-            // omit Ownable since SolidStateDiamond includes those
-            facetCuts[0] = perpetualMintFacetCut;
-            facetCuts[1] = vrfConsumerBaseV2FacetCut;
+        perpetualMintBlastFunctionSelectors = new bytes4[](1);
 
-            return facetCuts;
-        }
-
-        // map the PerpetualMintBlastSupra related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintBlastSupraFunctionSelectors = new bytes4[](
-            1
-        );
-
-        perpetualMintBlastSupraFunctionSelectors = new bytes4[](1);
-
-        perpetualMintBlastSupraFunctionSelectors[0] = IPerpetualMintBlastSupra
+        perpetualMintBlastFunctionSelectors[0] = IPerpetualMintBlast
             .setBlastYieldRisk
             .selector;
 
         ICore.FacetCut
-            memory perpetualMintBlastSupraFacetCut = IDiamondWritableInternal
+            memory perpetualMintBlastFacetCut = IDiamondWritableInternal
                 .FacetCut({
                     target: facetAddress,
                     action: IDiamondWritableInternal.FacetCutAction.ADD,
-                    selectors: perpetualMintBlastSupraFunctionSelectors
+                    selectors: perpetualMintBlastFunctionSelectors
                 });
 
         facetCuts = new ICore.FacetCut[](3);
 
         // omit Ownable since SolidStateDiamond includes those
-        facetCuts[0] = perpetualMintBlastSupraFacetCut;
+        facetCuts[0] = perpetualMintBlastFacetCut;
         facetCuts[1] = perpetualMintFacetCut;
         facetCuts[2] = vrfConsumerBaseV2FacetCut;
 
@@ -590,18 +580,41 @@ contract DeployPerpetualMint_Blast is Script {
             selectors: perpetualMintViewFunctionSelectors
         });
 
+        // map the PerpetualMintViewBlast related function selectors to their respective interfaces
+        bytes4[] memory perpetualMintViewBlastFunctionSelectors = new bytes4[](
+            1
+        );
+
+        perpetualMintViewBlastFunctionSelectors[0] = IPerpetualMintViewBlast
+            .blastYieldRisk
+            .selector;
+
+        ICore.FacetCut
+            memory perpetualMintViewBlastFacetCut = IDiamondWritableInternal
+                .FacetCut({
+                    target: viewFacetAddress,
+                    action: IDiamondWritableInternal.FacetCutAction.ADD,
+                    selectors: perpetualMintViewBlastFunctionSelectors
+                });
+
+        if (insrtVRF) {
+            facetCuts = new ICore.FacetCut[](3);
+
+            facetCuts[0] = pausableFacetCut;
+            facetCuts[1] = perpetualMintViewFacetCut;
+            facetCuts[2] = perpetualMintViewBlastFacetCut;
+
+            return facetCuts;
+        }
+
         // map the PerpetualMintViewBlastSupra related function selectors to their respective interfaces
         bytes4[]
             memory perpetualMintViewBlastSupraFunctionSelectors = new bytes4[](
-                2
+                1
             );
 
         perpetualMintViewBlastSupraFunctionSelectors[
             0
-        ] = IPerpetualMintViewBlastSupra.blastYieldRisk.selector;
-
-        perpetualMintViewBlastSupraFunctionSelectors[
-            1
         ] = IPerpetualMintViewBlastSupra.calculateMintResultBlastSupra.selector;
 
         ICore.FacetCut
@@ -612,11 +625,12 @@ contract DeployPerpetualMint_Blast is Script {
                     selectors: perpetualMintViewBlastSupraFunctionSelectors
                 });
 
-        facetCuts = new ICore.FacetCut[](3);
+        facetCuts = new ICore.FacetCut[](4);
 
         facetCuts[0] = pausableFacetCut;
         facetCuts[1] = perpetualMintViewFacetCut;
-        facetCuts[2] = perpetualMintViewBlastSupraFacetCut;
+        facetCuts[2] = perpetualMintViewBlastFacetCut;
+        facetCuts[3] = perpetualMintViewBlastSupraFacetCut;
 
         return facetCuts;
     }

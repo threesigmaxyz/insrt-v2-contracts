@@ -10,7 +10,8 @@ import { IPausable } from "@solidstate/contracts/security/pausable/IPausable.sol
 import { IERC1155Metadata } from "@solidstate/contracts/token/ERC1155/metadata/IERC1155Metadata.sol";
 
 import { ICore } from "../../../contracts/diamonds/Core/ICore.sol";
-import { IPerpetualMintBlastSupra } from "../../../contracts/facets/PerpetualMint/Blast/Supra/IPerpetualMint.sol";
+import { IPerpetualMintBlast } from "../../../contracts/facets/PerpetualMint/Blast/IPerpetualMint.sol";
+import { IPerpetualMintViewBlast } from "../../../contracts/facets/PerpetualMint/Blast/IPerpetualMintView.sol";
 import { IPerpetualMintViewBlastSupra } from "../../../contracts/facets/PerpetualMint/Blast/Supra/IPerpetualMintView.sol";
 import { PerpetualMintBlastSupra } from "../../../contracts/facets/PerpetualMint/Blast/Supra/PerpetualMint.sol";
 import { PerpetualMintViewBlastSupra } from "../../../contracts/facets/PerpetualMint/Blast/Supra/PerpetualMintView.sol";
@@ -323,7 +324,7 @@ contract UpgradeAndSplitPerpetualMintBlastSupraEOA is Script {
 
         perpetualMintBlastSupraFunctionSelectors = new bytes4[](1);
 
-        perpetualMintBlastSupraFunctionSelectors[0] = IPerpetualMintBlastSupra
+        perpetualMintBlastSupraFunctionSelectors[0] = IPerpetualMintBlast
             .setBlastYieldRisk
             .selector;
 
@@ -488,15 +489,28 @@ contract UpgradeAndSplitPerpetualMintBlastSupraEOA is Script {
                     selectors: perpetualMintViewFunctionSelectors
                 });
 
+        // map the PerpetualMintViewBlast related function selectors to their respective interfaces
+        bytes4[] memory perpetualMintViewBlastFunctionSelectors = new bytes4[](
+            1
+        );
+
+        perpetualMintViewBlastFunctionSelectors[0] = IPerpetualMintViewBlast
+            .blastYieldRisk
+            .selector;
+
+        ICore.FacetCut
+            memory perpetualMintViewBlastFacetCut = IDiamondWritableInternal
+                .FacetCut({
+                    target: facetAddress,
+                    action: IDiamondWritableInternal.FacetCutAction.ADD,
+                    selectors: perpetualMintViewBlastFunctionSelectors
+                });
+
         // map the PerpetualMintViewBlastSupra related function selectors to their respective interfaces
         bytes4[]
             memory perpetualMintViewBlastSupraFunctionSelectors = new bytes4[](
-                2
+                1
             );
-
-        perpetualMintViewBlastSupraFunctionSelectors[
-            0
-        ] = IPerpetualMintViewBlastSupra.blastYieldRisk.selector;
 
         perpetualMintViewBlastSupraFunctionSelectors[
             1
@@ -527,12 +541,13 @@ contract UpgradeAndSplitPerpetualMintBlastSupraEOA is Script {
                     selectors: perpetualMintViewSupraFunctionSelectors
                 });
 
-        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](4);
+        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](5);
 
         facetCuts[0] = pausableFacetCut;
         facetCuts[1] = perpetualMintViewFacetCut;
-        facetCuts[2] = perpetualMintViewBlastSupraFacetCut;
-        facetCuts[3] = perpetualMintViewSupraFacetCut;
+        facetCuts[2] = perpetualMintViewBlastFacetCut;
+        facetCuts[3] = perpetualMintViewBlastSupraFacetCut;
+        facetCuts[4] = perpetualMintViewSupraFacetCut;
 
         return facetCuts;
     }

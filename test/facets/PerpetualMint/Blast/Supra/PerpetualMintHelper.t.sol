@@ -12,7 +12,8 @@ import { IERC1155Metadata } from "@solidstate/contracts/token/ERC1155/metadata/I
 import { IPerpetualMintHarnessBlast } from "../IPerpetualMintHarness.sol";
 import { IPerpetualMintHarness } from "../../IPerpetualMintHarness.sol";
 import { PerpetualMintHarnessBlastSupra } from "./PerpetualMintHarness.t.sol";
-import { IPerpetualMintBlastSupra } from "../../../../../contracts/facets/PerpetualMint/Blast/Supra/IPerpetualMint.sol";
+import { IPerpetualMintBlast } from "../../../../../contracts/facets/PerpetualMint/Blast/IPerpetualMint.sol";
+import { IPerpetualMintViewBlast } from "../../../../../contracts/facets/PerpetualMint/Blast/IPerpetualMintView.sol";
 import { IPerpetualMintViewBlastSupra } from "../../../../../contracts/facets/PerpetualMint/Blast/Supra/IPerpetualMintView.sol";
 import { PerpetualMintViewBlastSupra } from "../../../../../contracts/facets/PerpetualMint/Blast/Supra/PerpetualMintView.sol";
 import { IPerpetualMint } from "../../../../../contracts/facets/PerpetualMint/IPerpetualMint.sol";
@@ -212,7 +213,7 @@ contract PerpetualMintHelper_BlastSupra {
             memory perpetualMintBlastSupraFacetCut = _createFacetCut(
                 address(perpetualMintHarnessBlastSupraImplementation),
                 IDiamondWritableInternal.FacetCutAction.ADD,
-                _getPerpetualMintBlastSupraFunctionSelectors()
+                _getPerpetualMintBlastFunctionSelectors()
             );
 
         // map the PerpetualMintView test related function selectors to their respective interfaces
@@ -325,6 +326,14 @@ contract PerpetualMintHelper_BlastSupra {
                 perpetualMintViewFunctionSelectors
             );
 
+        // map the PerpetualMintViewBlast related function selectors to their respective interfaces
+        ISolidStateDiamond.FacetCut
+            memory perpetualMintViewBlastFacetCut = _createFacetCut(
+                address(perpetualMintViewBlastSupraImplementation),
+                IDiamondWritableInternal.FacetCutAction.ADD,
+                _getPerpetualMintViewBlastFunctionSelectors()
+            );
+
         // map the PerpetualMintViewBlastSupra related function selectors to their respective interfaces
         ISolidStateDiamond.FacetCut
             memory perpetualMintViewBlastSupraFacetCut = _createFacetCut(
@@ -334,75 +343,11 @@ contract PerpetualMintHelper_BlastSupra {
             );
 
         // map the PerpetualMintHarness test related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintHarnessFunctionSelectors = new bytes4[](
-            15
-        );
-
-        perpetualMintHarnessFunctionSelectors[0] = IPerpetualMintHarness
-            .exposed_enforceBasis
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[1] = IPerpetualMintHarness
-            .exposed_enforceNoPendingMints
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[2] = IPerpetualMintHarness
-            .exposed_normalizeValue
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[3] = IPerpetualMintHarness
-            .exposed_pendingRequestsAdd
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[4] = IPerpetualMintHarness
-            .exposed_pendingRequestsAt
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[5] = IPerpetualMintHarness
-            .exposed_pendingRequestsLength
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[6] = IPerpetualMintHarness
-            .exposed_requestRandomWordsSupra
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[7] = IPerpetualMintHarness
-            .exposed_requests
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[8] = IPerpetualMintHarness
-            .exposed_resolveMints
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[9] = IPerpetualMintHarness
-            .exposed_resolveMintsForMint
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[10] = IPerpetualMintHarness
-            .mintReceipts
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[11] = IPerpetualMintHarness
-            .setConsolationFees
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[12] = IPerpetualMintHarness
-            .setMintEarnings
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[13] = IPerpetualMintHarness
-            .setProtocolFees
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[14] = IPerpetualMintHarness
-            .setRequests
-            .selector;
-
         ISolidStateDiamond.FacetCut
             memory perpetualMintHarnessFacetCut = _createFacetCut(
                 address(perpetualMintHarnessBlastSupraImplementation),
                 IDiamondWritableInternal.FacetCutAction.ADD,
-                perpetualMintHarnessFunctionSelectors
+                _getPerpetualMintHarnessFunctionSelectors()
             );
 
         // map the PerpetualMintHarnessBlast test related function selectors to their respective interfaces
@@ -421,7 +366,7 @@ contract PerpetualMintHelper_BlastSupra {
                 _getVRFConsumerBaseV2FunctionSelectors()
             );
 
-        facetCuts = new ISolidStateDiamond.FacetCut[](10);
+        facetCuts = new ISolidStateDiamond.FacetCut[](11);
 
         facetCuts[0] = erc1155FacetCut;
 
@@ -435,13 +380,15 @@ contract PerpetualMintHelper_BlastSupra {
 
         facetCuts[5] = perpetualMintViewFacetCut;
 
-        facetCuts[6] = perpetualMintViewBlastSupraFacetCut;
+        facetCuts[6] = perpetualMintViewBlastFacetCut;
 
-        facetCuts[7] = perpetualMintHarnessFacetCut;
+        facetCuts[7] = perpetualMintViewBlastSupraFacetCut;
 
-        facetCuts[8] = perpetualMintHarnessBlastFacetCut;
+        facetCuts[8] = perpetualMintHarnessFacetCut;
 
-        facetCuts[9] = vrfConsumerBaseV2FacetCut;
+        facetCuts[9] = perpetualMintHarnessBlastFacetCut;
+
+        facetCuts[10] = vrfConsumerBaseV2FacetCut;
     }
 
     function _createFacetCut(
@@ -477,14 +424,62 @@ contract PerpetualMintHelper_BlastSupra {
         selectors[0] = IPerpetualMintBase.onERC1155Received.selector;
     }
 
-    function _getPerpetualMintBlastSupraFunctionSelectors()
+    function _getPerpetualMintBlastFunctionSelectors()
         private
         pure
         returns (bytes4[] memory selectors)
     {
         selectors = new bytes4[](1);
 
-        selectors[0] = IPerpetualMintBlastSupra.setBlastYieldRisk.selector;
+        selectors[0] = IPerpetualMintBlast.setBlastYieldRisk.selector;
+    }
+
+    function _getPerpetualMintHarnessFunctionSelectors()
+        private
+        pure
+        returns (bytes4[] memory selectors)
+    {
+        selectors = new bytes4[](15);
+
+        selectors[0] = IPerpetualMintHarness.exposed_enforceBasis.selector;
+
+        selectors[1] = IPerpetualMintHarness
+            .exposed_enforceNoPendingMints
+            .selector;
+
+        selectors[2] = IPerpetualMintHarness.exposed_normalizeValue.selector;
+
+        selectors[3] = IPerpetualMintHarness
+            .exposed_pendingRequestsAdd
+            .selector;
+
+        selectors[4] = IPerpetualMintHarness.exposed_pendingRequestsAt.selector;
+
+        selectors[5] = IPerpetualMintHarness
+            .exposed_pendingRequestsLength
+            .selector;
+
+        selectors[6] = IPerpetualMintHarness
+            .exposed_requestRandomWordsSupra
+            .selector;
+
+        selectors[7] = IPerpetualMintHarness.exposed_requests.selector;
+
+        selectors[8] = IPerpetualMintHarness.exposed_resolveMints.selector;
+
+        selectors[9] = IPerpetualMintHarness
+            .exposed_resolveMintsForMint
+            .selector;
+
+        selectors[10] = IPerpetualMintHarness.mintReceipts.selector;
+
+        selectors[11] = IPerpetualMintHarness.setConsolationFees.selector;
+
+        selectors[12] = IPerpetualMintHarness.setMintEarnings.selector;
+
+        selectors[13] = IPerpetualMintHarness.setProtocolFees.selector;
+
+        selectors[14] = IPerpetualMintHarness.setRequests.selector;
     }
 
     function _getPerpetualMintHarnessBlastFunctionSelectors()
@@ -503,16 +498,24 @@ contract PerpetualMintHelper_BlastSupra {
             .selector;
     }
 
+    function _getPerpetualMintViewBlastFunctionSelectors()
+        private
+        pure
+        returns (bytes4[] memory selectors)
+    {
+        selectors = new bytes4[](1);
+
+        selectors[0] = IPerpetualMintViewBlast.blastYieldRisk.selector;
+    }
+
     function _getPerpetualMintViewBlastSupraFunctionSelectors()
         private
         pure
         returns (bytes4[] memory selectors)
     {
-        selectors = new bytes4[](2);
+        selectors = new bytes4[](1);
 
-        selectors[0] = IPerpetualMintViewBlastSupra.blastYieldRisk.selector;
-
-        selectors[1] = IPerpetualMintViewBlastSupra
+        selectors[0] = IPerpetualMintViewBlastSupra
             .calculateMintResultBlastSupra
             .selector;
     }

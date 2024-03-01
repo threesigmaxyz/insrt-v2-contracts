@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
 import { ICore } from "../../../contracts/diamonds/Core/ICore.sol";
-import { IPerpetualMintBlastSupra, MintTokenTiersData, TiersData } from "../../../contracts/facets/PerpetualMint/Blast/Supra/IPerpetualMint.sol";
+import { IPerpetualMintBlast, MintTokenTiersData, TiersData } from "../../../contracts/facets/PerpetualMint/Blast/IPerpetualMint.sol";
 
 /// @title ConfigurePerpetualMint_Blast
 /// @dev configures the PerpetualMint_Blast contract by setting the collection price to mint ratio BP,
@@ -60,7 +60,7 @@ contract ConfigurePerpetualMint_Blast is Script, Test {
 
         uint32[] memory tierRisks = toUint32Array(envTierRisks);
 
-        IPerpetualMintBlastSupra perpetualMint = IPerpetualMintBlastSupra(
+        IPerpetualMintBlast perpetualMint = IPerpetualMintBlast(
             perpetualMintAddress
         );
 
@@ -170,9 +170,7 @@ contract ConfigurePerpetualMint_Blast is Script, Test {
         return uint32Array;
     }
 
-    function _setBlastYieldRisk(
-        IPerpetualMintBlastSupra perpetualMint
-    ) private {
+    function _setBlastYieldRisk(IPerpetualMintBlast perpetualMint) private {
         uint32 blastYieldRisk = uint32(vm.envUint("BLAST_YIELD_RISK"));
 
         perpetualMint.setBlastYieldRisk(blastYieldRisk);

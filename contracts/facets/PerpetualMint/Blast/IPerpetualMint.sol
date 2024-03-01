@@ -2,11 +2,11 @@
 
 pragma solidity 0.8.19;
 
-import "../../IPerpetualMint.sol";
+import "../IPerpetualMint.sol";
 
-/// @title IPerpetualMintBlastSupra
-/// @dev Extension interface of the PerpetualMintBlastSupra facet
-interface IPerpetualMintBlastSupra is IPerpetualMint {
+/// @title IPerpetualMintBlast
+/// @dev Extension interface of the PerpetualMintBlast facet
+interface IPerpetualMintBlast is IPerpetualMint {
     /// @notice sets the risk for Blast yield
     /// @param risk risk of Blast yield
     function setBlastYieldRisk(uint32 risk) external;

@@ -2,16 +2,13 @@
 
 pragma solidity 0.8.19;
 
-import { IPerpetualMintBlastSupra } from "./IPerpetualMint.sol";
+import { IPerpetualMintBlast } from "../IPerpetualMint.sol";
 import { IPerpetualMint } from "../../IPerpetualMint.sol";
 import { PerpetualMintSupra } from "../../Supra/PerpetualMint.sol";
 
 /// @title PerpetualMintBlastSupra
 /// @dev Blast Supra VRF-specific overrides for PerpetualMint
-contract PerpetualMintBlastSupra is
-    IPerpetualMintBlastSupra,
-    PerpetualMintSupra
-{
+contract PerpetualMintBlastSupra is IPerpetualMintBlast, PerpetualMintSupra {
     /// @dev number of words used in mints for $MINT
     uint8 private constant TWO_WORDS = 2;
 
@@ -90,7 +87,7 @@ contract PerpetualMintBlastSupra is
         );
     }
 
-    /// @inheritdoc IPerpetualMintBlastSupra
+    /// @inheritdoc IPerpetualMintBlast
     function setBlastYieldRisk(uint32 risk) external onlyOwner {
         _setBlastYieldRisk(risk);
     }

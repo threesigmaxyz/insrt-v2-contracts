@@ -3,6 +3,7 @@
 pragma solidity 0.8.19;
 
 import { IPerpetualMintViewBlastSupra } from "./IPerpetualMintView.sol";
+import { IPerpetualMintViewBlast } from "../IPerpetualMintView.sol";
 import { MintResultDataBlast } from "../../Storage.sol";
 import { PerpetualMintViewSupra } from "../../Supra/PerpetualMintView.sol";
 
@@ -14,7 +15,7 @@ contract PerpetualMintViewBlastSupra is
 {
     constructor(address vrf) PerpetualMintViewSupra(vrf) {}
 
-    /// @inheritdoc IPerpetualMintViewBlastSupra
+    /// @inheritdoc IPerpetualMintViewBlast
     function blastYieldRisk() external view returns (uint32 risk) {
         risk = _blastYieldRisk();
     }
