@@ -233,6 +233,10 @@ upgrade-token-arb-sepolia:
 
 ##### Blast Sepolia
 
+##### Configure Blast Points Operator using ConfigurePointsOperator facet
+configure-blast-points-operator-blast-sepolia:
+	@./script/Blast/upgrade/configure-points-operator-blast-sepolia.sh
+
 ##### Upgrade & Split PerpetualMintBlastSupra facet
 upgrade-split-perp-mint-blast-sepolia:
 	@./script/Blast/upgrade/upgrade-split-perp-mint-blast-sepolia.sh
