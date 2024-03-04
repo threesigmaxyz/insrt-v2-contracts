@@ -258,3 +258,12 @@ calculate-mint-result-base:
 
 %:      # Do nothing to silence "No rule to make target" error when calculating mint results
 	@:
+
+#### Blast
+
+##### Calculate mint results
+calculate-mint-result-blast:
+	@./script/Blast/calculate-mint-result.sh $(filter-out $@,$(MAKECMDGOALS))
+
+%:      # Do nothing to silence "No rule to make target" error when calculating mint results
+	@:

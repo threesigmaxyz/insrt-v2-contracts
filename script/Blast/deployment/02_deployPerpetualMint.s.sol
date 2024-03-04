@@ -74,8 +74,7 @@ contract DeployPerpetualMint_Blast is Script {
 
             // get PerpetualMint facet cuts
             perpetualMintFacetCuts = getPerpetualMintFacetCuts(
-                address(perpetualMint),
-                insrtVRF
+                address(perpetualMint)
             );
 
             // get PerpetualMintView facet cuts
@@ -108,8 +107,7 @@ contract DeployPerpetualMint_Blast is Script {
 
             // get PerpetualMint + PerpetualMintBlastSupra facet cuts
             perpetualMintFacetCuts = getPerpetualMintFacetCuts(
-                address(perpetualMintBlastSupra),
-                insrtVRF
+                address(perpetualMintBlastSupra)
             );
 
             // get PerpetualMintView + PerpetualMintViewBlastSupra facet cuts
@@ -171,10 +169,8 @@ contract DeployPerpetualMint_Blast is Script {
 
     /// @dev provides the facet cuts for cutting PerpetualMint & PerpetualMintBlastSupra facet into CoreBlast
     /// @param facetAddress address of PerpetualMint facet
-    /// @param insrtVRF boolean indicating whether Insrt VRF is being used
     function getPerpetualMintFacetCuts(
-        address facetAddress,
-        bool insrtVRF
+        address facetAddress
     ) internal pure returns (ICore.FacetCut[] memory) {
         // map the PerpetualMint related function selectors to their respective interfaces
         bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](33);

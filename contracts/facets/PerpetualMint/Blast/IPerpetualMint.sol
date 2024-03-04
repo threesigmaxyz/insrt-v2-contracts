@@ -3,6 +3,7 @@
 pragma solidity 0.8.19;
 
 import "../IPerpetualMint.sol";
+import { MintResultDataBlast } from "../Storage.sol";
 
 /// @title IPerpetualMintBlast
 /// @dev Extension interface of the PerpetualMintBlast facet

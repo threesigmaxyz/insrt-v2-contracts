@@ -659,5 +659,17 @@ Requires the following additional environment variables set:
 #### Calculating mint results
 
 ```
-make calculate-mint-result-base <mint-collection-address> <number-of-mint-attempts> <randomness_signature_index_1> <randomness_signature_index_2>
+make calculate-mint-result-base <mint-collection-address> <number-of-mint-attempts> <randomness_signature-index-1> <randomness-signature-index-2>
+```
+
+### Blast
+
+Requires the following additional environment variables set:
+
+- `BLAST_RPC_URL`: Blast RPC URL
+
+#### Calculating mint results
+
+```
+make calculate-mint-result-blast <mint-collection-address> <number-of-mint-attempts> <randomness-signature-index-1> <randomness-signature-index-2> <price-per-mint>
 ```
