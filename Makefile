@@ -231,6 +231,12 @@ upgrade-perp-mint-view-arb-sepolia:
 upgrade-token-arb-sepolia:
 	@./script/Arbitrum/upgrade/upgrade-token-arb-sepolia.sh
 
+#### Blast
+
+##### Remove failed VRF fulfillments using RemoveFailedVRFFulfillments facet
+remove-failed-vrf-fulfillments-blast:
+	@./script/Blast/upgrade/remove-failed-vrf-fulfillments-blast.sh
+
 ##### Blast Sepolia
 
 ##### Configure Blast Points Operator using ConfigurePointsOperator facet
