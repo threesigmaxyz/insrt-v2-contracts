@@ -6,49 +6,28 @@ import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidSt
 
 import { PerpetualMintHelper_BlastSupra } from "./PerpetualMintHelper.t.sol";
 import { IPerpetualMintTest } from "../../IPerpetualMintTest.sol";
+import { PerpetualMintTest } from "../../PerpetualMint.t.sol";
 import { CoreBlastTest } from "../../../../diamonds/Core/Blast/Core.t.sol";
-import { MintTokenTiersData, PerpetualMintStorage as Storage, TiersData } from "../../../../../contracts/facets/PerpetualMint/Storage.sol";
+import { MintTokenTiersData, TiersData } from "../../../../../contracts/facets/PerpetualMint/Storage.sol";
 import { IDepositContract } from "../../../../../contracts/vrf/Supra/IDepositContract.sol";
 import { ISupraRouterContract } from "../../../../../contracts/vrf/Supra/ISupraRouterContract.sol";
 
 /// @title PerpetualMintTest_BlastSupra
 /// @dev PerpetualMintTest Blast-specific, Supra VRF-specific helper contract. Configures PerpetualMint facets for CoreBlast test.
 /// @dev Should function identically across all forks.
-abstract contract PerpetualMintTest_BlastSupra is CoreBlastTest {
+abstract contract PerpetualMintTest_BlastSupra is
+    CoreBlastTest,
+    PerpetualMintTest
+{
     IDepositContract internal supraVRFDepositContract;
-
-    IPerpetualMintTest public perpetualMint;
 
     ISupraRouterContract internal supraRouterContract;
 
-    PerpetualMintHelper_BlastSupra public perpetualMintHelper;
-
-    MintTokenTiersData internal testMintTokenTiersData;
-
-    TiersData internal testTiersData;
-
-    /// @dev number of tiers
-    uint8 internal constant testNumberOfTiers = 5;
+    PerpetualMintHelper_BlastSupra public perpetualMintHelper_BlastSupra;
 
     uint32 internal constant TEST_BLAST_YIELD_RISK = 1e6; // 0.1%
 
-    uint32 internal constant TEST_COLLECTION_MINT_FEE_DISTRIBUTION_RATIO_BP =
-        5e8; // 50%
-
-    /// @dev mint for collection consolation fee basis points to test
-    uint32 internal constant TEST_COLLECTION_CONSOLATION_FEE_BP = 5000000; // 0.5% fee
-
-    uint32 internal constant TEST_DEFAULT_COLLECTION_REFERRAL_FEE_BP = 25e7; // 25%
-
-    uint32 internal constant TEST_MINT_FEE_BP = 5000000; // 0.5% fee
-
-    /// @dev mint for $MINT consolation fee basis points to test
-    uint32 internal constant TEST_MINT_TOKEN_CONSOLATION_FEE_BP = 5000000; // 0.5% fee
-
     uint64 internal constant TEST_VRF_NUMBER_OF_CONFIRMATIONS = 1;
-
-    /// @dev first tier multiplier (lowest multiplier)
-    uint256 internal constant firstTierMultiplier = 1; // 1x multiplier
 
     /// @dev the VRF request function signature
     string internal constant VRF_REQUEST_FUNCTION_SIGNATURE =
@@ -56,42 +35,9 @@ abstract contract PerpetualMintTest_BlastSupra is CoreBlastTest {
 
     address internal supraVRFDepositContractOwner;
 
-    // Ethereum mainnet Bored Ape Yacht Club contract address.
-    address internal constant BORED_APE_YACHT_CLUB =
-        0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D;
-
-    // Ethereum mainnet Parallel Alpha contract address.
-    address internal constant PARALLEL_ALPHA =
-        0x76BE3b62873462d2142405439777e971754E8E77;
-
-    // realistic mint price in ETH given mint price of 50USD and ETH price 1850USD
-    uint256 MINT_PRICE = 0.027 ether;
-
-    /// @dev mint adjustment factor to test
-    uint256 internal TEST_ADJUSTMENT_FACTOR;
-
-    // minter
-    address payable internal minter = payable(address(3));
-
-    /// @dev the no referrer address used during test mint attempts
-    address internal constant NO_REFERRER = address(0);
-
-    address internal PERPETUAL_MINT_NON_OWNER = address(100);
-
-    /// @dev the referrer address used during test mint attempts
-    address payable internal constant REFERRER = payable(address(4567));
-
-    // collection mint referral fee in basis points
-    uint32 internal constant baycCollectionReferralFeeBP = 1000000; // 0.10%
-
-    // collection risk values
-    uint32 internal constant baycCollectionRisk = 100000; // 0.01%
-
-    uint32 internal constant parallelAlphaCollectionRisk = 10000000; // 1%
-
     /// @dev sets up PerpetualMint for testing
-    function setUp() public virtual override {
-        super.setUp();
+    function setUp() public virtual override(CoreBlastTest, PerpetualMintTest) {
+        CoreBlastTest.setUp();
 
         initPerpetualMint();
 
@@ -210,7 +156,7 @@ abstract contract PerpetualMintTest_BlastSupra is CoreBlastTest {
         );
 
         supraRouterContract = ISupraRouterContract(
-            this.perpetualMintHelper().VRF_ROUTER()
+            this.perpetualMintHelper_BlastSupra().VRF_ROUTER()
         );
 
         supraVRFDepositContract = IDepositContract(
@@ -225,11 +171,11 @@ abstract contract PerpetualMintTest_BlastSupra is CoreBlastTest {
     }
 
     /// @dev initializes PerpetualMint facets by executing a diamond cut on the Core Diamond.
-    function initPerpetualMint() internal {
-        perpetualMintHelper = new PerpetualMintHelper_BlastSupra();
+    function initPerpetualMint() internal override {
+        perpetualMintHelper_BlastSupra = new PerpetualMintHelper_BlastSupra();
 
-        ISolidStateDiamond.FacetCut[] memory facetCuts = perpetualMintHelper
-            .getFacetCuts();
+        ISolidStateDiamond.FacetCut[]
+            memory facetCuts = perpetualMintHelper_BlastSupra.getFacetCuts();
 
         coreBlastDiamond.diamondCut(facetCuts, address(0), "");
     }

@@ -6,79 +6,21 @@ import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidSt
 
 import { CoreTest } from "../diamonds/Core/Core.t.sol";
 import { IPerpetualMintTest } from "../facets/PerpetualMint/IPerpetualMintTest.sol";
+import { PerpetualMintTest } from "../facets/PerpetualMint/PerpetualMint.t.sol";
 import { PerpetualMintHelper } from "../facets/PerpetualMint/PerpetualMintHelper.t.sol";
-import { MintTokenTiersData, PerpetualMintStorage as Storage, TiersData, VRFConfig } from "../../contracts/facets/PerpetualMint/Storage.sol";
+import { MintTokenTiersData, TiersData, VRFConfig } from "../../contracts/facets/PerpetualMint/Storage.sol";
 import { IInsrtVRFCoordinator } from "../../contracts/vrf/Insrt/IInsrtVRFCoordinator.sol";
 
 /// @title PerpetualMintTest_InsrtVRFCoordinator
 /// @dev PerpetualMintTest InsrtVRFCoordinator-specific helper contract. Configures PerpetualMint facets for Core testing using the Insrt VRF Coordinator.
 /// @dev Should function identically across all forks where the Insrt VRF Coordinator is deployed & configured.
-abstract contract PerpetualMintTest_InsrtVRFCoordinator is CoreTest {
-    IPerpetualMintTest public perpetualMint;
-
-    PerpetualMintHelper public perpetualMintHelper;
-
-    MintTokenTiersData internal testMintTokenTiersData;
-
-    TiersData internal testTiersData;
-
-    /// @dev number of tiers
-    uint8 internal constant testNumberOfTiers = 5;
-
-    /// @dev mint for collection consolation fee basis points to test
-    uint32 internal constant TEST_COLLECTION_CONSOLATION_FEE_BP = 5000000; // 0.5% fee
-
-    uint32 internal constant TEST_COLLECTION_MINT_FEE_DISTRIBUTION_RATIO_BP =
-        5e8; // 50%
-
-    uint32 internal constant TEST_DEFAULT_COLLECTION_REFERRAL_FEE_BP = 25e7; // 25%
-
-    uint32 internal constant TEST_MINT_FEE_BP = 5000000; // 0.5% fee
-
-    /// @dev mint for $MINT consolation fee basis points to test
-    uint32 internal constant TEST_MINT_TOKEN_CONSOLATION_FEE_BP = 5000000; // 0.5% fee
-
-    uint64 internal constant TEST_VRF_SUBSCRIPTION_ID = 1;
-
-    /// @dev first tier multiplier (lowest multiplier)
-    uint256 internal constant firstTierMultiplier = 1e9; // 1x multiplier
-
-    // Ethereum mainnet Bored Ape Yacht Club contract address.
-    address internal constant BORED_APE_YACHT_CLUB =
-        0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D;
-
-    // Ethereum mainnet Parallel Alpha contract address.
-    address internal constant PARALLEL_ALPHA =
-        0x76BE3b62873462d2142405439777e971754E8E77;
-
-    // realistic mint price in ETH given mint price of 50USD and ETH price 1850USD
-    uint256 MINT_PRICE = 0.027 ether;
-
-    /// @dev mint adjustment factor to test
-    uint256 internal TEST_ADJUSTMENT_FACTOR;
-
-    // minter
-    address payable internal minter = payable(address(3));
-
-    /// @dev the no referrer address used during test mint attempts
-    address internal constant NO_REFERRER = address(0);
-
-    address internal PERPETUAL_MINT_NON_OWNER = address(100);
-
-    /// @dev the referrer address used during test mint attempts
-    address payable internal constant REFERRER = payable(address(4567));
-
-    // collection mint referral fee in basis points
-    uint32 internal constant baycCollectionReferralFeeBP = 1000000; // 0.10%
-
-    // collection risk values
-    uint32 internal constant baycCollectionRisk = 100000; // 0.01%
-
-    uint32 internal constant parallelAlphaCollectionRisk = 10000000; // 1%
-
+abstract contract PerpetualMintTest_InsrtVRFCoordinator is
+    CoreTest,
+    PerpetualMintTest
+{
     /// @dev sets up PerpetualMint for testing
-    function setUp() public virtual override {
-        super.setUp();
+    function setUp() public virtual override(CoreTest, PerpetualMintTest) {
+        CoreTest.setUp();
 
         initPerpetualMint();
 
@@ -222,7 +164,7 @@ abstract contract PerpetualMintTest_InsrtVRFCoordinator is CoreTest {
     }
 
     /// @dev initializes PerpetualMint facets by executing a diamond cut on the Core Diamond.
-    function initPerpetualMint() internal {
+    function initPerpetualMint() internal override {
         perpetualMintHelper = new PerpetualMintHelper(true);
 
         ISolidStateDiamond.FacetCut[]

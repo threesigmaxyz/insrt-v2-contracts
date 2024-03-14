@@ -26,17 +26,20 @@ abstract contract PerpetualMintTest is CoreTest {
     uint8 internal constant testNumberOfTiers = 5;
 
     /// @dev mint for collection consolation fee basis points to test
-    uint32 internal constant TEST_COLLECTION_CONSOLATION_FEE_BP = 5000000; // 0.5% fee
+    uint32 internal constant TEST_COLLECTION_CONSOLATION_FEE_BP = 5e6; // 0.5% fee
 
     uint32 internal constant TEST_COLLECTION_MINT_FEE_DISTRIBUTION_RATIO_BP =
         5e8; // 50%
 
     uint32 internal constant TEST_DEFAULT_COLLECTION_REFERRAL_FEE_BP = 25e7; // 25%
 
-    uint32 internal constant TEST_MINT_FEE_BP = 5000000; // 0.5% fee
+    uint32 internal constant TEST_MINT_FEE_BP = 5e6; // 0.5% fee
+
+    /// @dev test mint for collection floor price
+    uint256 internal constant TEST_MINT_FOR_COLLECTION_FLOOR_PRICE = 69 ether;
 
     /// @dev mint for $MINT consolation fee basis points to test
-    uint32 internal constant TEST_MINT_TOKEN_CONSOLATION_FEE_BP = 5000000; // 0.5% fee
+    uint32 internal constant TEST_MINT_TOKEN_CONSOLATION_FEE_BP = 5e6; // 0.5% fee
 
     uint64 internal constant TEST_VRF_SUBSCRIPTION_ID = 1;
 
@@ -52,7 +55,7 @@ abstract contract PerpetualMintTest is CoreTest {
         0x76BE3b62873462d2142405439777e971754E8E77;
 
     // realistic mint price in ETH given mint price of 50USD and ETH price 1850USD
-    uint256 MINT_PRICE = 0.027 ether;
+    uint256 internal MINT_PRICE = 0.027 ether;
 
     /// @dev mint adjustment factor to test
     uint256 internal TEST_ADJUSTMENT_FACTOR;
@@ -214,7 +217,7 @@ abstract contract PerpetualMintTest is CoreTest {
     }
 
     /// @dev initializes PerpetualMint facets by executing a diamond cut on the Core Diamond.
-    function initPerpetualMint() internal {
+    function initPerpetualMint() internal virtual {
         // use Chainlink VRF for base behavior tests targeting Arbitrum
         perpetualMintHelper = new PerpetualMintHelper(false);
 

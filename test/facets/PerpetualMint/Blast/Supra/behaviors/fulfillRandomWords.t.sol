@@ -7,7 +7,7 @@ import { EnumerableSet } from "@solidstate/contracts/data/EnumerableSet.sol";
 import { PerpetualMintTest_BlastSupra } from "../PerpetualMint.t.sol";
 import { TokenTest } from "../../../../Token/Token.t.sol";
 import { BlastForkTest } from "../../../../../BlastForkTest.t.sol";
-import { CoreBlastTest } from "../../../../../diamonds/Core/Blast/Core.t.sol";
+import { CoreTest } from "../../../../../diamonds/Core/Core.t.sol";
 import { TokenProxyTest } from "../../../../../diamonds/TokenProxy.t.sol";
 
 /// @title PerpetualMint_fulfillRandomWordsBlastSupra
@@ -31,7 +31,7 @@ contract PerpetualMint_fulfillRandomWordsBlastSupra is
     address internal constant MINT_FOR_MINT_ADDRESS = address(0);
 
     /// @dev overrides the receive function to accept ETH
-    receive() external payable override(CoreBlastTest, TokenProxyTest) {}
+    receive() external payable override(CoreTest, TokenProxyTest) {}
 
     /// @dev Sets up the test case environment.
     function setUp() public override(PerpetualMintTest_BlastSupra, TokenTest) {

@@ -7,7 +7,7 @@ import { IPausableInternal } from "@solidstate/contracts/security/pausable/IPaus
 import { PerpetualMintTest_BlastSupra } from "../PerpetualMint.t.sol";
 import { TokenTest } from "../../../../Token/Token.t.sol";
 import { BlastForkTest } from "../../../../../BlastForkTest.t.sol";
-import { CoreBlastTest } from "../../../../../diamonds/Core/Blast/Core.t.sol";
+import { CoreTest } from "../../../../../diamonds/Core/Core.t.sol";
 import { TokenProxyTest } from "../../../../../diamonds/TokenProxy.t.sol";
 import { IPerpetualMintInternal } from "../../../../../../contracts/facets/PerpetualMint/IPerpetualMintInternal.sol";
 
@@ -27,7 +27,7 @@ contract PerpetualMint_attemptBatchMintWithMintBlastSupra is
     address COLLECTION = BORED_APE_YACHT_CLUB;
 
     /// @dev overrides the receive function to accept ETH
-    receive() external payable override(CoreBlastTest, TokenProxyTest) {}
+    receive() external payable override(CoreTest, TokenProxyTest) {}
 
     /// @dev sets up the context for the test cases
     function setUp() public override(PerpetualMintTest_BlastSupra, TokenTest) {
