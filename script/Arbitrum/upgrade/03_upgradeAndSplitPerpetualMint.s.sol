@@ -215,9 +215,9 @@ contract UpgradeAndSplitPerpetualMintArb is BatchScript {
 
         perpetualMintFunctionSelectors[5] = IPerpetualMint.cancelClaim.selector;
 
-        perpetualMintFunctionSelectors[6] = IPerpetualMint
-            .claimMintEarnings
-            .selector;
+        perpetualMintFunctionSelectors[6] = bytes4(
+            keccak256("claimMintEarnings()")
+        );
 
         perpetualMintFunctionSelectors[7] = IPerpetualMint.claimPrize.selector;
 

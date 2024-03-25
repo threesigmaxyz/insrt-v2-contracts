@@ -79,6 +79,11 @@ contract PerpetualMint is IPerpetualMint, PerpetualMintInternal {
     }
 
     /// @inheritdoc IPerpetualMint
+    function claimMintEarnings(uint256 amount) external onlyOwner {
+        _claimMintEarnings(msg.sender, amount);
+    }
+
+    /// @inheritdoc IPerpetualMint
     function claimPrize(address prizeRecipient, uint256 tokenId) external {
         _claimPrize(msg.sender, prizeRecipient, tokenId);
     }

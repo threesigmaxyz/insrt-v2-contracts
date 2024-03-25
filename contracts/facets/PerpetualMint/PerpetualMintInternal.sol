@@ -1305,7 +1305,7 @@ abstract contract PerpetualMintInternal is
         );
     }
 
-    /// @notice claims all accrued mint earnings across collections
+    /// @notice claims all accrued mint earnings
     /// @param recipient address of mint earnings recipient
     function _claimMintEarnings(address recipient) internal {
         Storage.Layout storage l = Storage.layout();
@@ -1314,6 +1314,17 @@ abstract contract PerpetualMintInternal is
         l.mintEarnings = 0;
 
         payable(recipient).sendValue(mintEarnings);
+    }
+
+    /// @notice claims a specific amount of accrued mint earnings
+    /// @param recipient address of mint earnings recipient
+    /// @param amount amount of mint earnings to claim
+    function _claimMintEarnings(address recipient, uint256 amount) internal {
+        Storage.Layout storage l = Storage.layout();
+
+        l.mintEarnings -= amount;
+
+        payable(recipient).sendValue(amount);
     }
 
     /// @notice Initiates a claim for a prize for a given collection

@@ -237,6 +237,10 @@ upgrade-token-arb-sepolia:
 remove-failed-vrf-fulfillments-blast:
 	@./script/Blast/upgrade/remove-failed-vrf-fulfillments-blast.sh
 
+##### Upgrade PerpetualMint + PerpetualMintBlastSupra facet
+upgrade-perp-mint-blast:
+	@./script/Blast/upgrade/upgrade-perp-mint-blast.sh
+
 ##### Upgrade PerpetualMintView + PerpetualMintViewBlastSupra facet
 upgrade-perp-mint-view-blast:
 	@./script/Blast/upgrade/upgrade-perp-mint-view-blast.sh

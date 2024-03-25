@@ -623,6 +623,19 @@ make upgrade-perp-mint-view-arb-sepolia
 make upgrade-token-arb-sepolia
 ```
 
+### Blast
+
+Requires the following additional environment variables set:
+
+- `BLAST_RPC_URL`: Blast RPC URL
+- `BLASTSCAN_API_KEY`: Blastscan API key for contract verification
+
+#### Upgrade PerpetualMint facet
+
+```
+make upgrade-perp-mint-blast
+```
+
 #### Blast Sepolia
 
 Requires the following additional environment variables set:

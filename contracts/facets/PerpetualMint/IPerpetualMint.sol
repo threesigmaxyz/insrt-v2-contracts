@@ -56,8 +56,12 @@ interface IPerpetualMint {
     /// @param tokenId token ID of rejected claim
     function cancelClaim(address claimer, uint256 tokenId) external;
 
-    /// @notice claims all accrued mint earnings across collections
+    /// @notice claims all accrued mint earnings
     function claimMintEarnings() external;
+
+    /// @notice claims a specific amount of mint earnings
+    /// @param amount amount of mint earnings to claim
+    function claimMintEarnings(uint256 amount) external;
 
     /// @notice Initiates a claim for a prize for a given collection
     /// @param prizeRecipient address of intended prize recipient

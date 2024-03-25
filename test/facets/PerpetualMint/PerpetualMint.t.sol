@@ -303,4 +303,40 @@ abstract contract PerpetualMintTest is CoreTest {
             perpetualMint.accruedProtocolFees() + mockMintFee
         );
     }
+
+    /// @dev mocks unsuccessful attemptBatchMintWithMint attempts to increase accrued
+    /// mint earnings, mint for collection consolation fees, & protocol fees by the number of unsuccessful mints
+    /// @param collection address of collection
+    /// @param numberOfMints number of unsuccessful mint attempts
+    function mock_unsuccessfulMintForCollectionWithMintAttempts(
+        address collection,
+        uint32 numberOfMints
+    ) internal {
+        uint256 mockEthRequired = perpetualMint.collectionMintPrice(
+            collection
+        ) * numberOfMints;
+
+        uint256 mockCollectionConsolationFee = (mockEthRequired *
+            perpetualMint.collectionConsolationFeeBP()) / perpetualMint.BASIS();
+
+        uint256 mockMintFee = (mockEthRequired * perpetualMint.mintFeeBP()) /
+            perpetualMint.BASIS();
+
+        uint256 mockNetConsolationFee = mockEthRequired -
+            mockCollectionConsolationFee;
+
+        perpetualMint.setConsolationFees(
+            perpetualMint.accruedConsolationFees() - mockNetConsolationFee
+        );
+
+        perpetualMint.setMintEarnings(
+            perpetualMint.accruedMintEarnings() +
+                mockNetConsolationFee -
+                mockMintFee
+        );
+
+        perpetualMint.setProtocolFees(
+            perpetualMint.accruedProtocolFees() + mockMintFee
+        );
+    }
 }
