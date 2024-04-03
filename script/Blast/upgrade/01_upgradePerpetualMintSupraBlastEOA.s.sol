@@ -4,74 +4,70 @@ pragma solidity 0.8.19;
 import "forge-std/Script.sol";
 
 import { VRFConsumerBaseV2 } from "@chainlink/vrf/VRFConsumerBaseV2.sol";
-import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidStateDiamond.sol";
-import { IDiamondWritable } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritable.sol";
 import { IDiamondWritableInternal } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritableInternal.sol";
-import { IPausable } from "@solidstate/contracts/security/pausable/IPausable.sol";
-import { IERC1155Metadata } from "@solidstate/contracts/token/ERC1155/metadata/IERC1155Metadata.sol";
 
+import { ICore } from "../../../contracts/diamonds/Core/ICore.sol";
 import { IPerpetualMint } from "../../../contracts/facets/PerpetualMint/IPerpetualMint.sol";
-import { PerpetualMint } from "../../../contracts/facets/PerpetualMint/PerpetualMint.sol";
+import { PerpetualMintSupraBlast } from "../../../contracts/facets/PerpetualMint/Blast/Supra/PerpetualMint.sol";
 
-/// @title UpgradePerpetualMintArbEOA
-/// @dev Deploys a new PerpetualMint facet and signs and submits a diamondCut of the PerpetualMint facet to the Core diamond
+/// @title UpgradePerpetualMintSupraBlastEOA
+/// @dev Deploys a new PerpetualMintSupraBlast facet and signs and submits a diamondCut of the PerpetualMintSupraBlast facet to the Core diamond
 /// using an externally owned account
-contract UpgradePerpetualMintArbEOA is Script {
+contract UpgradePerpetualMintSupraBlastEOA is Script {
     /// @dev runs the script logic
     function run() external {
         // read deployer private key
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
 
-        // get Core PerpetualMint diamond address
-        address core = vm.envAddress("CORE_ADDRESS");
+        // get CoreBlast PerpetualMint diamond address
+        address core = vm.envAddress("CORE_BLAST_ADDRESS");
 
-        // get VRF Coordinator address
-        address VRF_COORDINATOR = vm.envAddress("VRF_COORDINATOR");
+        // get VRF Router address
+        address VRF_ROUTER = vm.envAddress("VRF_ROUTER");
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // deploy new PerpetualMint facet
-        PerpetualMint perpetualMint = new PerpetualMint(VRF_COORDINATOR);
+        // deploy new PerpetualMintSupraBlast facet
+        PerpetualMintSupraBlast perpetualMintSupraBlast = new PerpetualMintSupraBlast(
+                VRF_ROUTER
+            );
 
         console.log(
-            "New PerpetualMint Facet Address: ",
-            address(perpetualMint)
+            "New PerpetualMintSupraBlast Facet Address: ",
+            address(perpetualMintSupraBlast)
         );
-        console.log("Core Address: ", core);
-        console.log("VRF Coordinator Address: ", VRF_COORDINATOR);
+        console.log("CoreBlast Address: ", core);
+        console.log("VRF Router Address: ", VRF_ROUTER);
 
-        // get new PerpetualMint facet cuts
-        ISolidStateDiamond.FacetCut[]
+        // get new PerpetualMint + PerpetualMintSupraBlast facet cuts
+        ICore.FacetCut[]
             memory newPerpetualMintFacetCuts = getNewPerpetualMintFacetCuts(
-                address(perpetualMint)
+                address(perpetualMintSupraBlast)
             );
 
-        // get replacement PerpetualMint facet cuts
-        ISolidStateDiamond.FacetCut[]
+        // get replacement get PerpetualMint + PerpetualMintSupraBlast facet cuts
+        ICore.FacetCut[]
             memory replacementPerpetualMintFacetCuts = getReplacementPerpetualMintFacetCuts(
-                address(perpetualMint)
+                address(perpetualMintSupraBlast)
             );
 
-        ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](5);
+        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](3);
 
         facetCuts[0] = newPerpetualMintFacetCuts[0];
         facetCuts[1] = replacementPerpetualMintFacetCuts[0];
         facetCuts[2] = replacementPerpetualMintFacetCuts[1];
-        facetCuts[3] = replacementPerpetualMintFacetCuts[2];
-        facetCuts[4] = replacementPerpetualMintFacetCuts[3];
 
-        // cut PerpetualMint into Core
-        ISolidStateDiamond(payable(core)).diamondCut(facetCuts, address(0), "");
+        // cut PerpetualMint + PerpetualMintSupraBlast into Core
+        ICore(payable(core)).diamondCut(facetCuts, address(0), "");
 
         vm.stopBroadcast();
     }
 
-    /// @dev provides the new facet cuts for cutting PerpetualMint facet into Core
+    /// @dev provides the new facet cuts for cutting PerpetualMint & PerpetualMintSupraBlast facets into Core
     /// @param facetAddress address of PerpetualMint facet
     function getNewPerpetualMintFacetCuts(
         address facetAddress
-    ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
+    ) internal pure returns (ICore.FacetCut[] memory) {
         // map the PerpetualMint related function selectors to their respective interfaces
         bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](1);
 
@@ -79,15 +75,14 @@ contract UpgradePerpetualMintArbEOA is Script {
             keccak256("claimMintEarnings(uint256)")
         );
 
-        ISolidStateDiamond.FacetCut
-            memory perpetualMintFacetCut = IDiamondWritableInternal.FacetCut({
+        ICore.FacetCut memory perpetualMintFacetCut = IDiamondWritableInternal
+            .FacetCut({
                 target: facetAddress,
                 action: IDiamondWritableInternal.FacetCutAction.ADD,
                 selectors: perpetualMintFunctionSelectors
             });
 
-        ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](1);
+        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](1);
 
         facetCuts[0] = perpetualMintFacetCut;
 
@@ -98,31 +93,7 @@ contract UpgradePerpetualMintArbEOA is Script {
     /// @param facetAddress address of PerpetualMint facet
     function getReplacementPerpetualMintFacetCuts(
         address facetAddress
-    ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
-        // map the ERC1155Metadata function selectors to their respective interfaces
-        bytes4[] memory erc1155MetadataFunctionSelectors = new bytes4[](1);
-
-        erc1155MetadataFunctionSelectors[0] = IERC1155Metadata.uri.selector;
-
-        ISolidStateDiamond.FacetCut
-            memory erc1155MetadataFacetCut = IDiamondWritableInternal.FacetCut({
-                target: facetAddress,
-                action: IDiamondWritableInternal.FacetCutAction.REPLACE,
-                selectors: erc1155MetadataFunctionSelectors
-            });
-
-        // map the Pausable function selectors to their respective interfaces
-        bytes4[] memory pausableFunctionSelectors = new bytes4[](1);
-
-        pausableFunctionSelectors[0] = IPausable.paused.selector;
-
-        ISolidStateDiamond.FacetCut
-            memory pausableFacetCut = IDiamondWritableInternal.FacetCut({
-                target: facetAddress,
-                action: IDiamondWritableInternal.FacetCutAction.REPLACE,
-                selectors: pausableFunctionSelectors
-            });
-
+    ) internal pure returns (ICore.FacetCut[] memory) {
         // map the PerpetualMint related function selectors to their respective interfaces
         bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](7);
 
@@ -150,8 +121,8 @@ contract UpgradePerpetualMintArbEOA is Script {
 
         perpetualMintFunctionSelectors[6] = IPerpetualMint.redeem.selector;
 
-        ISolidStateDiamond.FacetCut
-            memory perpetualMintFacetCut = IDiamondWritableInternal.FacetCut({
+        ICore.FacetCut memory perpetualMintFacetCut = IDiamondWritableInternal
+            .FacetCut({
                 target: facetAddress,
                 action: IDiamondWritableInternal.FacetCutAction.REPLACE,
                 selectors: perpetualMintFunctionSelectors
@@ -164,7 +135,7 @@ contract UpgradePerpetualMintArbEOA is Script {
             .rawFulfillRandomWords
             .selector;
 
-        ISolidStateDiamond.FacetCut
+        ICore.FacetCut
             memory vrfConsumerBaseV2FacetCut = IDiamondWritableInternal
                 .FacetCut({
                     target: facetAddress,
@@ -172,14 +143,11 @@ contract UpgradePerpetualMintArbEOA is Script {
                     selectors: vrfConsumerBaseV2FunctionSelectors
                 });
 
-        ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](6);
+        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](2);
 
         // omit Ownable since SolidStateDiamond includes those
-        facetCuts[0] = erc1155MetadataFacetCut;
-        facetCuts[1] = pausableFacetCut;
-        facetCuts[2] = perpetualMintFacetCut;
-        facetCuts[3] = vrfConsumerBaseV2FacetCut;
+        facetCuts[0] = perpetualMintFacetCut;
+        facetCuts[1] = vrfConsumerBaseV2FacetCut;
 
         return facetCuts;
     }
