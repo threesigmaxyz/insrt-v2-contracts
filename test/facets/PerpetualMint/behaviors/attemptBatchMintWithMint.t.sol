@@ -215,8 +215,8 @@ contract PerpetualMint_attemptBatchMintWithMint is
 
         uint256 preMintTokenBalance = token.balanceOf(minter);
 
-        // pay 1/10th of the collection mint price per spin
-        MINT_PRICE = MINT_PRICE / 10;
+        // pay 1/4th of the collection mint price per spin
+        MINT_PRICE = MINT_PRICE / 4;
 
         vm.prank(minter);
         perpetualMint.attemptBatchMintWithMint(
@@ -450,7 +450,7 @@ contract PerpetualMint_attemptBatchMintWithMint is
         perpetualMint.attemptBatchMintWithMint(
             COLLECTION,
             NO_REFERRER,
-            1 ether + 1, // 1 $MINT + 1 wei (dust)
+            2_500 ether + 1, // 2,500 $MINT + 1 wei (dust)
             TEST_MINT_ATTEMPTS
         );
     }

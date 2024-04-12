@@ -172,8 +172,8 @@ contract PerpetualMint_attemptBatchMintForMintWithEth is
 
         assert(address(perpetualMint).balance == 0);
 
-        // pay 1/10th of the $MINT mint price per spin
-        MINT_PRICE = MINT_PRICE / 10;
+        // pay 1/4th of the $MINT mint price per spin
+        MINT_PRICE = MINT_PRICE / 4;
 
         vm.prank(minter);
         perpetualMint.attemptBatchMintForMintWithEth{

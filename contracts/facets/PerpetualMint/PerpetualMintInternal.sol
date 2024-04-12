@@ -50,8 +50,8 @@ abstract contract PerpetualMintInternal is
     /// @dev Starting default conversion ratio: 1 ETH = 1,000,000 $MINT
     uint32 internal constant DEFAULT_ETH_TO_MINT_RATIO = 1e6;
 
-    /// @dev minimum price per spin, 1000 gwei = 0.000001 ETH / 1 $MINT
-    uint256 internal constant MINIMUM_PRICE_PER_SPIN = 1000 gwei;
+    /// @dev minimum price per spin, 0.0025 ETH / 2,500 $MINT
+    uint256 internal constant MINIMUM_PRICE_PER_SPIN = 0.0025 ether;
 
     /// @dev address of the Blast precompile
     address private constant BLAST = 0x4300000000000000000000000000000000000002;

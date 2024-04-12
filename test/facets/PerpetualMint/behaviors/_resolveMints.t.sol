@@ -138,8 +138,8 @@ contract PerpetualMint_resolveMints is
         // assert that the minter currently has no $MINT tokens
         assert(token.balanceOf(minter) == 0);
 
-        // pay 1/10th of the collection mint price per spin
-        MINT_PRICE = MINT_PRICE / 10;
+        // pay 1/4th of the collection mint price per spin
+        MINT_PRICE = MINT_PRICE / 4;
 
         // scale up the price per spin
         uint256 scaledPricePerSpin = MINT_PRICE * perpetualMint.SCALE();
