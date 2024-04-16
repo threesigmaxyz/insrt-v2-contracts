@@ -237,6 +237,10 @@ upgrade-token-arb-sepolia:
 remove-failed-vrf-fulfillments-blast:
 	@./script/Blast/upgrade/remove-failed-vrf-fulfillments-blast.sh
 
+##### Upgrade & Remove PerpetualMintView & PerpetualMintViewSupraBlast facet
+upgrade-remove-perp-mint-view-blast:
+	@./script/Blast/upgrade/upgrade-remove-perp-mint-view-blast.sh
+
 ##### Upgrade PerpetualMint + PerpetualMintSupraBlast facet
 upgrade-perp-mint-blast:
 	@./script/Blast/upgrade/upgrade-perp-mint-blast.sh
@@ -251,13 +255,17 @@ upgrade-split-perp-mint-blast:
 
 ##### Blast Sepolia
 
-##### Upgrade PerpetualMint + PerpetualMintSupraBlast facet
-upgrade-perp-mint-blast-sepolia:
-	@./script/Blast/upgrade/upgrade-perp-mint-blast-sepolia.sh
-
 ##### Configure Blast Points Operator using ConfigurePointsOperator facet
 configure-blast-points-operator-blast-sepolia:
 	@./script/Blast/upgrade/configure-points-operator-blast-sepolia.sh
+
+##### Upgrade & Remove PerpetualMintView & PerpetualMintViewSupraBlast facet
+upgrade-remove-perp-mint-view-blast-sepolia:
+	@./script/Blast/upgrade/upgrade-remove-perp-mint-view-blast-sepolia.sh
+
+##### Upgrade PerpetualMint + PerpetualMintSupraBlast facet
+upgrade-perp-mint-blast-sepolia:
+	@./script/Blast/upgrade/upgrade-perp-mint-blast-sepolia.sh
 
 ##### Upgrade PerpetualMintView + PerpetualMintViewSupraBlast facet
 upgrade-perp-mint-view-blast-sepolia:
