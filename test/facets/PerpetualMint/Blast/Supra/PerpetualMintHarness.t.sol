@@ -78,7 +78,9 @@ contract PerpetualMintHarnessSupraBlast is
     function exposed_requestRandomWords(
         address minter,
         address collection,
+        uint256 mintEarningsFee,
         uint256 mintPriceAdjustmentFactor,
+        uint256 prizeValueInWei,
         uint32 numWords
     ) external {
         Storage.Layout storage l = Storage.layout();
@@ -90,7 +92,9 @@ contract PerpetualMintHarnessSupraBlast is
             collectionData,
             minter,
             collection,
+            mintEarningsFee,
             mintPriceAdjustmentFactor,
+            prizeValueInWei,
             numWords
         );
     }
@@ -99,7 +103,9 @@ contract PerpetualMintHarnessSupraBlast is
     function exposed_requestRandomWordsSupra(
         address minter,
         address collection,
+        uint256 mintEarningsFee,
         uint256 mintPriceAdjustmentFactor,
+        uint256 prizeValueInWei,
         uint8 numWords
     ) external {
         Storage.Layout storage l = Storage.layout();
@@ -111,7 +117,9 @@ contract PerpetualMintHarnessSupraBlast is
             collectionData,
             minter,
             collection,
+            mintEarningsFee,
             mintPriceAdjustmentFactor,
+            prizeValueInWei,
             numWords
         );
     }
@@ -125,15 +133,25 @@ contract PerpetualMintHarnessSupraBlast is
         returns (
             address minter,
             address collection,
-            uint256 mintPriceAdjustmentFactor
+            uint256 mintEarningsFee,
+            uint256 mintPriceAdjustmentFactor,
+            uint256 prizeValueInWei
         )
     {
         RequestData storage request = Storage.layout().requests[requestId];
 
-        (minter, collection, mintPriceAdjustmentFactor) = (
+        (
+            minter,
+            collection,
+            mintEarningsFee,
+            mintPriceAdjustmentFactor,
+            prizeValueInWei
+        ) = (
             request.minter,
             request.collection,
-            request.mintPriceAdjustmentFactor
+            request.mintEarningsFee,
+            request.mintPriceAdjustmentFactor,
+            request.prizeValueInWei
         );
     }
 
@@ -163,6 +181,27 @@ contract PerpetualMintHarnessSupraBlast is
     }
 
     /// @inheritdoc IPerpetualMintHarnessBlast
+    function exposed_resolveMintsForEthBlast(
+        RequestData calldata request,
+        uint256[] memory randomWords
+    ) external {
+        Storage.Layout storage l = Storage.layout();
+
+        CollectionData storage collectionData = l.collections[
+            request.collection
+        ];
+
+        _resolveMintsForEthBlast(
+            l,
+            request,
+            _collectionMintMultiplier(collectionData),
+            _collectionMintPrice(collectionData),
+            randomWords,
+            _ethToMintRatio(l)
+        );
+    }
+
+    /// @inheritdoc IPerpetualMintHarnessBlast
     function exposed_resolveMintsBlast(
         address minter,
         address collection,
@@ -182,6 +221,27 @@ contract PerpetualMintHarnessSupraBlast is
             tiersData,
             minter,
             collection,
+            randomWords,
+            _ethToMintRatio(l)
+        );
+    }
+
+    /// @inheritdoc IPerpetualMintHarness
+    function exposed_resolveMintsForEth(
+        RequestData calldata request,
+        uint256[] memory randomWords
+    ) external {
+        Storage.Layout storage l = Storage.layout();
+
+        CollectionData storage collectionData = l.collections[
+            request.collection
+        ];
+
+        _resolveMintsForEth(
+            l,
+            request,
+            _collectionMintMultiplier(collectionData),
+            _collectionMintPrice(collectionData),
             randomWords,
             _ethToMintRatio(l)
         );
@@ -271,12 +331,16 @@ contract PerpetualMintHarnessSupraBlast is
         uint256 requestId,
         address minter,
         address collection,
-        uint256 mintPriceAdjustmentFactor
+        uint256 mintEarningsFee,
+        uint256 mintPriceAdjustmentFactor,
+        uint256 prizeValueInWei
     ) external {
         Storage.layout().requests[requestId] = RequestData({
             collection: collection,
             minter: minter,
-            mintPriceAdjustmentFactor: mintPriceAdjustmentFactor
+            mintEarningsFee: mintEarningsFee,
+            mintPriceAdjustmentFactor: mintPriceAdjustmentFactor,
+            prizeValueInWei: prizeValueInWei
         });
     }
 }

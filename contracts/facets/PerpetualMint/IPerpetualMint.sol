@@ -5,6 +5,28 @@ pragma solidity 0.8.19;
 /// @title IPerpetualMint
 /// @dev Interface of the PerpetualMint facet
 interface IPerpetualMint {
+    /// @notice Attempts a batch mint for the msg.sender for ETH using ETH as payment.
+    /// @param referrer referrer address for mint attempts
+    /// @param numberOfMints number of mints to attempt
+    /// @param ethPrizeValueInWei value of ETH prize in wei
+    function attemptBatchMintForEthWithEth(
+        address referrer,
+        uint32 numberOfMints,
+        uint256 ethPrizeValueInWei
+    ) external payable;
+
+    /// @notice Attempts a batch mint for the msg.sender for ETH using $MINT tokens as payment.
+    /// @param referrer referrer address for mint attempts
+    /// @param pricePerMint price per mint for ETH ($MINT denominated in units of wei)
+    /// @param numberOfMints number of mints to attempt
+    /// @param ethPrizeValueInWei value of ETH prize in wei
+    function attemptBatchMintForEthWithMint(
+        address referrer,
+        uint256 pricePerMint,
+        uint32 numberOfMints,
+        uint256 ethPrizeValueInWei
+    ) external;
+
     /// @notice Attempts a batch mint for the msg.sender for $MINT using ETH as payment.
     /// @param referrer referrer address for mint attempts
     /// @param numberOfMints number of mints to attempt
@@ -15,7 +37,7 @@ interface IPerpetualMint {
 
     /// @notice Attempts a batch mint for the msg.sender for $MINT using $MINT tokens as payment.
     /// @param referrer referrer address for mint attempts
-    /// @param pricePerMint price per mint for collection ($MINT denominated in units of wei)
+    /// @param pricePerMint price per mint for $MINT ($MINT denominated in units of wei)
     /// @param numberOfMints number of mints to attempt
     function attemptBatchMintForMintWithMint(
         address referrer,
