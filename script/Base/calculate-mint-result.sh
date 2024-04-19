@@ -9,6 +9,7 @@ export CORE_ADDRESS="0x0000000000000000000000000000000000000000"
 export NUMBER_OF_MINTS=$2
 export RANDOMNESS="$3,$4"
 export PRICE_PER_MINT=$5
+export PRIZE_VALUE_IN_WEI=$6
 
 # Run forge scripts
 forge script script/Supra/${CALCULATION_SCRIPT} --rpc-url $RPC_URL

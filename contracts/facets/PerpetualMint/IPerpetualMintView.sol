@@ -35,7 +35,7 @@ interface IPerpetualMintView is IPausable {
     /// @param collection address of collection for mint attempts
     /// @param numberOfMints number of mints to attempt
     /// @param randomness random value to use in calculation
-    /// @param pricePerMint price paid per mint for collection (denominated in units of wei)
+    /// @param pricePerMint price paid per mint (denominated in units of wei)
     /// @param prizeValueInWei value of the prize in wei
     function calculateMintResult(
         address collection,

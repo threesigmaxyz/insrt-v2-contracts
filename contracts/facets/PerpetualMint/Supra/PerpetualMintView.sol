@@ -16,13 +16,15 @@ contract PerpetualMintViewSupra is IPerpetualMintViewSupra, PerpetualMintView {
         address collection,
         uint8 numberOfMints,
         uint256[2] calldata signature,
-        uint256 pricePerMint
+        uint256 pricePerMint,
+        uint256 prizeValueInWei
     ) external view returns (MintResultData memory result) {
         result = _calculateMintResultSupra(
             collection,
             numberOfMints,
             signature,
-            pricePerMint
+            pricePerMint,
+            prizeValueInWei
         );
     }
 }

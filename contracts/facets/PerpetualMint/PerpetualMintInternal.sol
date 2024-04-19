@@ -1305,7 +1305,7 @@ abstract contract PerpetualMintInternal is
     /// @param collection address of collection for mint attempts
     /// @param numberOfMints number of mints to attempt
     /// @param randomness random value to use in calculation
-    /// @param pricePerMint price paid per mint for collection (denominated in units of wei)
+    /// @param pricePerMint price paid per mint (denominated in units of wei)
     /// @param prizeValueInWei prize value in wei
     function _calculateMintResult(
         address collection,
@@ -1472,13 +1472,17 @@ abstract contract PerpetualMintInternal is
     /// @param collection address of collection for mint attempts
     /// @param numberOfMints number of mints to attempt
     /// @param signature signature value to use as randomness in calculation
-    /// @param pricePerMint price paid per mint for collection (denominated in units of wei)
+    /// @param pricePerMint price paid per mint (denominated in units of wei)
+    /// @param prizeValueInWei prize value in wei
     function _calculateMintResultSupra(
         address collection,
         uint8 numberOfMints,
         uint256[2] calldata signature,
-        uint256 pricePerMint
+        uint256 pricePerMint,
+        uint256 prizeValueInWei
     ) internal view returns (MintResultData memory result) {
+        bool mintForEth = collection == ETH_COLLECTION_ADDRESS;
+
         bool mintForMint = collection == MINT_TOKEN_COLLECTION_ADDRESS;
 
         uint8 numberOfWords = numberOfMints * (mintForMint ? 1 : 2);
@@ -1523,17 +1527,16 @@ abstract contract PerpetualMintInternal is
             );
         }
 
-        if (mintForMint) {
-            result = _calculateMintForMintResult_sharedLogic(
-                calculateMintResultSharedData,
-                randomWords
-            );
-        } else {
-            result = _calculateMintForCollectionResult_sharedLogic(
-                calculateMintResultSharedData,
-                randomWords
-            );
-        }
+        uint256 msgValue = numberOfWords * pricePerMint;
+
+        result = _calculateMintResult_sharedLogic(
+            randomWords,
+            calculateMintResultSharedData,
+            msgValue,
+            prizeValueInWei,
+            mintForEth,
+            mintForMint
+        );
     }
 
     function _calculateMintForCollectionResult_sharedLogic(

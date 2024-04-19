@@ -104,6 +104,7 @@ contract CalculateMintResultArb is Script, Test {
 
                 console.log("Collection Risk: ", collectionRisk);
             }
+
             console.log("Tiers: ");
             emit log_named_array("  Tier Multipliers: ", tiers.tierMultipliers);
             emit log_named_array(

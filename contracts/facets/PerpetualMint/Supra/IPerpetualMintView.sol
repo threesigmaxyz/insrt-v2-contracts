@@ -11,11 +11,13 @@ interface IPerpetualMintViewSupra {
     /// @param collection address of collection for mint attempts
     /// @param numberOfMints number of mints to attempt
     /// @param signature signature value to use as randomness in calculation
-    /// @param pricePerMint price paid per mint for collection (denominated in units of wei)
+    /// @param pricePerMint price paid per mint (denominated in units of wei)
+    /// @param prizeValueInWei value of the prize in wei
     function calculateMintResultSupra(
         address collection,
         uint8 numberOfMints,
         uint256[2] calldata signature,
-        uint256 pricePerMint
+        uint256 pricePerMint,
+        uint256 prizeValueInWei
     ) external view returns (MintResultData memory result);
 }

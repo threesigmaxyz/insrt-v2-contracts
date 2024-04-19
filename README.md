@@ -730,7 +730,7 @@ Requires the following additional environment variables set:
 #### Calculating mint results
 
 ```
-make calculate-mint-result-base <mint-collection-address> <number-of-mint-attempts> <randomness_signature-index-1> <randomness-signature-index-2>
+make calculate-mint-result-base <mint-collection-address> <number-of-mint-attempts> <randomness_signature-index-1> <randomness-signature-index-2> <price-per-mint> <prize-value>
 ```
 
 ### Blast
