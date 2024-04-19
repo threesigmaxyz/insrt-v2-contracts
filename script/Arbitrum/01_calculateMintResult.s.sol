@@ -29,7 +29,10 @@ contract CalculateMintResultArb is Script, Test {
         // get collection address
         address collection = vm.envAddress("COLLECTION_ADDRESS");
 
-        // determine if minting for mint or collection
+        // determine if minting for ETH
+        bool mintForEth = collection == address(type(uint160).max);
+
+        // determine if minting for $MINT
         bool mintForMint = collection == address(0);
 
         // get number of mints
@@ -41,16 +44,18 @@ contract CalculateMintResultArb is Script, Test {
         // get price per mint
         uint256 pricePerMint = vm.envUint("PRICE_PER_MINT");
 
+        // get prize value in wei
+        uint256 prizeValueInWei = vm.envUint("PRIZE_VALUE_IN_WEI");
+
         uint256 collectionMintMultiplier = core.collectionMintMultiplier(
             collection
         );
 
         uint256 collectionMintPrice = core.collectionMintPrice(collection);
 
-        uint32 collectionRisk = core.collectionRisk(collection);
-
         console.log("BASIS: ", BASIS);
         console.log("Collection Address: ", collection);
+        console.log("Mint for ETH?: ", mintForEth);
         console.log("Mint for Mint?: ", mintForMint);
         console.log("Collection Mint Multiplier: ", collectionMintMultiplier);
         console.log("Collection Mint Price: ", collectionMintPrice);
@@ -58,6 +63,7 @@ contract CalculateMintResultArb is Script, Test {
         console.log("Number of Mints: ", numberOfMints);
         console.log("Randomness: ", randomness);
         console.log("Price Per Mint: ", pricePerMint);
+        console.log("Prize Value in Wei: ", prizeValueInWei);
 
         if (mintForMint) {
             console.log("Mint Token Tiers: ");
@@ -70,7 +76,34 @@ contract CalculateMintResultArb is Script, Test {
                 toUint256Array(mintTokenTiers.tierRisks)
             );
         } else {
-            console.log("Collection Risk: ", collectionRisk);
+            if (mintForEth) {
+                uint256 msgValue = numberOfMints * pricePerMint;
+
+                // calculate the mint for ETH consolation fee
+                uint256 mintForEthConsolationFee = (msgValue *
+                    core.mintForEthConsolationFeeBP()) / BASIS;
+
+                // apply the mint for ETH-specific mint fee ratio
+                uint256 additionalDepositorFee = (mintForEthConsolationFee *
+                    core.collectionMintFeeDistributionRatioBP(collection)) /
+                    BASIS;
+
+                // calculate the protocol mint fee
+                uint256 mintFee = (msgValue * core.mintFeeBP()) / BASIS;
+
+                uint256 mintEarningsFee = msgValue -
+                    mintForEthConsolationFee -
+                    mintFee +
+                    additionalDepositorFee;
+
+                uint256 risk = (mintEarningsFee * BASIS) / prizeValueInWei;
+
+                console.log("Risk: ", risk);
+            } else {
+                uint32 collectionRisk = core.collectionRisk(collection);
+
+                console.log("Collection Risk: ", collectionRisk);
+            }
             console.log("Tiers: ");
             emit log_named_array("  Tier Multipliers: ", tiers.tierMultipliers);
             emit log_named_array(
@@ -83,7 +116,8 @@ contract CalculateMintResultArb is Script, Test {
             collection,
             numberOfMints,
             randomness,
-            pricePerMint
+            pricePerMint,
+            prizeValueInWei
         );
 
         // Iterate over the mintOutcomes array in MintResultData
@@ -102,8 +136,15 @@ contract CalculateMintResultArb is Script, Test {
         console.log("\nTotal Mint Amount: ", result.totalMintAmount);
 
         if (!mintForMint) {
+            if (mintForEth) {
+                console.log(
+                    "Total Prize Value Amount: ",
+                    result.totalPrizeValueAmount
+                );
+            }
+
             console.log(
-                "Total Receipt Amount: ",
+                "Total Number of Wins: ",
                 result.totalSuccessfulMints,
                 "\n"
             );

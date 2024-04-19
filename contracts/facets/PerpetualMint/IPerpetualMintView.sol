@@ -36,11 +36,13 @@ interface IPerpetualMintView is IPausable {
     /// @param numberOfMints number of mints to attempt
     /// @param randomness random value to use in calculation
     /// @param pricePerMint price paid per mint for collection (denominated in units of wei)
+    /// @param prizeValueInWei value of the prize in wei
     function calculateMintResult(
         address collection,
         uint32 numberOfMints,
         uint256 randomness,
-        uint256 pricePerMint
+        uint256 pricePerMint,
+        uint256 prizeValueInWei
     ) external view returns (MintResultData memory result);
 
     /// @notice Returns the current mint fee distribution ratio in basis points for a collection

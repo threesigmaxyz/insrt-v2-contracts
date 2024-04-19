@@ -718,7 +718,7 @@ Requires the following additional environment variables set:
 #### Calculating mint results
 
 ```
-make calculate-mint-result-arb <mint-collection-address> <number-of-mint-attempts> <randomness>
+make calculate-mint-result-arb <mint-collection-address> <number-of-mint-attempts> <randomness> <price-per-mint> <prize-value>
 ```
 
 ### Base

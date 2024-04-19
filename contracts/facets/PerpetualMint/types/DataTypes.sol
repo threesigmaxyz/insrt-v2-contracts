@@ -4,7 +4,31 @@ pragma solidity 0.8.19;
 
 import { EnumerableSet } from "@solidstate/contracts/data/EnumerableSet.sol";
 
-/// @dev DataTypes.sol defines the PerpetualMint struct data types used in the PerpetualMintStorage layout
+/// @dev DataTypes.sol defines PerpetualMint struct data types used throughout the PerpetualMint facet contracts
+
+/// @dev Represents the shared data used in the internal calculation of a given mint result
+struct CalculateMintResult_SharedData {
+    /// @dev The current collection's mint fee distribution ratio in basis points
+    uint32 collectionMintFeeDistributionRatioBP;
+    /// @dev The current collection's set risk of ruin (if applicable)
+    uint32 collectionRisk;
+    /// @dev The current mint for ETH consolation fee in basis points
+    uint32 mintForEthConsolationFeeBP;
+    /// @dev The current mint protocol fee in basis points
+    uint32 mintFeeBP;
+    /// @dev The current ETH to $MINT conversion ratio
+    uint256 ethToMintRatio;
+    /// @dev The current collection's mint multiplier
+    uint256 collectionMintMultiplier;
+    /// @dev The current collection's mint price
+    uint256 collectionMintPrice;
+    /// @dev The calculated mint price adjustment factor
+    uint256 mintPriceAdjustmentFactor;
+    /// @dev The current mint for $MINT consolation tier data
+    MintTokenTiersData mintTokenTiers;
+    /// @dev The current mint for collection & mint for ETH consolation tier data
+    TiersData tiers;
+}
 
 /// @dev Represents data specific to a collection
 struct CollectionData {
@@ -41,8 +65,10 @@ struct MintResultData {
     MintOutcome[] mintOutcomes;
     /// @dev The total amount of $MINT to be issued based on all outcomes, in units of wei
     uint256 totalMintAmount;
-    /// @dev The total number of successful mint attempts where a prize ticket was awarded
+    /// @dev The total number of successful mint attempts where a prize was won
     uint256 totalSuccessfulMints;
+    /// @dev The total ETH value of all prizes won, in units of wei
+    uint256 totalPrizeValueAmount;
 }
 
 /// @dev Represents the total result of a batch mint attempt on Blast.

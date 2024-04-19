@@ -50,13 +50,15 @@ contract PerpetualMintView is
         address collection,
         uint32 numberOfMints,
         uint256 randomness,
-        uint256 pricePerMint
+        uint256 pricePerMint,
+        uint256 prizeValueInWei
     ) external view returns (MintResultData memory result) {
         result = _calculateMintResult(
             collection,
             numberOfMints,
             randomness,
-            pricePerMint
+            pricePerMint,
+            prizeValueInWei
         );
     }
 

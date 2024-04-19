@@ -14,7 +14,7 @@ import { AddressUtils } from "@solidstate/contracts/utils/AddressUtils.sol";
 import { IGas } from "./Blast/IGas.sol";
 import { ERC1155MetadataExtensionInternal } from "./ERC1155MetadataExtensionInternal.sol";
 import { IPerpetualMintInternal } from "./IPerpetualMintInternal.sol";
-import { CollectionData, MintOutcome, MintResultData, MintResultDataBlast, MintTokenTiersData, PerpetualMintStorage as Storage, RequestData, TiersData, VRFConfig } from "./Storage.sol";
+import { CalculateMintResult_SharedData, CollectionData, MintOutcome, MintResultData, MintResultDataBlast, MintTokenTiersData, PerpetualMintStorage as Storage, RequestData, TiersData, VRFConfig } from "./Storage.sol";
 import { IToken } from "../Token/IToken.sol";
 import { GuardsInternal } from "../../common/GuardsInternal.sol";
 import { IBlast } from "../../diamonds/Core/Blast/IBlast.sol";
@@ -1306,30 +1306,60 @@ abstract contract PerpetualMintInternal is
     /// @param numberOfMints number of mints to attempt
     /// @param randomness random value to use in calculation
     /// @param pricePerMint price paid per mint for collection (denominated in units of wei)
+    /// @param prizeValueInWei prize value in wei
     function _calculateMintResult(
         address collection,
         uint32 numberOfMints,
         uint256 randomness,
-        uint256 pricePerMint
+        uint256 pricePerMint,
+        uint256 prizeValueInWei
     ) internal view returns (MintResultData memory result) {
-        Storage.Layout storage l = Storage.layout();
-
-        CollectionData storage collectionData = l.collections[collection];
+        bool mintForEth = collection == ETH_COLLECTION_ADDRESS;
 
         bool mintForMint = collection == MINT_TOKEN_COLLECTION_ADDRESS;
 
         uint32 numberOfWords = numberOfMints * (mintForMint ? 1 : 2);
 
-        uint256 collectionMintMultiplier = _collectionMintMultiplier(
-            collectionData
-        );
+        CalculateMintResult_SharedData memory calculateMintResultSharedData;
 
-        uint256 ethToMintRatio = _ethToMintRatio(l);
+        {
+            Storage.Layout storage l = Storage.layout();
 
-        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+            calculateMintResultSharedData.mintFeeBP = l.mintFeeBP;
+
+            calculateMintResultSharedData.mintForEthConsolationFeeBP = l
+                .mintForEthConsolationFeeBP;
+
+            calculateMintResultSharedData.ethToMintRatio = _ethToMintRatio(l);
+
+            calculateMintResultSharedData.mintTokenTiers = l.mintTokenTiers;
+
+            calculateMintResultSharedData.tiers = l.tiers;
+
+            CollectionData storage collectionData = l.collections[collection];
+
+            calculateMintResultSharedData
+                .collectionMintFeeDistributionRatioBP = collectionData
+                .mintFeeDistributionRatioBP;
+
+            calculateMintResultSharedData
+                .collectionMintMultiplier = _collectionMintMultiplier(
+                collectionData
+            );
+
+            calculateMintResultSharedData
+                .collectionMintPrice = _collectionMintPrice(collectionData);
+
+            calculateMintResultSharedData.collectionRisk = _collectionRisk(
+                collectionData
+            );
+
+            calculateMintResultSharedData
+                .mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
                 collectionData,
                 pricePerMint
             );
+        }
 
         uint256[] memory randomWords = new uint256[](numberOfWords);
 
@@ -1337,25 +1367,42 @@ abstract contract PerpetualMintInternal is
             randomWords[i] = uint256(keccak256(abi.encode(randomness, i)));
         }
 
+        uint256 msgValue = numberOfWords * pricePerMint;
+
+        result = _calculateMintResult_sharedLogic(
+            randomWords,
+            calculateMintResultSharedData,
+            msgValue,
+            prizeValueInWei,
+            mintForEth,
+            mintForMint
+        );
+    }
+
+    function _calculateMintResult_sharedLogic(
+        uint256[] memory randomWords,
+        CalculateMintResult_SharedData memory calculateMintResultSharedData,
+        uint256 msgValue,
+        uint256 prizeValueInWei,
+        bool mintForEth,
+        bool mintForMint
+    ) private pure returns (MintResultData memory result) {
         if (mintForMint) {
             result = _calculateMintForMintResult_sharedLogic(
-                l,
-                numberOfMints,
+                calculateMintResultSharedData,
+                randomWords
+            );
+        } else if (mintForEth) {
+            result = _calculateMintForEthResult_sharedLogic(
+                calculateMintResultSharedData,
                 randomWords,
-                collectionMintMultiplier,
-                ethToMintRatio,
-                mintPriceAdjustmentFactor,
-                collectionData
+                msgValue,
+                prizeValueInWei
             );
         } else {
             result = _calculateMintForCollectionResult_sharedLogic(
-                l,
-                numberOfMints,
-                randomWords,
-                collectionMintMultiplier,
-                ethToMintRatio,
-                mintPriceAdjustmentFactor,
-                collectionData
+                calculateMintResultSharedData,
+                randomWords
             );
         }
     }
@@ -1432,24 +1479,41 @@ abstract contract PerpetualMintInternal is
         uint256[2] calldata signature,
         uint256 pricePerMint
     ) internal view returns (MintResultData memory result) {
-        Storage.Layout storage l = Storage.layout();
-
-        CollectionData storage collectionData = l.collections[collection];
-
         bool mintForMint = collection == MINT_TOKEN_COLLECTION_ADDRESS;
 
         uint8 numberOfWords = numberOfMints * (mintForMint ? 1 : 2);
 
-        uint256 collectionMintMultiplier = _collectionMintMultiplier(
-            collectionData
-        );
+        CalculateMintResult_SharedData memory calculateMintResultSharedData;
 
-        uint256 ethToMintRatio = _ethToMintRatio(l);
+        {
+            Storage.Layout storage l = Storage.layout();
 
-        uint256 mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+            calculateMintResultSharedData.ethToMintRatio = _ethToMintRatio(l);
+
+            calculateMintResultSharedData.mintTokenTiers = l.mintTokenTiers;
+
+            calculateMintResultSharedData.tiers = l.tiers;
+
+            CollectionData storage collectionData = l.collections[collection];
+
+            calculateMintResultSharedData
+                .collectionMintMultiplier = _collectionMintMultiplier(
+                collectionData
+            );
+
+            calculateMintResultSharedData
+                .collectionMintPrice = _collectionMintPrice(collectionData);
+
+            calculateMintResultSharedData.collectionRisk = _collectionRisk(
+                collectionData
+            );
+
+            calculateMintResultSharedData
+                .mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
                 collectionData,
                 pricePerMint
             );
+        }
 
         uint256[] memory randomWords = new uint256[](numberOfWords);
 
@@ -1461,41 +1525,26 @@ abstract contract PerpetualMintInternal is
 
         if (mintForMint) {
             result = _calculateMintForMintResult_sharedLogic(
-                l,
-                numberOfMints,
-                randomWords,
-                collectionMintMultiplier,
-                ethToMintRatio,
-                mintPriceAdjustmentFactor,
-                collectionData
+                calculateMintResultSharedData,
+                randomWords
             );
         } else {
             result = _calculateMintForCollectionResult_sharedLogic(
-                l,
-                numberOfMints,
-                randomWords,
-                collectionMintMultiplier,
-                ethToMintRatio,
-                mintPriceAdjustmentFactor,
-                collectionData
+                calculateMintResultSharedData,
+                randomWords
             );
         }
     }
 
     function _calculateMintForCollectionResult_sharedLogic(
-        Storage.Layout storage l,
-        uint32 numberOfMints,
-        uint256[] memory randomWords,
-        uint256 collectionMintMultiplier,
-        uint256 ethToMintRatio,
-        uint256 mintPriceAdjustmentFactor,
-        CollectionData storage collectionData
-    ) private view returns (MintResultData memory result) {
+        CalculateMintResult_SharedData memory calculateMintResultSharedData,
+        uint256[] memory randomWords
+    ) private pure returns (MintResultData memory result) {
         // adjust the collection risk by the mint price adjustment factor
-        uint256 collectionRisk = (_collectionRisk(collectionData) *
-            mintPriceAdjustmentFactor) / BASIS;
+        uint256 collectionRisk = (calculateMintResultSharedData.collectionRisk *
+            calculateMintResultSharedData.mintPriceAdjustmentFactor) / BASIS;
 
-        result.mintOutcomes = new MintOutcome[](numberOfMints);
+        result.mintOutcomes = new MintOutcome[](randomWords.length / 2); // 2 words per mint for collection
 
         for (uint256 i = 0; i < randomWords.length; i += 2) {
             MintOutcome memory outcome;
@@ -1508,11 +1557,11 @@ abstract contract PerpetualMintInternal is
             if (!(collectionRisk > firstNormalizedValue)) {
                 outcome = _calculateMintForCollectionOutcome(
                     _normalizeValue(randomWords[i + 1], BASIS), // secondNormalizedValue
-                    l.tiers,
-                    mintPriceAdjustmentFactor,
-                    ethToMintRatio,
-                    _collectionMintPrice(collectionData),
-                    collectionMintMultiplier
+                    calculateMintResultSharedData.tiers,
+                    calculateMintResultSharedData.mintPriceAdjustmentFactor,
+                    calculateMintResultSharedData.ethToMintRatio,
+                    calculateMintResultSharedData.collectionMintPrice,
+                    calculateMintResultSharedData.collectionMintMultiplier
                 );
 
                 result.totalMintAmount += outcome.mintAmount;
@@ -1582,12 +1631,12 @@ abstract contract PerpetualMintInternal is
 
     function _calculateMintForCollectionOutcome(
         uint256 secondNormalizedValue,
-        TiersData storage tiers,
+        TiersData memory tiers,
         uint256 mintPriceAdjustmentFactor,
         uint256 ethToMintRatio,
         uint256 collectionMintPrice,
         uint256 collectionMintMultiplier
-    ) private view returns (MintOutcome memory outcome) {
+    ) private pure returns (MintOutcome memory outcome) {
         uint256 cumulativeRisk;
 
         for (uint256 j = 0; j < tiers.tierRisks.length; ++j) {
@@ -1611,20 +1660,81 @@ abstract contract PerpetualMintInternal is
         }
     }
 
-    function _calculateMintForMintResult_sharedLogic(
-        Storage.Layout storage l,
-        uint32 numberOfMints,
+    function _calculateMintForEthResult_sharedLogic(
+        CalculateMintResult_SharedData memory calculateMintResultSharedData,
         uint256[] memory randomWords,
-        uint256 collectionMintMultiplier,
-        uint256 ethToMintRatio,
-        uint256 mintPriceAdjustmentFactor,
-        CollectionData storage collectionData
-    ) private view returns (MintResultData memory result) {
-        MintTokenTiersData storage mintTokenTiers = l.mintTokenTiers;
+        uint256 msgValue,
+        uint256 prizeValueInWei
+    ) private pure returns (MintResultData memory result) {
+        uint256 mintEarningsFee = _calculateMintForEthResult_calculateFees(
+            calculateMintResultSharedData,
+            msgValue
+        );
 
-        uint256 collectionMintPrice = _collectionMintPrice(collectionData);
+        // determine the risk by dividing the mint earnings fee by the prize value in wei
+        uint256 risk = (mintEarningsFee * BASIS) / prizeValueInWei;
 
-        result.mintOutcomes = new MintOutcome[](numberOfMints);
+        result.mintOutcomes = new MintOutcome[](randomWords.length / 2); // 2 words per mint for ETH
+
+        for (uint256 i = 0; i < randomWords.length; i += 2) {
+            MintOutcome memory outcome;
+
+            uint256 firstNormalizedValue = _normalizeValue(
+                randomWords[i],
+                BASIS
+            );
+
+            if (!(risk > firstNormalizedValue)) {
+                outcome = _calculateMintForCollectionOutcome(
+                    _normalizeValue(randomWords[i + 1], BASIS), // secondNormalizedValue
+                    calculateMintResultSharedData.tiers,
+                    calculateMintResultSharedData.mintPriceAdjustmentFactor,
+                    calculateMintResultSharedData.ethToMintRatio,
+                    calculateMintResultSharedData.collectionMintPrice,
+                    calculateMintResultSharedData.collectionMintMultiplier
+                );
+
+                result.totalMintAmount += outcome.mintAmount;
+            } else {
+                result.totalPrizeValueAmount += prizeValueInWei;
+
+                ++result.totalSuccessfulMints;
+            }
+
+            result.mintOutcomes[i / 2] = outcome;
+        }
+    }
+
+    function _calculateMintForEthResult_calculateFees(
+        CalculateMintResult_SharedData memory calculateMintResultSharedData,
+        uint256 msgValue
+    ) private pure returns (uint256 mintEarningsFee) {
+        // calculate the mint for ETH consolation fee
+        uint256 mintForEthConsolationFee = (msgValue *
+            calculateMintResultSharedData.mintForEthConsolationFeeBP) / BASIS;
+
+        // apply the mint for ETH-specific mint fee ratio
+        uint256 additionalDepositorFee = (mintForEthConsolationFee *
+            calculateMintResultSharedData
+                .collectionMintFeeDistributionRatioBP) / BASIS;
+
+        // calculate the protocol mint fee
+        uint256 mintFee = (msgValue * calculateMintResultSharedData.mintFeeBP) /
+            BASIS;
+
+        // calculate the mint earnings fee
+        mintEarningsFee =
+            msgValue -
+            mintForEthConsolationFee -
+            mintFee +
+            additionalDepositorFee;
+    }
+
+    function _calculateMintForMintResult_sharedLogic(
+        CalculateMintResult_SharedData memory calculateMintResultSharedData,
+        uint256[] memory randomWords
+    ) private pure returns (MintResultData memory result) {
+        result.mintOutcomes = new MintOutcome[](randomWords.length / 1); // 1 word per mint for $MINT
 
         for (uint256 i = 0; i < randomWords.length; ++i) {
             MintOutcome memory outcome;
@@ -1634,21 +1744,36 @@ abstract contract PerpetualMintInternal is
             uint256 mintAmount;
             uint256 cumulativeRisk;
 
-            for (uint256 j = 0; j < mintTokenTiers.tierRisks.length; ++j) {
-                cumulativeRisk += mintTokenTiers.tierRisks[j];
+            for (
+                uint256 j = 0;
+                j <
+                calculateMintResultSharedData.mintTokenTiers.tierRisks.length;
+                ++j
+            ) {
+                cumulativeRisk += calculateMintResultSharedData
+                    .mintTokenTiers
+                    .tierRisks[j];
 
                 if (cumulativeRisk > normalizedValue) {
                     mintAmount =
-                        (mintTokenTiers.tierMultipliers[j] *
-                            mintPriceAdjustmentFactor *
-                            ethToMintRatio *
-                            collectionMintPrice *
-                            collectionMintMultiplier) /
+                        (calculateMintResultSharedData
+                            .mintTokenTiers
+                            .tierMultipliers[j] *
+                            calculateMintResultSharedData
+                                .mintPriceAdjustmentFactor *
+                            calculateMintResultSharedData.ethToMintRatio *
+                            calculateMintResultSharedData.collectionMintPrice *
+                            calculateMintResultSharedData
+                                .collectionMintMultiplier) /
                         (uint256(BASIS) * BASIS * BASIS);
 
                     outcome.tierIndex = j;
-                    outcome.tierMultiplier = mintTokenTiers.tierMultipliers[j];
-                    outcome.tierRisk = mintTokenTiers.tierRisks[j];
+                    outcome.tierMultiplier = calculateMintResultSharedData
+                        .mintTokenTiers
+                        .tierMultipliers[j];
+                    outcome.tierRisk = calculateMintResultSharedData
+                        .mintTokenTiers
+                        .tierRisks[j];
                     outcome.mintAmount = mintAmount;
 
                     break;
