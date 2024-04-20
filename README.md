@@ -701,6 +701,12 @@ make upgrade-remove-perp-mint-view-blast-sepolia
 make upgrade-split-perp-mint-blast-sepolia
 ```
 
+#### Upgrade PerpetualMintAdmin & PerpetualMintAdminBlast facet
+
+```
+make upgrade-perp-mint-admin-blast-sepolia
+```
+
 #### Upgrade PerpetualMintView & PerpetualMintViewSupraBlast facet
 
 ```
@@ -742,5 +748,5 @@ Requires the following additional environment variables set:
 #### Calculating mint results
 
 ```
-make calculate-mint-result-blast <mint-collection-address> <number-of-mint-attempts> <randomness-signature-index-1> <randomness-signature-index-2> <price-per-mint>
+make calculate-mint-result-blast <mint-collection-address> <number-of-mint-attempts> <randomness-signature-index-1> <randomness-signature-index-2> <price-per-mint> <prize-value>
 ```

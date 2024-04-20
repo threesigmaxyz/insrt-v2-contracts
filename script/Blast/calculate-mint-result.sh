@@ -9,6 +9,7 @@ export CORE_BLAST_ADDRESS="0x8113e6335ddf1e6227113b429cd1f57e8e007760"
 export NUMBER_OF_MINTS=$2
 export RANDOMNESS="$3,$4"
 export PRICE_PER_MINT=$5
+export PRIZE_VALUE_IN_WEI=$6
 
 # Run forge scripts
 forge script script/Blast/${CALCULATION_SCRIPT} --rpc-url $RPC_URL

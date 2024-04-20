@@ -79,8 +79,10 @@ struct MintResultDataBlast {
     uint256 totalBlastYieldAmount;
     /// @dev The total amount of $MINT to be issued based on all outcomes, in units of wei
     uint256 totalMintAmount;
-    /// @dev The total number of successful mint attempts where a prize ticket was awarded
+    /// @dev The total number of successful mint attempts where a prize was won
     uint256 totalSuccessfulMints;
+    /// @dev The total ETH value of all prizes won, in units of wei
+    uint256 totalPrizeValueAmount;
 }
 
 /// @dev Represents data specific to $MINT mint for $MINT consolation tiers

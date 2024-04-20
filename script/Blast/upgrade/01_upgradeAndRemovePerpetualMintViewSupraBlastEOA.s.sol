@@ -84,9 +84,11 @@ contract UpgradeAndRemovePerpetualMintViewSupraBlastEOA is Script {
                 1
             );
 
-        perpetualMintViewSupraBlastFunctionSelectors[
-            0
-        ] = IPerpetualMintViewSupraBlast.calculateMintResultSupraBlast.selector;
+        perpetualMintViewSupraBlastFunctionSelectors[0] = bytes4(
+            keccak256(
+                "calculateMintResultSupraBlast(address,uint8,uint256[2],uint256,uint256)"
+            )
+        );
 
         ICore.FacetCut
             memory perpetualMintViewSupraBlastFacetCut = IDiamondWritableInternal
@@ -116,7 +118,7 @@ contract UpgradeAndRemovePerpetualMintViewSupraBlastEOA is Script {
 
         perpetualMintViewSupraBlastFunctionSelectors[0] = bytes4(
             keccak256(
-                "calculateMintResultBlastSupra(address,uint8,uint256[2],uint256)"
+                "calculateMintResultSupraBlast(address,uint8,uint256[2],uint256)"
             )
         );
 
@@ -153,7 +155,7 @@ contract UpgradeAndRemovePerpetualMintViewSupraBlastEOA is Script {
             });
 
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](25);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](27);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -216,42 +218,50 @@ contract UpgradeAndRemovePerpetualMintViewSupraBlastEOA is Script {
             .selector;
 
         perpetualMintViewFunctionSelectors[15] = IPerpetualMintView
-            .mintFeeBP
+            .mintEarningsBufferBP
             .selector;
 
         perpetualMintViewFunctionSelectors[16] = IPerpetualMintView
-            .mintToken
+            .mintFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[17] = IPerpetualMintView
-            .mintTokenConsolationFeeBP
+            .mintForEthConsolationFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[18] = IPerpetualMintView
-            .mintTokenTiers
+            .mintToken
             .selector;
 
         perpetualMintViewFunctionSelectors[19] = IPerpetualMintView
-            .redemptionFeeBP
+            .mintTokenConsolationFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[20] = IPerpetualMintView
-            .redeemPaused
+            .mintTokenTiers
             .selector;
 
         perpetualMintViewFunctionSelectors[21] = IPerpetualMintView
-            .SCALE
+            .redemptionFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[22] = IPerpetualMintView
-            .tiers
+            .redeemPaused
             .selector;
 
         perpetualMintViewFunctionSelectors[23] = IPerpetualMintView
-            .vrfConfig
+            .SCALE
             .selector;
 
         perpetualMintViewFunctionSelectors[24] = IPerpetualMintView
+            .tiers
+            .selector;
+
+        perpetualMintViewFunctionSelectors[25] = IPerpetualMintView
+            .vrfConfig
+            .selector;
+
+        perpetualMintViewFunctionSelectors[26] = IPerpetualMintView
             .vrfSubscriptionBalanceThreshold
             .selector;
 
