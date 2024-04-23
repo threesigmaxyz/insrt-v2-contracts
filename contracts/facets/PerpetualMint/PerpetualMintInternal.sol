@@ -1367,7 +1367,7 @@ abstract contract PerpetualMintInternal is
             randomWords[i] = uint256(keccak256(abi.encode(randomness, i)));
         }
 
-        uint256 msgValue = numberOfWords * pricePerMint;
+        uint256 msgValue = numberOfMints * pricePerMint;
 
         result = _calculateMintResult_sharedLogic(
             randomWords,
@@ -1431,6 +1431,11 @@ abstract contract PerpetualMintInternal is
         {
             Storage.Layout storage l = Storage.layout();
 
+            calculateMintResultSharedData.mintFeeBP = l.mintFeeBP;
+
+            calculateMintResultSharedData.mintForEthConsolationFeeBP = l
+                .mintForEthConsolationFeeBP;
+
             calculateMintResultSharedData.ethToMintRatio = _ethToMintRatio(l);
 
             calculateMintResultSharedData.mintTokenTiers = l.mintTokenTiers;
@@ -1438,6 +1443,10 @@ abstract contract PerpetualMintInternal is
             calculateMintResultSharedData.tiers = l.tiers;
 
             CollectionData storage collectionData = l.collections[collection];
+
+            calculateMintResultSharedData
+                .collectionMintFeeDistributionRatioBP = collectionData
+                .mintFeeDistributionRatioBP;
 
             calculateMintResultSharedData
                 .collectionMintMultiplier = _collectionMintMultiplier(
@@ -1466,7 +1475,7 @@ abstract contract PerpetualMintInternal is
             );
         }
 
-        uint256 msgValue = numberOfWords * pricePerMint;
+        uint256 msgValue = numberOfMints * pricePerMint;
 
         result = _calculateMintResultBlast_sharedLogic(
             randomWords,
@@ -1530,6 +1539,11 @@ abstract contract PerpetualMintInternal is
         {
             Storage.Layout storage l = Storage.layout();
 
+            calculateMintResultSharedData.mintFeeBP = l.mintFeeBP;
+
+            calculateMintResultSharedData.mintForEthConsolationFeeBP = l
+                .mintForEthConsolationFeeBP;
+
             calculateMintResultSharedData.ethToMintRatio = _ethToMintRatio(l);
 
             calculateMintResultSharedData.mintTokenTiers = l.mintTokenTiers;
@@ -1537,6 +1551,10 @@ abstract contract PerpetualMintInternal is
             calculateMintResultSharedData.tiers = l.tiers;
 
             CollectionData storage collectionData = l.collections[collection];
+
+            calculateMintResultSharedData
+                .collectionMintFeeDistributionRatioBP = collectionData
+                .mintFeeDistributionRatioBP;
 
             calculateMintResultSharedData
                 .collectionMintMultiplier = _collectionMintMultiplier(
@@ -1565,7 +1583,7 @@ abstract contract PerpetualMintInternal is
             );
         }
 
-        uint256 msgValue = numberOfWords * pricePerMint;
+        uint256 msgValue = numberOfMints * pricePerMint;
 
         result = _calculateMintResult_sharedLogic(
             randomWords,

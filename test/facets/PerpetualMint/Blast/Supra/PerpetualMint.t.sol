@@ -80,6 +80,11 @@ abstract contract PerpetualMintTest_SupraBlast is
         // sets the mint fee
         perpetualMint.setMintFeeBP(TEST_MINT_FEE_BP);
 
+        // sets the mint for ETH consolation fee
+        perpetualMint.setMintForEthConsolationFeeBP(
+            TEST_MINT_FOR_ETH_CONSOLATION_FEE_BP
+        );
+
         // sets the mint for $MINT consolation fee
         perpetualMint.setMintTokenConsolationFeeBP(
             TEST_MINT_TOKEN_CONSOLATION_FEE_BP
