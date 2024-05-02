@@ -670,6 +670,12 @@ make upgrade-remove-perp-mint-view-blast
 make upgrade-split-perp-mint-blast
 ```
 
+#### Upgrade PerpetualMintAdmin & PerpetualMintAdminBlast facet
+
+```
+make upgrade-perp-mint-admin-blast
+```
+
 #### Upgrade PerpetualMint & PerpetualMintSupraBlast facet
 
 ```

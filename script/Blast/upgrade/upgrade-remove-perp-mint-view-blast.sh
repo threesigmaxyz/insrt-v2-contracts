@@ -3,10 +3,14 @@ set -e
 
 CHAIN_ID=81457
 RPC_URL=$BLAST_RPC_URL
-UPGRADE_SCRIPT="01_upgradeAndRemovePerpetualMintViewSupraBlastEOA.s.sol"
+UPGRADE_SCRIPT="01_upgradeAndRemovePerpetualMintViewSupraBlast.s.sol"
 VERIFIER_URL="https://api.blastscan.io/api"
+export CHAIN="blast"
 export CORE_BLAST_ADDRESS="0x8113E6335ddf1E6227113B429CD1F57e8E007760"
+export GNOSIS_SAFE="0xA5200F89aDB961B9D6d92DA2D0D45Ba9a0976F90"
+export PRIVATE_KEY=$DEPLOYER_KEY
 export VRF_ROUTER="0x82A515c2BEC5C4be8aBBbF0D2F59C19A4547709c"
+export WALLET_TYPE="local"
 
 # Check if BLASTSCAN_API_KEY is set
 if [[ -z $BLASTSCAN_API_KEY ]]; then
@@ -38,6 +42,6 @@ DEPLOYER_BALANCE_ETH=$(cast from-wei $DEPLOYER_BALANCE_DEC)
 echo -e "Deployer address balance is $DEPLOYER_BALANCE_ETH ETH.\n"
 
 # Run forge scripts
-forge script script/Blast/upgrade/${UPGRADE_SCRIPT} --rpc-url $RPC_URL --verify --broadcast --verifier-url $VERIFIER_URL
+forge script script/Blast/upgrade/${UPGRADE_SCRIPT} --rpc-url $RPC_URL --verify --broadcast --verifier-url $VERIFIER_URL --ffi --sender $DEPLOYER_ADDRESS --legacy
 
 echo -e "\nDeployer Address: $DEPLOYER_ADDRESS\n"

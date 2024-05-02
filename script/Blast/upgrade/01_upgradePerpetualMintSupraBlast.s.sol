@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import "forge-std/Script.sol";
+import "forge-safe/BatchScript.sol";
 
 import { VRFConsumerBaseV2 } from "@chainlink/vrf/VRFConsumerBaseV2.sol";
+import { IDiamondWritable } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritable.sol";
 import { IDiamondWritableInternal } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritableInternal.sol";
 
 import { ICore } from "../../../contracts/diamonds/Core/ICore.sol";
 import { IPerpetualMint } from "../../../contracts/facets/PerpetualMint/IPerpetualMint.sol";
 import { PerpetualMintSupraBlast } from "../../../contracts/facets/PerpetualMint/Blast/Supra/PerpetualMint.sol";
 
-/// @title UpgradePerpetualMintSupraBlastEOA
+/// @title UpgradePerpetualMintSupraBlast
 /// @dev Deploys a new PerpetualMintSupraBlast facet and signs and submits a diamondCut of the PerpetualMintSupraBlast facet
-/// to the CoreBlast diamond using an externally owned account
-contract UpgradePerpetualMintSupraBlastEOA is Script {
+/// to the CoreBlast diamond via the Gnosis Safe Transaction Service API
+contract UpgradePerpetualMintSupraBlast is BatchScript {
     /// @dev runs the script logic
     function run() external {
         // read deployer private key
@@ -22,9 +23,15 @@ contract UpgradePerpetualMintSupraBlastEOA is Script {
         // get CoreBlast PerpetualMint diamond address
         address core = vm.envAddress("CORE_BLAST_ADDRESS");
 
+        // get Gnosis Safe (protocol owner) address
+        address gnosisSafeAddress = vm.envAddress("GNOSIS_SAFE");
+
         // get VRF Router address
         address VRF_ROUTER = vm.envAddress("VRF_ROUTER");
 
+        // we only explicitly broadcast facet deployments
+        // broadcasting of batch execution gnosis multi-sig transactions is done
+        // separately using the Gnosis Safe Transaction Service API
         vm.startBroadcast(deployerPrivateKey);
 
         // deploy new PerpetualMintSupraBlast facet
@@ -32,12 +39,14 @@ contract UpgradePerpetualMintSupraBlastEOA is Script {
                 VRF_ROUTER
             );
 
-        console.log(
+        vm.stopBroadcast();
+
+        console2.log(
             "New PerpetualMintSupraBlast Facet Address: ",
             address(perpetualMintSupraBlast)
         );
-        console.log("CoreBlast Address: ", core);
-        console.log("VRF Router Address: ", VRF_ROUTER);
+        console2.log("CoreBlast Address: ", core);
+        console2.log("VRF Router Address: ", VRF_ROUTER);
 
         // get new PerpetualMint + PerpetualMintSupraBlast facet cuts
         ICore.FacetCut[]
@@ -57,23 +66,34 @@ contract UpgradePerpetualMintSupraBlastEOA is Script {
         facetCuts[1] = replacementPerpetualMintFacetCuts[0];
         facetCuts[2] = replacementPerpetualMintFacetCuts[1];
 
-        // cut PerpetualMint + PerpetualMintSupraBlast into Core
-        ICore(payable(core)).diamondCut(facetCuts, address(0), "");
+        bytes memory diamondCutTx = abi.encodeWithSelector(
+            IDiamondWritable.diamondCut.selector,
+            facetCuts,
+            address(0),
+            ""
+        );
 
-        vm.stopBroadcast();
+        addToBatch(core, diamondCutTx);
+
+        executeBatch(gnosisSafeAddress, true);
     }
 
-    /// @dev provides the new facet cuts for cutting PerpetualMint & PerpetualMintSupraBlast facets into CoreBlast
+    /// @dev provides the new facet cuts for cutting PerpetualMint & PerpetualMintSupraBlast facets
+    /// into CoreBlast
     /// @param facetAddress address of PerpetualMint facet
     function getNewPerpetualMintFacetCuts(
         address facetAddress
     ) internal pure returns (ICore.FacetCut[] memory facetCuts) {
         // map the PerpetualMint related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](1);
+        bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](2);
 
-        perpetualMintFunctionSelectors[0] = bytes4(
-            keccak256("claimMintEarnings(uint256)")
-        );
+        perpetualMintFunctionSelectors[0] = IPerpetualMint
+            .attemptBatchMintForEthWithEth
+            .selector;
+
+        perpetualMintFunctionSelectors[1] = IPerpetualMint
+            .attemptBatchMintForEthWithMint
+            .selector;
 
         ICore.FacetCut memory perpetualMintFacetCut = IDiamondWritableInternal
             .FacetCut({
@@ -87,45 +107,38 @@ contract UpgradePerpetualMintSupraBlastEOA is Script {
         facetCuts[0] = perpetualMintFacetCut;
     }
 
-    /// @dev provides the replacement facet cuts for cutting PerpetualMint facet into Core
+    /// @dev provides the replacement facet cuts for cutting PerpetualMint & PerpetualMintSupraBlast facets
+    /// into CoreBlast
     /// @param facetAddress address of PerpetualMint facet
     function getReplacementPerpetualMintFacetCuts(
         address facetAddress
     ) internal pure returns (ICore.FacetCut[] memory facetCuts) {
         // map the PerpetualMint related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](9);
+        bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](7);
 
         perpetualMintFunctionSelectors[0] = IPerpetualMint
-            .attemptBatchMintForEthWithEth
-            .selector;
-
-        perpetualMintFunctionSelectors[1] = IPerpetualMint
-            .attemptBatchMintForEthWithMint
-            .selector;
-
-        perpetualMintFunctionSelectors[2] = IPerpetualMint
             .attemptBatchMintForMintWithEth
             .selector;
 
-        perpetualMintFunctionSelectors[3] = IPerpetualMint
+        perpetualMintFunctionSelectors[1] = IPerpetualMint
             .attemptBatchMintForMintWithMint
             .selector;
 
-        perpetualMintFunctionSelectors[4] = IPerpetualMint
+        perpetualMintFunctionSelectors[2] = IPerpetualMint
             .attemptBatchMintWithEth
             .selector;
 
-        perpetualMintFunctionSelectors[5] = IPerpetualMint
+        perpetualMintFunctionSelectors[3] = IPerpetualMint
             .attemptBatchMintWithMint
             .selector;
 
-        perpetualMintFunctionSelectors[6] = IPerpetualMint.claimPrize.selector;
+        perpetualMintFunctionSelectors[4] = IPerpetualMint.claimPrize.selector;
 
-        perpetualMintFunctionSelectors[7] = IPerpetualMint
+        perpetualMintFunctionSelectors[5] = IPerpetualMint
             .fundConsolationFees
             .selector;
 
-        perpetualMintFunctionSelectors[8] = IPerpetualMint.redeem.selector;
+        perpetualMintFunctionSelectors[6] = IPerpetualMint.redeem.selector;
 
         ICore.FacetCut memory perpetualMintFacetCut = IDiamondWritableInternal
             .FacetCut({

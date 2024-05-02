@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import "forge-std/Script.sol";
+import "forge-safe/BatchScript.sol";
 
+import { IDiamondWritable } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritable.sol";
 import { IDiamondWritableInternal } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritableInternal.sol";
 import { IPausable } from "@solidstate/contracts/security/pausable/IPausable.sol";
 
@@ -12,10 +13,11 @@ import { IPerpetualMintViewBlast } from "../../../contracts/facets/PerpetualMint
 import { IPerpetualMintViewSupraBlast } from "../../../contracts/facets/PerpetualMint/Blast/Supra/IPerpetualMintView.sol";
 import { PerpetualMintViewSupraBlast } from "../../../contracts/facets/PerpetualMint/Blast/Supra/PerpetualMintView.sol";
 
-/// @title UpgradePerpetualMintViewSupraBlastEOA
-/// @dev Deploys a new PerpetualMintViewSupraBlast facet and signs and submits a diamondCut of the PerpetualMintViewSupraBlast facet
-/// to the CoreBlast diamond using an externally owned account
-contract UpgradePerpetualMintViewSupraBlastEOA is Script {
+/// @title UpgradeAndRemovePerpetualMintViewSupraBlast
+/// @dev Upgrades and removes certain functions from the PerpetualMintViewSupraBlast facet by deploying a new PerpetualMintViewSupraBlast
+/// facet and signing and submitting a diamondCut of the upgrade & removal PerpetualMintViewSupraBlast facets to the CoreBlast diamond
+/// via the Gnosis Safe Transaction Service API
+contract UpgradeAndRemovePerpetualMintViewSupraBlast is BatchScript {
     /// @dev runs the script logic
     function run() external {
         // read deployer private key
@@ -24,9 +26,15 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
         // get CoreBlast PerpetualMint diamond address
         address core = vm.envAddress("CORE_BLAST_ADDRESS");
 
+        // get Gnosis Safe (protocol owner) address
+        address gnosisSafeAddress = vm.envAddress("GNOSIS_SAFE");
+
         // get VRF Router address
         address VRF_ROUTER = vm.envAddress("VRF_ROUTER");
 
+        // we only explicitly broadcast facet deployments
+        // broadcasting of batch execution gnosis multi-sig transactions is done
+        // separately using the Gnosis Safe Transaction Service API
         vm.startBroadcast(deployerPrivateKey);
 
         // deploy PerpetualMintViewSupraBlast facet
@@ -34,17 +42,25 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
                 VRF_ROUTER
             );
 
-        console.log(
+        vm.stopBroadcast();
+
+        console2.log(
             "New PerpetualMintViewSupraBlast Facet Address: ",
             address(perpetualMintViewSupraBlast)
         );
-        console.log("CoreBlast Address: ", core);
-        console.log("VRF Router Address: ", VRF_ROUTER);
+        console2.log("CoreBlast Address: ", core);
+        console2.log("VRF Router Address: ", VRF_ROUTER);
 
         // get new PerpetualMintView + PerpetualMintViewSupraBlast facet cuts
         ICore.FacetCut[]
             memory newPerpetualMintViewFacetCuts = getNewPerpetualMintViewFacetCuts(
                 address(perpetualMintViewSupraBlast)
+            );
+
+        // get removal PerpetualMintView + PerpetualMintViewSupraBlast facet cuts
+        ICore.FacetCut[]
+            memory removalPerpetualMintViewFacetCuts = getRemovalPerpetualMintViewFacetCuts(
+                address(0) // removal target addresses are expected to be zero address
             );
 
         // get replacement PerpetualMintView + PerpetualMintViewSupraBlast facet cuts
@@ -53,21 +69,28 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
                 address(perpetualMintViewSupraBlast)
             );
 
-        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](5);
+        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](6);
 
         facetCuts[0] = newPerpetualMintViewFacetCuts[0];
-        facetCuts[1] = replacementPerpetualMintViewFacetCuts[0];
-        facetCuts[2] = replacementPerpetualMintViewFacetCuts[1];
-        facetCuts[3] = replacementPerpetualMintViewFacetCuts[2];
-        facetCuts[4] = replacementPerpetualMintViewFacetCuts[3];
+        facetCuts[1] = newPerpetualMintViewFacetCuts[1];
+        facetCuts[2] = removalPerpetualMintViewFacetCuts[0];
+        facetCuts[3] = replacementPerpetualMintViewFacetCuts[0];
+        facetCuts[4] = replacementPerpetualMintViewFacetCuts[1];
+        facetCuts[5] = replacementPerpetualMintViewFacetCuts[2];
 
-        // cut PerpetualMintView + PerpetualMintViewSupraBlast into Core
-        ICore(payable(core)).diamondCut(facetCuts, address(0), "");
+        bytes memory diamondCutTx = abi.encodeWithSelector(
+            IDiamondWritable.diamondCut.selector,
+            facetCuts,
+            address(0),
+            ""
+        );
 
-        vm.stopBroadcast();
+        addToBatch(core, diamondCutTx);
+
+        executeBatch(gnosisSafeAddress, true);
     }
 
-    /// @dev provides the new facet cuts for cutting PerpetualMintView & PerpetualMintViewSupraBlast facets into CoreBlast
+    /// @dev provides the replacement facet cuts for cutting PerpetualMintView facet into CoreBlast
     /// @param viewFacetAddress address of PerpetualMintView facet
     function getNewPerpetualMintViewFacetCuts(
         address viewFacetAddress
@@ -91,12 +114,58 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
                     selectors: perpetualMintViewFunctionSelectors
                 });
 
+        // map the PerpetualMintViewSupraBlast related function selectors to their respective interfaces
+        bytes4[]
+            memory perpetualMintViewSupraBlastFunctionSelectors = new bytes4[](
+                1
+            );
+
+        perpetualMintViewSupraBlastFunctionSelectors[
+            0
+        ] = IPerpetualMintViewSupraBlast.calculateMintResultSupraBlast.selector;
+
+        ICore.FacetCut
+            memory perpetualMintViewSupraBlastFacetCut = IDiamondWritableInternal
+                .FacetCut({
+                    target: viewFacetAddress,
+                    action: IDiamondWritableInternal.FacetCutAction.ADD,
+                    selectors: perpetualMintViewSupraBlastFunctionSelectors
+                });
+
+        facetCuts = new ICore.FacetCut[](2);
+
+        facetCuts[0] = perpetualMintViewFacetCut;
+        facetCuts[1] = perpetualMintViewSupraBlastFacetCut;
+    }
+
+    /// @dev provides the removal facet cuts for removing PerpetualMintView facet functions from CoreBlast
+    /// @param facetAddress target address to remove
+    function getRemovalPerpetualMintViewFacetCuts(
+        address facetAddress
+    ) internal pure returns (ICore.FacetCut[] memory facetCuts) {
+        // map the PerpetualMintView related function selectors to their respective interfaces
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](1);
+
+        perpetualMintViewFunctionSelectors[0] = bytes4(
+            keccak256(
+                "calculateMintResultSupraBlast(address,uint8,uint256[2],uint256)"
+            )
+        );
+
+        ICore.FacetCut
+            memory perpetualMintViewFacetCut = IDiamondWritableInternal
+                .FacetCut({
+                    target: facetAddress,
+                    action: IDiamondWritableInternal.FacetCutAction.REMOVE,
+                    selectors: perpetualMintViewFunctionSelectors
+                });
+
         facetCuts = new ICore.FacetCut[](1);
 
         facetCuts[0] = perpetualMintViewFacetCut;
     }
 
-    /// @dev provides the replacement facet cuts for cutting PerpetualMintView facet into CoreBlast
+    /// @dev provides the replacement facet cuts for cutting PerpetualMintView facet into Core
     /// @param viewFacetAddress address of PerpetualMintView facet
     function getReplacementPerpetualMintViewFacetCuts(
         address viewFacetAddress
@@ -114,7 +183,7 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
             });
 
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](27);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](25);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -177,60 +246,52 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
             .selector;
 
         perpetualMintViewFunctionSelectors[15] = IPerpetualMintView
-            .mintEarningsBufferBP
-            .selector;
-
-        perpetualMintViewFunctionSelectors[16] = IPerpetualMintView
             .mintFeeBP
             .selector;
 
-        perpetualMintViewFunctionSelectors[17] = IPerpetualMintView
-            .mintForEthConsolationFeeBP
-            .selector;
-
-        perpetualMintViewFunctionSelectors[18] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[16] = IPerpetualMintView
             .mintToken
             .selector;
 
-        perpetualMintViewFunctionSelectors[19] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[17] = IPerpetualMintView
             .mintTokenConsolationFeeBP
             .selector;
 
-        perpetualMintViewFunctionSelectors[20] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[18] = IPerpetualMintView
             .mintTokenTiers
             .selector;
 
-        perpetualMintViewFunctionSelectors[21] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[19] = IPerpetualMintView
             .redemptionFeeBP
             .selector;
 
-        perpetualMintViewFunctionSelectors[22] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[20] = IPerpetualMintView
             .redeemPaused
             .selector;
 
-        perpetualMintViewFunctionSelectors[23] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[21] = IPerpetualMintView
             .SCALE
             .selector;
 
-        perpetualMintViewFunctionSelectors[24] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[22] = IPerpetualMintView
             .tiers
             .selector;
 
-        perpetualMintViewFunctionSelectors[25] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[23] = IPerpetualMintView
             .vrfConfig
             .selector;
 
-        perpetualMintViewFunctionSelectors[26] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[24] = IPerpetualMintView
             .vrfSubscriptionBalanceThreshold
             .selector;
 
-        ICore.FacetCut memory perpetualMintViewFacetCut;
-
-        perpetualMintViewFacetCut = IDiamondWritableInternal.FacetCut({
-            target: viewFacetAddress,
-            action: IDiamondWritableInternal.FacetCutAction.REPLACE,
-            selectors: perpetualMintViewFunctionSelectors
-        });
+        ICore.FacetCut
+            memory perpetualMintViewFacetCut = IDiamondWritableInternal
+                .FacetCut({
+                    target: viewFacetAddress,
+                    action: IDiamondWritableInternal.FacetCutAction.REPLACE,
+                    selectors: perpetualMintViewFunctionSelectors
+                });
 
         // map the PerpetualMintViewBlast related function selectors to their respective interfaces
         bytes4[] memory perpetualMintViewBlastFunctionSelectors = new bytes4[](
@@ -253,29 +314,10 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
                     selectors: perpetualMintViewBlastFunctionSelectors
                 });
 
-        // map the PerpetualMintViewSupraBlast related function selectors to their respective interfaces
-        bytes4[]
-            memory perpetualMintViewSupraBlastFunctionSelectors = new bytes4[](
-                1
-            );
-
-        perpetualMintViewSupraBlastFunctionSelectors[
-            0
-        ] = IPerpetualMintViewSupraBlast.calculateMintResultSupraBlast.selector;
-
-        ICore.FacetCut
-            memory perpetualMintViewSupraBlastFacetCut = IDiamondWritableInternal
-                .FacetCut({
-                    target: viewFacetAddress,
-                    action: IDiamondWritableInternal.FacetCutAction.REPLACE,
-                    selectors: perpetualMintViewSupraBlastFunctionSelectors
-                });
-
-        facetCuts = new ICore.FacetCut[](4);
+        facetCuts = new ICore.FacetCut[](3);
 
         facetCuts[0] = pausableFacetCut;
         facetCuts[1] = perpetualMintViewFacetCut;
         facetCuts[2] = perpetualMintViewBlastFacetCut;
-        facetCuts[3] = perpetualMintViewSupraBlastFacetCut;
     }
 }

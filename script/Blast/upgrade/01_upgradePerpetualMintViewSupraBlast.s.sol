@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import "forge-std/Script.sol";
+import "forge-safe/BatchScript.sol";
 
+import { IDiamondWritable } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritable.sol";
 import { IDiamondWritableInternal } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritableInternal.sol";
 import { IPausable } from "@solidstate/contracts/security/pausable/IPausable.sol";
 
@@ -12,10 +13,10 @@ import { IPerpetualMintViewBlast } from "../../../contracts/facets/PerpetualMint
 import { IPerpetualMintViewSupraBlast } from "../../../contracts/facets/PerpetualMint/Blast/Supra/IPerpetualMintView.sol";
 import { PerpetualMintViewSupraBlast } from "../../../contracts/facets/PerpetualMint/Blast/Supra/PerpetualMintView.sol";
 
-/// @title UpgradePerpetualMintViewSupraBlastEOA
+/// @title UpgradePerpetualMintViewSupraBlast
 /// @dev Deploys a new PerpetualMintViewSupraBlast facet and signs and submits a diamondCut of the PerpetualMintViewSupraBlast facet
-/// to the CoreBlast diamond using an externally owned account
-contract UpgradePerpetualMintViewSupraBlastEOA is Script {
+/// to the CoreBlast diamond via the Gnosis Safe Transaction Service API
+contract UpgradePerpetualMintViewSupraBlast is BatchScript {
     /// @dev runs the script logic
     function run() external {
         // read deployer private key
@@ -24,9 +25,15 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
         // get CoreBlast PerpetualMint diamond address
         address core = vm.envAddress("CORE_BLAST_ADDRESS");
 
+        // get Gnosis Safe (protocol owner) address
+        address gnosisSafeAddress = vm.envAddress("GNOSIS_SAFE");
+
         // get VRF Router address
         address VRF_ROUTER = vm.envAddress("VRF_ROUTER");
 
+        // we only explicitly broadcast facet deployments
+        // broadcasting of batch execution gnosis multi-sig transactions is done
+        // separately using the Gnosis Safe Transaction Service API
         vm.startBroadcast(deployerPrivateKey);
 
         // deploy PerpetualMintViewSupraBlast facet
@@ -34,12 +41,14 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
                 VRF_ROUTER
             );
 
-        console.log(
+        vm.stopBroadcast();
+
+        console2.log(
             "New PerpetualMintViewSupraBlast Facet Address: ",
             address(perpetualMintViewSupraBlast)
         );
-        console.log("CoreBlast Address: ", core);
-        console.log("VRF Router Address: ", VRF_ROUTER);
+        console2.log("CoreBlast Address: ", core);
+        console2.log("VRF Router Address: ", VRF_ROUTER);
 
         // get new PerpetualMintView + PerpetualMintViewSupraBlast facet cuts
         ICore.FacetCut[]
@@ -61,10 +70,16 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
         facetCuts[3] = replacementPerpetualMintViewFacetCuts[2];
         facetCuts[4] = replacementPerpetualMintViewFacetCuts[3];
 
-        // cut PerpetualMintView + PerpetualMintViewSupraBlast into Core
-        ICore(payable(core)).diamondCut(facetCuts, address(0), "");
+        bytes memory diamondCutTx = abi.encodeWithSelector(
+            IDiamondWritable.diamondCut.selector,
+            facetCuts,
+            address(0),
+            ""
+        );
 
-        vm.stopBroadcast();
+        addToBatch(core, diamondCutTx);
+
+        executeBatch(gnosisSafeAddress, true);
     }
 
     /// @dev provides the new facet cuts for cutting PerpetualMintView & PerpetualMintViewSupraBlast facets into CoreBlast
@@ -114,7 +129,7 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
             });
 
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](27);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](25);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -177,60 +192,52 @@ contract UpgradePerpetualMintViewSupraBlastEOA is Script {
             .selector;
 
         perpetualMintViewFunctionSelectors[15] = IPerpetualMintView
-            .mintEarningsBufferBP
-            .selector;
-
-        perpetualMintViewFunctionSelectors[16] = IPerpetualMintView
             .mintFeeBP
             .selector;
 
-        perpetualMintViewFunctionSelectors[17] = IPerpetualMintView
-            .mintForEthConsolationFeeBP
-            .selector;
-
-        perpetualMintViewFunctionSelectors[18] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[16] = IPerpetualMintView
             .mintToken
             .selector;
 
-        perpetualMintViewFunctionSelectors[19] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[17] = IPerpetualMintView
             .mintTokenConsolationFeeBP
             .selector;
 
-        perpetualMintViewFunctionSelectors[20] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[18] = IPerpetualMintView
             .mintTokenTiers
             .selector;
 
-        perpetualMintViewFunctionSelectors[21] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[19] = IPerpetualMintView
             .redemptionFeeBP
             .selector;
 
-        perpetualMintViewFunctionSelectors[22] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[20] = IPerpetualMintView
             .redeemPaused
             .selector;
 
-        perpetualMintViewFunctionSelectors[23] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[21] = IPerpetualMintView
             .SCALE
             .selector;
 
-        perpetualMintViewFunctionSelectors[24] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[22] = IPerpetualMintView
             .tiers
             .selector;
 
-        perpetualMintViewFunctionSelectors[25] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[23] = IPerpetualMintView
             .vrfConfig
             .selector;
 
-        perpetualMintViewFunctionSelectors[26] = IPerpetualMintView
+        perpetualMintViewFunctionSelectors[24] = IPerpetualMintView
             .vrfSubscriptionBalanceThreshold
             .selector;
 
-        ICore.FacetCut memory perpetualMintViewFacetCut;
-
-        perpetualMintViewFacetCut = IDiamondWritableInternal.FacetCut({
-            target: viewFacetAddress,
-            action: IDiamondWritableInternal.FacetCutAction.REPLACE,
-            selectors: perpetualMintViewFunctionSelectors
-        });
+        ICore.FacetCut
+            memory perpetualMintViewFacetCut = IDiamondWritableInternal
+                .FacetCut({
+                    target: viewFacetAddress,
+                    action: IDiamondWritableInternal.FacetCutAction.REPLACE,
+                    selectors: perpetualMintViewFunctionSelectors
+                });
 
         // map the PerpetualMintViewBlast related function selectors to their respective interfaces
         bytes4[] memory perpetualMintViewBlastFunctionSelectors = new bytes4[](
