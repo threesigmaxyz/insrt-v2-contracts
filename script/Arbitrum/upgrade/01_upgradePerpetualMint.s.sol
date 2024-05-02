@@ -80,7 +80,7 @@ contract UpgradePerpetualMintArb is BatchScript {
     /// @param facetAddress address of PerpetualMint facet
     function getNewPerpetualMintFacetCuts(
         address facetAddress
-    ) internal pure returns (ICore.FacetCut[] memory) {
+    ) internal pure returns (ICore.FacetCut[] memory facetCuts) {
         // map the PerpetualMint related function selectors to their respective interfaces
         bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](2);
 
@@ -99,18 +99,16 @@ contract UpgradePerpetualMintArb is BatchScript {
                 selectors: perpetualMintFunctionSelectors
             });
 
-        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](1);
+        facetCuts = new ICore.FacetCut[](1);
 
         facetCuts[0] = perpetualMintFacetCut;
-
-        return facetCuts;
     }
 
     /// @dev provides the replacement facet cuts for cutting PerpetualMint facet into Core
     /// @param facetAddress address of PerpetualMint facet
     function getReplacementPerpetualMintFacetCuts(
         address facetAddress
-    ) internal pure returns (ICore.FacetCut[] memory) {
+    ) internal pure returns (ICore.FacetCut[] memory facetCuts) {
         // map the PerpetualMint related function selectors to their respective interfaces
         bytes4[] memory perpetualMintFunctionSelectors = new bytes4[](7);
 
@@ -160,12 +158,10 @@ contract UpgradePerpetualMintArb is BatchScript {
                     selectors: vrfConsumerBaseV2FunctionSelectors
                 });
 
-        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](2);
+        facetCuts = new ICore.FacetCut[](2);
 
         // omit Ownable since SolidStateDiamond includes those
         facetCuts[0] = perpetualMintFacetCut;
         facetCuts[1] = vrfConsumerBaseV2FacetCut;
-
-        return facetCuts;
     }
 }

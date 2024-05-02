@@ -3,10 +3,11 @@ pragma solidity 0.8.19;
 
 import "forge-safe/BatchScript.sol";
 
-import { ISolidStateDiamond } from "@solidstate/contracts/proxy/diamond/ISolidStateDiamond.sol";
 import { IDiamondWritable } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritable.sol";
 import { IDiamondWritableInternal } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritableInternal.sol";
+import { IPausable } from "@solidstate/contracts/security/pausable/IPausable.sol";
 
+import { ICore } from "../../../contracts/diamonds/Core/ICore.sol";
 import { IPerpetualMintView } from "../../../contracts/facets/PerpetualMint/IPerpetualMintView.sol";
 import { PerpetualMintView } from "../../../contracts/facets/PerpetualMint/PerpetualMintView.sol";
 
@@ -48,29 +49,29 @@ contract UpgradeAndRemovePerpetualMintViewArb is BatchScript {
         console2.log("VRF Coordinator Address: ", VRF_COORDINATOR);
 
         // get new PerpetualMintView facet cuts
-        ISolidStateDiamond.FacetCut[]
+        ICore.FacetCut[]
             memory newPerpetualMintViewFacetCuts = getNewPerpetualMintViewFacetCuts(
                 address(perpetualMintView)
             );
 
         // get removal PerpetualMintView facet cuts
-        ISolidStateDiamond.FacetCut[]
+        ICore.FacetCut[]
             memory removalPerpetualMintViewFacetCuts = getRemovalPerpetualMintViewFacetCuts(
                 address(0) // removal target addresses are expected to be zero address
             );
 
         // get replacement PerpetualMintView facet cuts
-        ISolidStateDiamond.FacetCut[]
+        ICore.FacetCut[]
             memory replacementPerpetualMintViewFacetCuts = getReplacementPerpetualMintViewFacetCuts(
                 address(perpetualMintView)
             );
 
-        ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](3);
+        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](4);
 
         facetCuts[0] = newPerpetualMintViewFacetCuts[0];
         facetCuts[1] = removalPerpetualMintViewFacetCuts[0];
         facetCuts[2] = replacementPerpetualMintViewFacetCuts[0];
+        facetCuts[3] = replacementPerpetualMintViewFacetCuts[1];
 
         bytes memory diamondCutTx = abi.encodeWithSelector(
             IDiamondWritable.diamondCut.selector,
@@ -88,19 +89,23 @@ contract UpgradeAndRemovePerpetualMintViewArb is BatchScript {
     /// @param viewFacetAddress address of PerpetualMintView facet
     function getNewPerpetualMintViewFacetCuts(
         address viewFacetAddress
-    ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
+    ) internal pure returns (ICore.FacetCut[] memory facetCuts) {
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](2);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](3);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .calculateMintResult
             .selector;
 
         perpetualMintViewFunctionSelectors[1] = IPerpetualMintView
-            .SCALE
+            .mintEarningsBufferBP
             .selector;
 
-        ISolidStateDiamond.FacetCut
+        perpetualMintViewFunctionSelectors[2] = IPerpetualMintView
+            .mintForEthConsolationFeeBP
+            .selector;
+
+        ICore.FacetCut
             memory perpetualMintViewFacetCut = IDiamondWritableInternal
                 .FacetCut({
                     target: viewFacetAddress,
@@ -108,27 +113,24 @@ contract UpgradeAndRemovePerpetualMintViewArb is BatchScript {
                     selectors: perpetualMintViewFunctionSelectors
                 });
 
-        ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](1);
+        facetCuts = new ICore.FacetCut[](1);
 
         facetCuts[0] = perpetualMintViewFacetCut;
-
-        return facetCuts;
     }
 
     /// @dev provides the removal facet cuts for removing PerpetualMintView facet functions from Core
     /// @param facetAddress target address to remove
     function getRemovalPerpetualMintViewFacetCuts(
         address facetAddress
-    ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
+    ) internal pure returns (ICore.FacetCut[] memory facetCuts) {
         // map the PerpetualMintView related function selectors to their respective interfaces
         bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](1);
 
         perpetualMintViewFunctionSelectors[0] = bytes4(
-            keccak256("calculateMintResult(address,uint32,uint256)")
+            keccak256("calculateMintResult(address,uint32,uint256,uint256)")
         );
 
-        ISolidStateDiamond.FacetCut
+        ICore.FacetCut
             memory perpetualMintViewFacetCut = IDiamondWritableInternal
                 .FacetCut({
                     target: facetAddress,
@@ -136,21 +138,30 @@ contract UpgradeAndRemovePerpetualMintViewArb is BatchScript {
                     selectors: perpetualMintViewFunctionSelectors
                 });
 
-        ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](1);
+        facetCuts = new ICore.FacetCut[](1);
 
         facetCuts[0] = perpetualMintViewFacetCut;
-
-        return facetCuts;
     }
 
     /// @dev provides the replacement facet cuts for cutting PerpetualMintView facet into Core
     /// @param viewFacetAddress address of PerpetualMintView facet
     function getReplacementPerpetualMintViewFacetCuts(
         address viewFacetAddress
-    ) internal pure returns (ISolidStateDiamond.FacetCut[] memory) {
+    ) internal pure returns (ICore.FacetCut[] memory facetCuts) {
+        // map the Pausable function selectors to their respective interfaces
+        bytes4[] memory pausableFunctionSelectors = new bytes4[](1);
+
+        pausableFunctionSelectors[0] = IPausable.paused.selector;
+
+        ICore.FacetCut memory pausableFacetCut = IDiamondWritableInternal
+            .FacetCut({
+                target: viewFacetAddress,
+                action: IDiamondWritableInternal.FacetCutAction.REPLACE,
+                selectors: pausableFunctionSelectors
+            });
+
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](24);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](25);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -237,18 +248,22 @@ contract UpgradeAndRemovePerpetualMintViewArb is BatchScript {
             .selector;
 
         perpetualMintViewFunctionSelectors[21] = IPerpetualMintView
-            .tiers
+            .SCALE
             .selector;
 
         perpetualMintViewFunctionSelectors[22] = IPerpetualMintView
-            .vrfConfig
+            .tiers
             .selector;
 
         perpetualMintViewFunctionSelectors[23] = IPerpetualMintView
+            .vrfConfig
+            .selector;
+
+        perpetualMintViewFunctionSelectors[24] = IPerpetualMintView
             .vrfSubscriptionBalanceThreshold
             .selector;
 
-        ISolidStateDiamond.FacetCut
+        ICore.FacetCut
             memory perpetualMintViewFacetCut = IDiamondWritableInternal
                 .FacetCut({
                     target: viewFacetAddress,
@@ -256,11 +271,9 @@ contract UpgradeAndRemovePerpetualMintViewArb is BatchScript {
                     selectors: perpetualMintViewFunctionSelectors
                 });
 
-        ISolidStateDiamond.FacetCut[]
-            memory facetCuts = new ISolidStateDiamond.FacetCut[](1);
+        facetCuts = new ICore.FacetCut[](2);
 
-        facetCuts[0] = perpetualMintViewFacetCut;
-
-        return facetCuts;
+        facetCuts[0] = pausableFacetCut;
+        facetCuts[1] = perpetualMintViewFacetCut;
     }
 }
