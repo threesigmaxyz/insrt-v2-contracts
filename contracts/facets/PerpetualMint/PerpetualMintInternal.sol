@@ -1320,46 +1320,11 @@ abstract contract PerpetualMintInternal is
 
         uint32 numberOfWords = numberOfMints * (mintForMint ? 1 : 2);
 
-        CalculateMintResult_SharedData memory calculateMintResultSharedData;
-
-        {
-            Storage.Layout storage l = Storage.layout();
-
-            calculateMintResultSharedData.mintFeeBP = l.mintFeeBP;
-
-            calculateMintResultSharedData.mintForEthConsolationFeeBP = l
-                .mintForEthConsolationFeeBP;
-
-            calculateMintResultSharedData.ethToMintRatio = _ethToMintRatio(l);
-
-            calculateMintResultSharedData.mintTokenTiers = l.mintTokenTiers;
-
-            calculateMintResultSharedData.tiers = l.tiers;
-
-            CollectionData storage collectionData = l.collections[collection];
-
-            calculateMintResultSharedData
-                .collectionMintFeeDistributionRatioBP = collectionData
-                .mintFeeDistributionRatioBP;
-
-            calculateMintResultSharedData
-                .collectionMintMultiplier = _collectionMintMultiplier(
-                collectionData
-            );
-
-            calculateMintResultSharedData
-                .collectionMintPrice = _collectionMintPrice(collectionData);
-
-            calculateMintResultSharedData.collectionRisk = _collectionRisk(
-                collectionData
-            );
-
-            calculateMintResultSharedData
-                .mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
-                collectionData,
+        CalculateMintResult_SharedData
+            memory calculateMintResultSharedData = _calculateMintResult_getCalculateMintResultSharedData(
+                collection,
                 pricePerMint
             );
-        }
 
         uint256[] memory randomWords = new uint256[](numberOfWords);
 
@@ -1376,6 +1341,54 @@ abstract contract PerpetualMintInternal is
             prizeValueInWei,
             mintForEth,
             mintForMint
+        );
+    }
+
+    function _calculateMintResult_getCalculateMintResultSharedData(
+        address collection,
+        uint256 pricePerMint
+    )
+        private
+        view
+        returns (
+            CalculateMintResult_SharedData memory calculateMintResultSharedData
+        )
+    {
+        Storage.Layout storage l = Storage.layout();
+
+        calculateMintResultSharedData.mintFeeBP = l.mintFeeBP;
+
+        calculateMintResultSharedData.mintForEthConsolationFeeBP = l
+            .mintForEthConsolationFeeBP;
+
+        calculateMintResultSharedData.ethToMintRatio = _ethToMintRatio(l);
+
+        calculateMintResultSharedData.mintTokenTiers = l.mintTokenTiers;
+
+        calculateMintResultSharedData.tiers = l.tiers;
+
+        CollectionData storage collectionData = l.collections[collection];
+
+        calculateMintResultSharedData
+            .collectionMintFeeDistributionRatioBP = collectionData
+            .mintFeeDistributionRatioBP;
+
+        calculateMintResultSharedData
+            .collectionMintMultiplier = _collectionMintMultiplier(
+            collectionData
+        );
+
+        calculateMintResultSharedData
+            .collectionMintPrice = _collectionMintPrice(collectionData);
+
+        calculateMintResultSharedData.collectionRisk = _collectionRisk(
+            collectionData
+        );
+
+        calculateMintResultSharedData
+            .mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
+            collectionData,
+            pricePerMint
         );
     }
 
@@ -1426,46 +1439,11 @@ abstract contract PerpetualMintInternal is
 
         uint8 numberOfWords = numberOfMints * (mintForMint ? 2 : 3);
 
-        CalculateMintResult_SharedData memory calculateMintResultSharedData;
-
-        {
-            Storage.Layout storage l = Storage.layout();
-
-            calculateMintResultSharedData.mintFeeBP = l.mintFeeBP;
-
-            calculateMintResultSharedData.mintForEthConsolationFeeBP = l
-                .mintForEthConsolationFeeBP;
-
-            calculateMintResultSharedData.ethToMintRatio = _ethToMintRatio(l);
-
-            calculateMintResultSharedData.mintTokenTiers = l.mintTokenTiers;
-
-            calculateMintResultSharedData.tiers = l.tiers;
-
-            CollectionData storage collectionData = l.collections[collection];
-
-            calculateMintResultSharedData
-                .collectionMintFeeDistributionRatioBP = collectionData
-                .mintFeeDistributionRatioBP;
-
-            calculateMintResultSharedData
-                .collectionMintMultiplier = _collectionMintMultiplier(
-                collectionData
-            );
-
-            calculateMintResultSharedData
-                .collectionMintPrice = _collectionMintPrice(collectionData);
-
-            calculateMintResultSharedData.collectionRisk = _collectionRisk(
-                collectionData
-            );
-
-            calculateMintResultSharedData
-                .mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
-                collectionData,
+        CalculateMintResult_SharedData
+            memory calculateMintResultSharedData = _calculateMintResult_getCalculateMintResultSharedData(
+                collection,
                 pricePerMint
             );
-        }
 
         uint256[] memory randomWords = new uint256[](numberOfWords);
 
@@ -1534,46 +1512,11 @@ abstract contract PerpetualMintInternal is
 
         uint8 numberOfWords = numberOfMints * (mintForMint ? 1 : 2);
 
-        CalculateMintResult_SharedData memory calculateMintResultSharedData;
-
-        {
-            Storage.Layout storage l = Storage.layout();
-
-            calculateMintResultSharedData.mintFeeBP = l.mintFeeBP;
-
-            calculateMintResultSharedData.mintForEthConsolationFeeBP = l
-                .mintForEthConsolationFeeBP;
-
-            calculateMintResultSharedData.ethToMintRatio = _ethToMintRatio(l);
-
-            calculateMintResultSharedData.mintTokenTiers = l.mintTokenTiers;
-
-            calculateMintResultSharedData.tiers = l.tiers;
-
-            CollectionData storage collectionData = l.collections[collection];
-
-            calculateMintResultSharedData
-                .collectionMintFeeDistributionRatioBP = collectionData
-                .mintFeeDistributionRatioBP;
-
-            calculateMintResultSharedData
-                .collectionMintMultiplier = _collectionMintMultiplier(
-                collectionData
-            );
-
-            calculateMintResultSharedData
-                .collectionMintPrice = _collectionMintPrice(collectionData);
-
-            calculateMintResultSharedData.collectionRisk = _collectionRisk(
-                collectionData
-            );
-
-            calculateMintResultSharedData
-                .mintPriceAdjustmentFactor = _attemptBatchMint_calculateMintPriceAdjustmentFactor(
-                collectionData,
+        CalculateMintResult_SharedData
+            memory calculateMintResultSharedData = _calculateMintResult_getCalculateMintResultSharedData(
+                collection,
                 pricePerMint
             );
-        }
 
         uint256[] memory randomWords = new uint256[](numberOfWords);
 

@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "forge-std/Script.sol";
 
 import { IDiamondWritableInternal } from "@solidstate/contracts/proxy/diamond/writable/IDiamondWritableInternal.sol";
+import { IPausable } from "@solidstate/contracts/security/pausable/IPausable.sol";
 
 import { ICore } from "../../../contracts/diamonds/Core/ICore.sol";
 import { IPerpetualMintView } from "../../../contracts/facets/PerpetualMint/IPerpetualMintView.sol";
@@ -54,6 +55,7 @@ contract UpgradePerpetualMintViewArbEOA is Script {
 
         facetCuts[0] = newPerpetualMintViewFacetCuts[0];
         facetCuts[1] = replacementPerpetualMintViewFacetCuts[0];
+        facetCuts[2] = replacementPerpetualMintViewFacetCuts[1];
 
         // cut PerpetualMintView into Core
         ICore(payable(core)).diamondCut(facetCuts, address(0), "");
@@ -96,9 +98,21 @@ contract UpgradePerpetualMintViewArbEOA is Script {
     /// @param viewFacetAddress address of PerpetualMintView facet
     function getReplacementPerpetualMintViewFacetCuts(
         address viewFacetAddress
-    ) internal pure returns (ICore.FacetCut[] memory) {
+    ) internal pure returns (ICore.FacetCut[] memory facetCuts) {
+        // map the Pausable function selectors to their respective interfaces
+        bytes4[] memory pausableFunctionSelectors = new bytes4[](1);
+
+        pausableFunctionSelectors[0] = IPausable.paused.selector;
+
+        ICore.FacetCut memory pausableFacetCut = IDiamondWritableInternal
+            .FacetCut({
+                target: viewFacetAddress,
+                action: IDiamondWritableInternal.FacetCutAction.REPLACE,
+                selectors: pausableFunctionSelectors
+            });
+
         // map the PerpetualMintView related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](26);
+        bytes4[] memory perpetualMintViewFunctionSelectors = new bytes4[](28);
 
         perpetualMintViewFunctionSelectors[0] = IPerpetualMintView
             .accruedConsolationFees
@@ -165,42 +179,50 @@ contract UpgradePerpetualMintViewArbEOA is Script {
             .selector;
 
         perpetualMintViewFunctionSelectors[16] = IPerpetualMintView
-            .mintFeeBP
+            .mintEarningsBufferBP
             .selector;
 
         perpetualMintViewFunctionSelectors[17] = IPerpetualMintView
-            .mintToken
+            .mintFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[18] = IPerpetualMintView
-            .mintTokenConsolationFeeBP
+            .mintForEthConsolationFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[19] = IPerpetualMintView
-            .mintTokenTiers
+            .mintToken
             .selector;
 
         perpetualMintViewFunctionSelectors[20] = IPerpetualMintView
-            .redemptionFeeBP
+            .mintTokenConsolationFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[21] = IPerpetualMintView
-            .redeemPaused
+            .mintTokenTiers
             .selector;
 
         perpetualMintViewFunctionSelectors[22] = IPerpetualMintView
-            .SCALE
+            .redemptionFeeBP
             .selector;
 
         perpetualMintViewFunctionSelectors[23] = IPerpetualMintView
-            .tiers
+            .redeemPaused
             .selector;
 
         perpetualMintViewFunctionSelectors[24] = IPerpetualMintView
-            .vrfConfig
+            .SCALE
             .selector;
 
         perpetualMintViewFunctionSelectors[25] = IPerpetualMintView
+            .tiers
+            .selector;
+
+        perpetualMintViewFunctionSelectors[26] = IPerpetualMintView
+            .vrfConfig
+            .selector;
+
+        perpetualMintViewFunctionSelectors[27] = IPerpetualMintView
             .vrfSubscriptionBalanceThreshold
             .selector;
 
@@ -212,10 +234,9 @@ contract UpgradePerpetualMintViewArbEOA is Script {
                     selectors: perpetualMintViewFunctionSelectors
                 });
 
-        ICore.FacetCut[] memory facetCuts = new ICore.FacetCut[](1);
+        facetCuts = new ICore.FacetCut[](2);
 
-        facetCuts[0] = perpetualMintViewFacetCut;
-
-        return facetCuts;
+        facetCuts[0] = pausableFacetCut;
+        facetCuts[1] = perpetualMintViewFacetCut;
     }
 }
