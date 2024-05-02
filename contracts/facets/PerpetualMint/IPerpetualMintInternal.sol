@@ -22,7 +22,7 @@ interface IPerpetualMintInternal {
     /// for now, this is only thrown when attempting to address(0) when minting for a collection
     error InvalidCollectionAddress();
 
-    /// @notice thrown when attempting to mint 0 tokens
+    /// @notice thrown when attempting to mint an invalid number of tokens (0 or over a certain limit)
     error InvalidNumberOfMints();
 
     /// @notice thrown when the specified price per mint in $MINT is not a whole number

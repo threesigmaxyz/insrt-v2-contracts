@@ -22,6 +22,11 @@ contract PerpetualMintSupra is PerpetualMint {
         uint32 numberOfMints,
         uint256 ethPrizeValueInWei
     ) external payable virtual override whenNotPaused {
+        // Validate that the number of mints is within the uint8 range
+        if (numberOfMints > type(uint8).max) {
+            revert InvalidNumberOfMints();
+        }
+
         _attemptBatchMintForEthWithEthSupra(
             msg.sender,
             referrer,
@@ -38,6 +43,11 @@ contract PerpetualMintSupra is PerpetualMint {
         uint32 numberOfMints,
         uint256 ethPrizeValueInWei
     ) external virtual override whenNotPaused {
+        // Validate that the number of mints is within the uint8 range
+        if (numberOfMints > type(uint8).max) {
+            revert InvalidNumberOfMints();
+        }
+
         _attemptBatchMintForEthWithMintSupra(
             msg.sender,
             referrer,
@@ -53,6 +63,11 @@ contract PerpetualMintSupra is PerpetualMint {
         address referrer,
         uint32 numberOfMints
     ) external payable virtual override whenNotPaused {
+        // Validate that the number of mints is within the uint8 range
+        if (numberOfMints > type(uint8).max) {
+            revert InvalidNumberOfMints();
+        }
+
         _attemptBatchMintForMintWithEthSupra(
             msg.sender,
             referrer,
@@ -67,6 +82,11 @@ contract PerpetualMintSupra is PerpetualMint {
         uint256 pricePerMint,
         uint32 numberOfMints
     ) external virtual override whenNotPaused {
+        // Validate that the number of mints is within the uint8 range
+        if (numberOfMints > type(uint8).max) {
+            revert InvalidNumberOfMints();
+        }
+
         _attemptBatchMintForMintWithMintSupra(
             msg.sender,
             referrer,
@@ -82,6 +102,11 @@ contract PerpetualMintSupra is PerpetualMint {
         address referrer,
         uint32 numberOfMints
     ) external payable virtual override whenNotPaused {
+        // Validate that the number of mints is within the uint8 range
+        if (numberOfMints > type(uint8).max) {
+            revert InvalidNumberOfMints();
+        }
+
         _attemptBatchMintWithEthSupra(
             msg.sender,
             collection,
@@ -98,6 +123,11 @@ contract PerpetualMintSupra is PerpetualMint {
         uint256 pricePerMint,
         uint32 numberOfMints
     ) external virtual override whenNotPaused {
+        // Validate that the number of mints is within the uint8 range
+        if (numberOfMints > type(uint8).max) {
+            revert InvalidNumberOfMints();
+        }
+
         _attemptBatchMintWithMintSupra(
             msg.sender,
             collection,
