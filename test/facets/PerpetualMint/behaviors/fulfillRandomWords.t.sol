@@ -162,7 +162,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             MINT_FOR_COLLECTION_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_COLLECTION_PRIZE_VALUE
         );
@@ -240,7 +240,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             ETH_COLLECTION_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_ETH_PRIZE_VALUE
         );
@@ -323,7 +323,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             ETH_COLLECTION_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_COLLECTION_PRIZE_VALUE
         );
@@ -401,7 +401,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             MINT_FOR_MINT_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_MINT_PRIZE_VALUE
         );
@@ -482,7 +482,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             MINT_FOR_COLLECTION_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_COLLECTION_PRIZE_VALUE
         );
@@ -564,7 +564,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             MINT_FOR_MINT_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_MINT_PRIZE_VALUE
         );
@@ -661,7 +661,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             MINT_FOR_COLLECTION_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_COLLECTION_PRIZE_VALUE
         );
@@ -754,7 +754,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             ETH_COLLECTION_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_ETH_PRIZE_VALUE
         );
@@ -853,7 +853,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             MINT_FOR_COLLECTION_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_COLLECTION_PRIZE_VALUE
         );
@@ -942,7 +942,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             MINT_FOR_MINT_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_MINT_PRIZE_VALUE
         );
@@ -1041,7 +1041,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             MINT_FOR_COLLECTION_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_COLLECTION_PRIZE_VALUE
         );
@@ -1138,7 +1138,7 @@ contract PerpetualMint_fulfillRandomWords is
             mockMintRequestId,
             minter,
             MINT_FOR_MINT_ADDRESS,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_MINT_PRIZE_VALUE
         );

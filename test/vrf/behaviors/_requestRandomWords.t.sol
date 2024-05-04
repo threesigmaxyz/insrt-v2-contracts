@@ -67,7 +67,7 @@ contract PerpetualMint_requestRandomWords_InsrtVRFCoordinator is
         perpetualMint.exposed_requestRandomWords(
             minter,
             COLLECTION,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_COLLECTION_PRIZE_VALUE,
             TEST_NUM_WORDS
@@ -82,7 +82,7 @@ contract PerpetualMint_requestRandomWords_InsrtVRFCoordinator is
         perpetualMint.exposed_requestRandomWords(
             minter,
             COLLECTION,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_COLLECTION_PRIZE_VALUE,
             TEST_NUM_WORDS
@@ -97,7 +97,7 @@ contract PerpetualMint_requestRandomWords_InsrtVRFCoordinator is
         (
             address requestMinter,
             address requestCollection,
-            uint256 mintEarningsFee,
+            uint256 mintEarningsFeePerSpin,
             uint256 mintPriceAdjustmentFactor,
             uint256 prizeValueInWei
         ) = perpetualMint.exposed_requests(requestId);
@@ -106,7 +106,7 @@ contract PerpetualMint_requestRandomWords_InsrtVRFCoordinator is
 
         assert(requestMinter == minter);
 
-        assert(mintEarningsFee == TEST_MINT_EARNINGS_FEE);
+        assert(mintEarningsFeePerSpin == TEST_MINT_EARNINGS_FEE_PER_SPIN);
 
         assert(mintPriceAdjustmentFactor == TEST_ADJUSTMENT_FACTOR);
 
@@ -136,7 +136,7 @@ contract PerpetualMint_requestRandomWords_InsrtVRFCoordinator is
         perpetualMint.exposed_requestRandomWords(
             minter,
             COLLECTION,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_COLLECTION_PRIZE_VALUE,
             ++currentMaxNumWords
@@ -164,7 +164,7 @@ contract PerpetualMint_requestRandomWords_InsrtVRFCoordinator is
         perpetualMint.exposed_requestRandomWords(
             minter,
             COLLECTION,
-            TEST_MINT_EARNINGS_FEE,
+            TEST_MINT_EARNINGS_FEE_PER_SPIN,
             TEST_ADJUSTMENT_FACTOR,
             TEST_MINT_FOR_COLLECTION_PRIZE_VALUE,
             TEST_NUM_WORDS

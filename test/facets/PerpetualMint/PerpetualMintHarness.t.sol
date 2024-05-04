@@ -77,7 +77,7 @@ contract PerpetualMintHarness is
     function exposed_requestRandomWords(
         address minter,
         address collection,
-        uint256 mintEarningsFee,
+        uint256 mintEarningsFeePerSpin,
         uint256 mintPriceAdjustmentFactor,
         uint256 prizeValueInWei,
         uint32 numWords
@@ -91,7 +91,7 @@ contract PerpetualMintHarness is
             collectionData,
             minter,
             collection,
-            mintEarningsFee,
+            mintEarningsFeePerSpin,
             mintPriceAdjustmentFactor,
             prizeValueInWei,
             numWords
@@ -102,7 +102,7 @@ contract PerpetualMintHarness is
     function exposed_requestRandomWordsSupra(
         address minter,
         address collection,
-        uint256 mintEarningsFee,
+        uint256 mintEarningsFeePerSpin,
         uint256 mintPriceAdjustmentFactor,
         uint256 prizeValueInWei,
         uint8 numWords
@@ -116,7 +116,7 @@ contract PerpetualMintHarness is
             collectionData,
             minter,
             collection,
-            mintEarningsFee,
+            mintEarningsFeePerSpin,
             mintPriceAdjustmentFactor,
             prizeValueInWei,
             numWords
@@ -132,7 +132,7 @@ contract PerpetualMintHarness is
         returns (
             address minter,
             address collection,
-            uint256 mintEarningsFee,
+            uint256 mintEarningsFeePerSpin,
             uint256 mintPriceAdjustmentFactor,
             uint256 prizeValueInWei
         )
@@ -142,13 +142,13 @@ contract PerpetualMintHarness is
         (
             minter,
             collection,
-            mintEarningsFee,
+            mintEarningsFeePerSpin,
             mintPriceAdjustmentFactor,
             prizeValueInWei
         ) = (
             request.minter,
             request.collection,
-            request.mintEarningsFee,
+            request.mintEarningsFeePerSpin,
             request.mintPriceAdjustmentFactor,
             request.prizeValueInWei
         );
@@ -257,14 +257,14 @@ contract PerpetualMintHarness is
         uint256 requestId,
         address minter,
         address collection,
-        uint256 mintEarningsFee,
+        uint256 mintEarningsFeePerSpin,
         uint256 mintPriceAdjustmentFactor,
         uint256 prizeValueInWei
     ) external {
         Storage.layout().requests[requestId] = RequestData({
             collection: collection,
             minter: minter,
-            mintEarningsFee: mintEarningsFee,
+            mintEarningsFeePerSpin: mintEarningsFeePerSpin,
             mintPriceAdjustmentFactor: mintPriceAdjustmentFactor,
             prizeValueInWei: prizeValueInWei
         });

@@ -60,7 +60,7 @@ contract PerpetualMint_resolveMintsForEth is
             RequestData({
                 minter: minter,
                 collection: COLLECTION,
-                mintEarningsFee: TEST_MINT_EARNINGS_FEE,
+                mintEarningsFeePerSpin: TEST_MINT_EARNINGS_FEE_PER_SPIN,
                 mintPriceAdjustmentFactor: TEST_ADJUSTMENT_FACTOR,
                 prizeValueInWei: TEST_MINT_FOR_ETH_PRIZE_VALUE
             }),
@@ -114,7 +114,7 @@ contract PerpetualMint_resolveMintsForEth is
             RequestData({
                 minter: minter,
                 collection: COLLECTION,
-                mintEarningsFee: TEST_MINT_EARNINGS_FEE,
+                mintEarningsFeePerSpin: TEST_MINT_EARNINGS_FEE_PER_SPIN,
                 mintPriceAdjustmentFactor: TEST_ADJUSTMENT_FACTOR,
                 prizeValueInWei: TEST_MINT_FOR_ETH_PRIZE_VALUE
             }),
@@ -168,7 +168,7 @@ contract PerpetualMint_resolveMintsForEth is
             RequestData({
                 minter: minter,
                 collection: COLLECTION,
-                mintEarningsFee: TEST_MINT_EARNINGS_FEE,
+                mintEarningsFeePerSpin: TEST_MINT_EARNINGS_FEE_PER_SPIN,
                 mintPriceAdjustmentFactor: TEST_ADJUSTMENT_FACTOR,
                 prizeValueInWei: TEST_MINT_FOR_ETH_PRIZE_VALUE
             }),
@@ -222,7 +222,7 @@ contract PerpetualMint_resolveMintsForEth is
             RequestData({
                 minter: minter,
                 collection: COLLECTION,
-                mintEarningsFee: TEST_MINT_EARNINGS_FEE,
+                mintEarningsFeePerSpin: TEST_MINT_EARNINGS_FEE_PER_SPIN,
                 mintPriceAdjustmentFactor: TEST_ADJUSTMENT_FACTOR,
                 prizeValueInWei: TEST_MINT_FOR_ETH_PRIZE_VALUE
             }),
@@ -284,7 +284,7 @@ contract PerpetualMint_resolveMintsForEth is
             RequestData({
                 minter: minter,
                 collection: COLLECTION,
-                mintEarningsFee: TEST_MINT_EARNINGS_FEE,
+                mintEarningsFeePerSpin: TEST_MINT_EARNINGS_FEE_PER_SPIN,
                 mintPriceAdjustmentFactor: TEST_ADJUSTMENT_FACTOR,
                 prizeValueInWei: TEST_MINT_FOR_ETH_PRIZE_VALUE
             }),
@@ -336,7 +336,7 @@ contract PerpetualMint_resolveMintsForEth is
             RequestData({
                 minter: minter,
                 collection: COLLECTION,
-                mintEarningsFee: TEST_MINT_EARNINGS_FEE,
+                mintEarningsFeePerSpin: TEST_MINT_EARNINGS_FEE_PER_SPIN,
                 mintPriceAdjustmentFactor: TEST_ADJUSTMENT_FACTOR,
                 prizeValueInWei: TEST_MINT_FOR_ETH_PRIZE_VALUE
             }),
@@ -380,7 +380,7 @@ contract PerpetualMint_resolveMintsForEth is
             RequestData({
                 minter: minter,
                 collection: COLLECTION,
-                mintEarningsFee: TEST_MINT_EARNINGS_FEE,
+                mintEarningsFeePerSpin: TEST_MINT_EARNINGS_FEE_PER_SPIN,
                 mintPriceAdjustmentFactor: TEST_ADJUSTMENT_FACTOR,
                 prizeValueInWei: TEST_MINT_FOR_ETH_PRIZE_VALUE
             }),
@@ -402,7 +402,7 @@ contract PerpetualMint_resolveMintsForEth is
             RequestData({
                 minter: minter,
                 collection: COLLECTION,
-                mintEarningsFee: TEST_MINT_EARNINGS_FEE,
+                mintEarningsFeePerSpin: TEST_MINT_EARNINGS_FEE_PER_SPIN,
                 mintPriceAdjustmentFactor: TEST_ADJUSTMENT_FACTOR,
                 prizeValueInWei: TEST_MINT_FOR_ETH_PRIZE_VALUE
             }),
@@ -419,7 +419,7 @@ contract PerpetualMint_resolveMintsForEth is
             RequestData({
                 minter: minter,
                 collection: COLLECTION,
-                mintEarningsFee: TEST_MINT_EARNINGS_FEE,
+                mintEarningsFeePerSpin: TEST_MINT_EARNINGS_FEE_PER_SPIN,
                 mintPriceAdjustmentFactor: TEST_ADJUSTMENT_FACTOR,
                 prizeValueInWei: TEST_MINT_FOR_ETH_PRIZE_VALUE
             }),
@@ -437,7 +437,7 @@ contract PerpetualMint_resolveMintsForEth is
             RequestData({
                 minter: minter,
                 collection: COLLECTION,
-                mintEarningsFee: TEST_MINT_EARNINGS_FEE,
+                mintEarningsFeePerSpin: TEST_MINT_EARNINGS_FEE_PER_SPIN,
                 mintPriceAdjustmentFactor: TEST_ADJUSTMENT_FACTOR,
                 prizeValueInWei: TEST_MINT_FOR_ETH_PRIZE_VALUE
             }),
