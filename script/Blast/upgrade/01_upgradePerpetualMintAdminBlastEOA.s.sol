@@ -101,7 +101,7 @@ contract UpgradePerpetualMintAdminBlastEOA is Script {
         address facetAddress
     ) internal pure returns (ICore.FacetCut[] memory facetCuts) {
         // map the PerpetualMintAdmin related function selectors to their respective interfaces
-        bytes4[] memory perpetualMintAdminFunctionSelectors = new bytes4[](27);
+        bytes4[] memory perpetualMintAdminFunctionSelectors = new bytes4[](29);
 
         perpetualMintAdminFunctionSelectors[0] = IPerpetualMintAdmin
             .burnReceipt
@@ -164,50 +164,58 @@ contract UpgradePerpetualMintAdminBlastEOA is Script {
             .selector;
 
         perpetualMintAdminFunctionSelectors[15] = IPerpetualMintAdmin
-            .setMintFeeBP
+            .setMintEarningsBufferBP
             .selector;
 
         perpetualMintAdminFunctionSelectors[16] = IPerpetualMintAdmin
-            .setMintToken
+            .setMintFeeBP
             .selector;
 
         perpetualMintAdminFunctionSelectors[17] = IPerpetualMintAdmin
-            .setMintTokenConsolationFeeBP
+            .setMintForEthConsolationFeeBP
             .selector;
 
         perpetualMintAdminFunctionSelectors[18] = IPerpetualMintAdmin
-            .setMintTokenTiers
+            .setMintToken
             .selector;
 
         perpetualMintAdminFunctionSelectors[19] = IPerpetualMintAdmin
-            .setReceiptBaseURI
+            .setMintTokenConsolationFeeBP
             .selector;
 
         perpetualMintAdminFunctionSelectors[20] = IPerpetualMintAdmin
-            .setReceiptTokenURI
+            .setMintTokenTiers
             .selector;
 
         perpetualMintAdminFunctionSelectors[21] = IPerpetualMintAdmin
-            .setRedemptionFeeBP
+            .setReceiptBaseURI
             .selector;
 
         perpetualMintAdminFunctionSelectors[22] = IPerpetualMintAdmin
-            .setRedeemPaused
+            .setReceiptTokenURI
             .selector;
 
         perpetualMintAdminFunctionSelectors[23] = IPerpetualMintAdmin
-            .setTiers
+            .setRedemptionFeeBP
             .selector;
 
         perpetualMintAdminFunctionSelectors[24] = IPerpetualMintAdmin
-            .setVRFConfig
+            .setRedeemPaused
             .selector;
 
         perpetualMintAdminFunctionSelectors[25] = IPerpetualMintAdmin
-            .setVRFSubscriptionBalanceThreshold
+            .setTiers
             .selector;
 
         perpetualMintAdminFunctionSelectors[26] = IPerpetualMintAdmin
+            .setVRFConfig
+            .selector;
+
+        perpetualMintAdminFunctionSelectors[27] = IPerpetualMintAdmin
+            .setVRFSubscriptionBalanceThreshold
+            .selector;
+
+        perpetualMintAdminFunctionSelectors[28] = IPerpetualMintAdmin
             .unpause
             .selector;
 
