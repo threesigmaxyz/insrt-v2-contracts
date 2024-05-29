@@ -2440,16 +2440,6 @@ abstract contract PerpetualMintInternal is
         ratio = DEFAULT_ETH_TO_MINT_RATIO;
     }
 
-    /// @dev enforces that there are no pending mint requests for a collection
-    /// @param collectionData the CollectionData struct for a given collection
-    function _enforceNoPendingMints(
-        CollectionData storage collectionData
-    ) internal view {
-        if (collectionData.pendingRequests.length() != 0) {
-            revert PendingRequests();
-        }
-    }
-
     /// @notice Returns the current ETH to $MINT ratio
     /// @param l the PerpetualMint storage layout
     /// @return ratio current ETH to $MINT ratio
@@ -3499,8 +3489,6 @@ abstract contract PerpetualMintInternal is
             collection
         ];
 
-        _enforceNoPendingMints(collectionData);
-
         collectionData.mintMultiplier = multiplier;
 
         emit CollectionMultiplierSet(collection, multiplier);
@@ -3545,8 +3533,6 @@ abstract contract PerpetualMintInternal is
         ];
 
         _enforceBasis(risk, BASIS);
-
-        _enforceNoPendingMints(collectionData);
 
         collectionData.risk = risk;
 

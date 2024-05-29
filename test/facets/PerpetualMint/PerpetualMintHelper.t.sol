@@ -444,7 +444,7 @@ contract PerpetualMintHelper {
 
         // map the PerpetualMintHarness test related function selectors to their respective interfaces
         bytes4[] memory perpetualMintHarnessFunctionSelectors = new bytes4[](
-            17
+            16
         );
 
         perpetualMintHarnessFunctionSelectors[0] = IPerpetualMintHarness
@@ -452,66 +452,62 @@ contract PerpetualMintHelper {
             .selector;
 
         perpetualMintHarnessFunctionSelectors[1] = IPerpetualMintHarness
-            .exposed_enforceNoPendingMints
-            .selector;
-
-        perpetualMintHarnessFunctionSelectors[2] = IPerpetualMintHarness
             .exposed_normalizeValue
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[3] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[2] = IPerpetualMintHarness
             .exposed_pendingRequestsAdd
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[4] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[3] = IPerpetualMintHarness
             .exposed_pendingRequestsAt
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[5] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[4] = IPerpetualMintHarness
             .exposed_pendingRequestsLength
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[6] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[5] = IPerpetualMintHarness
             .exposed_requestRandomWords
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[7] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[6] = IPerpetualMintHarness
             .exposed_requests
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[8] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[7] = IPerpetualMintHarness
             .exposed_resolveMints
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[9] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[8] = IPerpetualMintHarness
             .exposed_resolveMintsForEth
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[10] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[9] = IPerpetualMintHarness
             .exposed_resolveMintsForMint
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[11] = bytes4(
+        perpetualMintHarnessFunctionSelectors[10] = bytes4(
             keccak256("mintReceipts(address,uint256)")
         );
 
-        perpetualMintHarnessFunctionSelectors[12] = bytes4(
+        perpetualMintHarnessFunctionSelectors[11] = bytes4(
             keccak256("mintReceipts(address,uint256,uint256)")
         );
 
-        perpetualMintHarnessFunctionSelectors[13] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[12] = IPerpetualMintHarness
             .setConsolationFees
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[14] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[13] = IPerpetualMintHarness
             .setMintEarnings
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[15] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[14] = IPerpetualMintHarness
             .setProtocolFees
             .selector;
 
-        perpetualMintHarnessFunctionSelectors[16] = IPerpetualMintHarness
+        perpetualMintHarnessFunctionSelectors[15] = IPerpetualMintHarness
             .setRequests
             .selector;
 

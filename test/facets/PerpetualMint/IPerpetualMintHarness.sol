@@ -10,9 +10,6 @@ interface IPerpetualMintHarness {
     /// @dev exposes _enforceBasis
     function exposed_enforceBasis(uint32 value) external pure;
 
-    /// @dev exposes _enforceNoPendingMints
-    function exposed_enforceNoPendingMints(address collection) external view;
-
     /// @dev exposes _normalizeValue
     function exposed_normalizeValue(
         uint256 value,

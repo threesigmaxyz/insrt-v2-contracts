@@ -29,14 +29,6 @@ contract PerpetualMintHarnessSupraBlast is
         _enforceBasis(value, _BASIS());
     }
 
-    function exposed_enforceNoPendingMints(address collection) external view {
-        CollectionData storage collectionData = Storage.layout().collections[
-            collection
-        ];
-
-        _enforceNoPendingMints(collectionData);
-    }
-
     /// @inheritdoc IPerpetualMintHarness
     function exposed_normalizeValue(
         uint256 value,

@@ -389,47 +389,43 @@ contract PerpetualMintHelper_SupraBlast {
         pure
         returns (bytes4[] memory selectors)
     {
-        selectors = new bytes4[](15);
+        selectors = new bytes4[](14);
 
         selectors[0] = IPerpetualMintHarness.exposed_enforceBasis.selector;
 
-        selectors[1] = IPerpetualMintHarness
-            .exposed_enforceNoPendingMints
-            .selector;
+        selectors[1] = IPerpetualMintHarness.exposed_normalizeValue.selector;
 
-        selectors[2] = IPerpetualMintHarness.exposed_normalizeValue.selector;
-
-        selectors[3] = IPerpetualMintHarness
+        selectors[2] = IPerpetualMintHarness
             .exposed_pendingRequestsAdd
             .selector;
 
-        selectors[4] = IPerpetualMintHarness.exposed_pendingRequestsAt.selector;
+        selectors[3] = IPerpetualMintHarness.exposed_pendingRequestsAt.selector;
 
-        selectors[5] = IPerpetualMintHarness
+        selectors[4] = IPerpetualMintHarness
             .exposed_pendingRequestsLength
             .selector;
 
-        selectors[6] = IPerpetualMintHarness.exposed_requests.selector;
+        selectors[5] = IPerpetualMintHarness.exposed_requests.selector;
 
-        selectors[7] = IPerpetualMintHarness.exposed_resolveMints.selector;
+        selectors[6] = IPerpetualMintHarness.exposed_resolveMints.selector;
 
-        selectors[8] = IPerpetualMintHarness
+        selectors[7] = IPerpetualMintHarness
             .exposed_resolveMintsForMint
             .selector;
 
-        selectors[9] = bytes4(keccak256("mintReceipts(address,uint256)"));
+        selectors[8] = bytes4(keccak256("mintReceipts(address,uint256)"));
 
-        selectors[10] = bytes4(
+        selectors[9] = bytes4(
             keccak256("mintReceipts(address,uint256,uint256)")
         );
 
-        selectors[11] = IPerpetualMintHarness.setConsolationFees.selector;
+        selectors[10] = IPerpetualMintHarness.setConsolationFees.selector;
 
-        selectors[12] = IPerpetualMintHarness.setMintEarnings.selector;
+        selectors[11] = IPerpetualMintHarness.setMintEarnings.selector;
 
-        selectors[13] = IPerpetualMintHarness.setProtocolFees.selector;
+        selectors[12] = IPerpetualMintHarness.setProtocolFees.selector;
 
-        selectors[14] = IPerpetualMintHarness.setRequests.selector;
+        selectors[13] = IPerpetualMintHarness.setRequests.selector;
     }
 
     function _getPerpetualMintHarnessBlastFunctionSelectors()
