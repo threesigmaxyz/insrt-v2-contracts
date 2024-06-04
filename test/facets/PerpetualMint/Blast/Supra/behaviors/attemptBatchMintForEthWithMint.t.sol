@@ -9,6 +9,7 @@ import { TokenTest } from "../../../../Token/Token.t.sol";
 import { BlastForkTest } from "../../../../../BlastForkTest.t.sol";
 import { CoreTest } from "../../../../../diamonds/Core/Core.t.sol";
 import { TokenProxyTest } from "../../../../../diamonds/TokenProxy.t.sol";
+import { IGuardsInternal } from "../../../../../../contracts/common/IGuardsInternal.sol";
 import { IPerpetualMintInternal } from "../../../../../../contracts/facets/PerpetualMint/IPerpetualMintInternal.sol";
 
 /// @title PerpetualMint_attemptBatchMintForEthWithMintSupraBlast
@@ -75,7 +76,8 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
             NO_REFERRER,
             MINT_PRICE * currentEthToMintRatio,
             TEST_MINT_ATTEMPTS,
-            TEST_MINT_FOR_ETH_PRIZE_VALUE
+            TEST_MINT_FOR_ETH_PRIZE_VALUE,
+            TEST_RISK_REWARD_RATIO
         );
 
         uint256 expectedEthRequired = MINT_PRICE * TEST_MINT_ATTEMPTS;
@@ -148,7 +150,8 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
             NO_REFERRER,
             MINT_PRICE * currentEthToMintRatio,
             TEST_MINT_ATTEMPTS,
-            TEST_MINT_FOR_ETH_PRIZE_VALUE
+            TEST_MINT_FOR_ETH_PRIZE_VALUE,
+            TEST_RISK_REWARD_RATIO
         );
 
         uint256 expectedEthRequired = MINT_PRICE * TEST_MINT_ATTEMPTS;
@@ -219,7 +222,8 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
             NO_REFERRER,
             MINT_PRICE * currentEthToMintRatio,
             TEST_MINT_ATTEMPTS,
-            TEST_MINT_FOR_ETH_PRIZE_VALUE
+            TEST_MINT_FOR_ETH_PRIZE_VALUE,
+            TEST_RISK_REWARD_RATIO
         );
 
         uint256 expectedEthRequired = MINT_PRICE * TEST_MINT_ATTEMPTS;
@@ -289,7 +293,8 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
             REFERRER,
             MINT_PRICE * currentEthToMintRatio,
             TEST_MINT_ATTEMPTS,
-            TEST_MINT_FOR_ETH_PRIZE_VALUE
+            TEST_MINT_FOR_ETH_PRIZE_VALUE,
+            TEST_RISK_REWARD_RATIO
         );
 
         uint256 expectedEthRequired = MINT_PRICE * TEST_MINT_ATTEMPTS;
@@ -300,21 +305,23 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
         uint256 postMintAccruedConsolationFees = perpetualMint
             .accruedConsolationFees();
 
-        assert(
-            postMintAccruedConsolationFees ==
-                preMintAccruedConsolationFees -
-                    (expectedEthRequired - expectedCollectionConsolationFee)
-        );
-
-        uint256 postMintAccruedProtocolFees = perpetualMint
-            .accruedProtocolFees();
-
         uint256 expectedMintFee = (expectedEthRequired *
             perpetualMint.mintFeeBP()) / perpetualMint.BASIS();
 
         uint256 expectedMintReferralFee = (expectedMintFee *
             perpetualMint.defaultCollectionReferralFeeBP()) /
             perpetualMint.BASIS();
+
+        assert(
+            postMintAccruedConsolationFees ==
+                preMintAccruedConsolationFees -
+                    (expectedEthRequired -
+                        expectedCollectionConsolationFee -
+                        expectedMintReferralFee)
+        );
+
+        uint256 postMintAccruedProtocolFees = perpetualMint
+            .accruedProtocolFees();
 
         // protocol fee is not applied to Blast deploy
         assert(postMintAccruedProtocolFees == preMintAccruedProtocolFees);
@@ -348,8 +355,8 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
         );
     }
 
-    /// @dev Tests attemptBatchMintForEthWithMint functionality when a collection mint fee distribution ratio is set.
-    function test_attemptBatchMintForEthWithMintWithCollectionMintFeeDistributionRatio()
+    /// @dev Tests attemptBatchMintForEthWithMint functionality when custom risk reward ratio is passed.
+    function test_attemptBatchMintForEthWithMintWithCustomRiskRewardRatio()
         external
     {
         uint256 currentEthToMintRatio = perpetualMint.ethToMintRatio();
@@ -367,9 +374,13 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
 
         uint256 preMintTokenBalance = token.balanceOf(minter);
 
-        perpetualMint.setCollectionMintFeeDistributionRatioBP(
-            COLLECTION,
-            TEST_COLLECTION_MINT_FEE_DISTRIBUTION_RATIO_BP
+        // set max risk reward ratio when minting for ETH
+        uint32 BASIS = perpetualMint.BASIS();
+
+        TEST_RISK_REWARD_RATIO = uint32(
+            (BASIS + BASIS) -
+                ((uint256(BASIS) ** 2) /
+                    perpetualMint.mintForEthConsolationFeeBP())
         );
 
         vm.prank(minter);
@@ -377,7 +388,8 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
             NO_REFERRER,
             MINT_PRICE * currentEthToMintRatio,
             TEST_MINT_ATTEMPTS,
-            TEST_MINT_FOR_ETH_PRIZE_VALUE
+            TEST_MINT_FOR_ETH_PRIZE_VALUE,
+            TEST_RISK_REWARD_RATIO
         );
 
         uint256 expectedEthRequired = MINT_PRICE * TEST_MINT_ATTEMPTS;
@@ -385,9 +397,8 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
         uint256 expectedCollectionConsolationFee = (expectedEthRequired *
             perpetualMint.mintForEthConsolationFeeBP()) / perpetualMint.BASIS();
 
-        uint256 expectedAdditionalDepositorFee = (expectedCollectionConsolationFee *
-                TEST_COLLECTION_MINT_FEE_DISTRIBUTION_RATIO_BP) /
-                perpetualMint.BASIS();
+        uint256 expectedAdditionalMintEarningsFee = (expectedCollectionConsolationFee *
+                TEST_RISK_REWARD_RATIO) / perpetualMint.BASIS();
 
         uint256 postMintAccruedConsolationFees = perpetualMint
             .accruedConsolationFees();
@@ -397,7 +408,7 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
                 preMintAccruedConsolationFees -
                     (expectedEthRequired -
                         expectedCollectionConsolationFee +
-                        expectedAdditionalDepositorFee)
+                        expectedAdditionalMintEarningsFee)
         );
 
         uint256 postMintAccruedProtocolFees = perpetualMint
@@ -413,7 +424,7 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
             postMintAccruedMintEarnings ==
                 expectedEthRequired -
                     expectedCollectionConsolationFee +
-                    expectedAdditionalDepositorFee +
+                    expectedAdditionalMintEarningsFee +
                     preMintAccruedMintEarnings // account for the mocked mint earnings during setup
         );
 
@@ -438,7 +449,8 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
             NO_REFERRER,
             2_500 ether + 1, // 2,500 $MINT + 1 wei (dust)
             TEST_MINT_ATTEMPTS,
-            TEST_MINT_FOR_ETH_PRIZE_VALUE
+            TEST_MINT_FOR_ETH_PRIZE_VALUE,
+            TEST_RISK_REWARD_RATIO
         );
     }
 
@@ -452,7 +464,36 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
             NO_REFERRER,
             1 ether - 1, // less than 1 $MINT
             TEST_MINT_ATTEMPTS,
-            TEST_MINT_FOR_ETH_PRIZE_VALUE
+            TEST_MINT_FOR_ETH_PRIZE_VALUE,
+            TEST_RISK_REWARD_RATIO
+        );
+    }
+
+    /// @dev Tests that attemptBatchMintForEthWithMint functionality reverts when attempting to mint with risk reward ratio exceeding the maximum risk reward ratio.
+    function test_attemptBatchMintForEthWithMintRevertsWhen_AttemptingToMintWithRiskRewardRatioExceedingMaxRiskRewardRatio()
+        external
+    {
+        uint256 currentEthToMintRatio = perpetualMint.ethToMintRatio();
+
+        // set the risk reward ratio to exceed the max risk reward ratio
+        uint32 BASIS = perpetualMint.BASIS();
+
+        TEST_RISK_REWARD_RATIO =
+            uint32(
+                (BASIS + BASIS) -
+                    ((uint256(BASIS) ** 2) /
+                        perpetualMint.mintForEthConsolationFeeBP())
+            ) +
+            1;
+
+        vm.expectRevert(IGuardsInternal.BasisExceeded.selector);
+
+        perpetualMint.attemptBatchMintForEthWithMint(
+            NO_REFERRER,
+            MINT_PRICE * currentEthToMintRatio,
+            TEST_MINT_ATTEMPTS,
+            TEST_MINT_FOR_ETH_PRIZE_VALUE,
+            TEST_RISK_REWARD_RATIO
         );
     }
 
@@ -468,7 +509,8 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
             NO_REFERRER,
             MINT_PRICE * currentEthToMintRatio,
             ZERO_MINT_ATTEMPTS,
-            TEST_MINT_FOR_ETH_PRIZE_VALUE
+            TEST_MINT_FOR_ETH_PRIZE_VALUE,
+            TEST_RISK_REWARD_RATIO
         );
     }
 
@@ -485,7 +527,8 @@ contract PerpetualMint_attemptBatchMintForEthWithMintSupraBlast is
             NO_REFERRER,
             MINT_PRICE * currentEthToMintRatio,
             TEST_MINT_ATTEMPTS,
-            TEST_MINT_FOR_ETH_PRIZE_VALUE
+            TEST_MINT_FOR_ETH_PRIZE_VALUE,
+            TEST_RISK_REWARD_RATIO
         );
     }
 }
